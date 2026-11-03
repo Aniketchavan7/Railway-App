@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.cache.redis_client import cache
 from app.config import settings
 from app.db.base import Base
+import app.db.models  # Register all models with Base.metadata
 from app.db.session import engine
 from app.routers import ai, details, live, pnr, search, system, ws
 
