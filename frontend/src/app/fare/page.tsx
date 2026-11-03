@@ -53,10 +53,10 @@ function FareContent() {
         <div>
           <h1 className="text-lg sm:text-2xl font-display font-bold text-ink tracking-tight flex items-center gap-2">
             <Calculator className="w-5 h-5 text-accent" />
-            <span>Telescopic distance fare calculator</span>
+            <span>Fare calculator</span>
           </h1>
           <p className="text-xs text-muted mt-1">
-            Calculates official Indian Railways distance-based tariff with base fare, reservation fee, superfast surcharge, GST, and Tatkal caps.
+            Distance-based tariff breakdown including base fare, reservation fee, superfast charge, and GST.
           </p>
         </div>
 
@@ -158,7 +158,7 @@ function FareContent() {
       {loading ? (
         <div className="flex flex-col items-center justify-center p-12 bg-paper-2 rounded-card border border-rule space-y-2">
           <Loader2 className="w-6 h-6 motion-safe:animate-spin motion-reduce:animate-none text-accent" />
-          <p className="text-xs text-muted font-outlier">Calculating official tariff breakdown…</p>
+          <p className="text-xs text-muted font-outlier">Calculating fares…</p>
         </div>
       ) : error ? (
         <div className="p-6 bg-paper-2 rounded-card border border-bad text-center text-xs text-bad">
@@ -209,7 +209,7 @@ function FareContent() {
                     <td className="py-3 px-4 font-outlier text-muted">₹{c.reservation_charge}</td>
                     <td className="py-3 px-4 font-outlier text-muted">₹{c.superfast_charge}</td>
                     <td className="py-3 px-4 font-outlier text-accent">
-                      {c.tatkal_surcharge > 0 ? `₹${c.tatkal_surcharge}` : "—"}
+                      {c.tatkal_surcharge > 0 ? `₹${c.tatkal_surcharge}` : "-"}
                     </td>
                     <td className="py-3 px-4 font-outlier text-muted">
                       {c.gst > 0 ? `₹${c.gst}` : "Exempt"}
@@ -228,7 +228,7 @@ function FareContent() {
           <div className="p-4 bg-paper-3 border-t border-rule text-[11px] text-muted flex items-center gap-2">
             <ShieldCheck className="w-3.5 h-3.5 text-ok shrink-0" />
             <span>
-              Telescopic fare formulas reflect official Railway Board tariff standards. Dynamic surge pricing (for Suvidha/Special trains) may vary at booking time on IRCTC.
+              Fares follow standard Railway Board distance tariffs. Special trains or Suvidha dynamic pricing may vary on IRCTC.
             </span>
           </div>
         </div>

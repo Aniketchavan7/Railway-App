@@ -16,9 +16,72 @@ from app.schemas.status import (
     RailwayStatus,
     StationHalt,
 )
+from app.providers.simulator import REFERENCE_TRAINS
 from app.services.fare_engine import TelescopicFareEngine
 
 logger = logging.getLogger("railpulse.services.orchestrator")
+
+KNOWN_TRAINS: Dict[str, str] = {
+    "12115": "Siddheshwar Superfast Express",
+    "12116": "Siddheshwar Superfast Express",
+    "22225": "Solapur Vande Bharat Express",
+    "22226": "Mumbai CSMT Vande Bharat Express",
+    "12157": "Hutatma Express",
+    "12158": "Hutatma Express",
+    "12123": "Deccan Queen Superfast Express",
+    "12124": "Deccan Queen Superfast Express",
+    "12125": "Pragati Express",
+    "12126": "Pragati Express",
+    "12127": "Mumbai Pune Intercity Express",
+    "12128": "Pune Mumbai Intercity Express",
+    "11007": "Deccan Express",
+    "11008": "Deccan Express",
+    "11009": "Sinhagad Express",
+    "11010": "Sinhagad Express",
+    "12101": "Jnaneswari Super Deluxe Express",
+    "12102": "Jnaneswari Super Deluxe Express",
+    "12951": "Mumbai Tejas Rajdhani Express",
+    "12952": "New Delhi Mumbai Tejas Rajdhani Express",
+    "22436": "Vande Bharat Express",
+    "22435": "Vande Bharat Express",
+    "12919": "Malwa Superfast Express",
+    "12920": "Malwa Superfast Express",
+    "12009": "Mumbai Ahmedabad Shatabdi Express",
+    "12010": "Ahmedabad Mumbai Shatabdi Express",
+    "12051": "Jan Shatabdi Express",
+    "12052": "Jan Shatabdi Express",
+    "12261": "Howrah Mumbai CSMT Duronto Express",
+    "12262": "Mumbai CSMT Howrah Duronto Express",
+    "12301": "Howrah Rajdhani Express",
+    "12302": "Howrah Rajdhani Express",
+}
+
+
+def clean_train_name(name: str, train_number: str) -> str:
+    clean_num = train_number.strip()
+    if clean_num in KNOWN_TRAINS:
+        return KNOWN_TRAINS[clean_num]
+    if not name or name.strip() == f"Express {clean_num}":
+        return f"Express {clean_num}"
+
+    clean = name.strip()
+    replacements = {
+        "EXP": "Express",
+        "SF": "Superfast",
+        "SF EXP": "Superfast Express",
+        "SUPERFAST EXP": "Superfast Express",
+        "MAIL": "Mail",
+        "PASS": "Passenger",
+    }
+    words = clean.split()
+    normalized = []
+    for w in words:
+        upper = w.upper()
+        if upper in replacements:
+            normalized.append(replacements[upper])
+        else:
+            normalized.append(w.capitalize())
+    return " ".join(normalized)
 
 
 def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
@@ -43,12 +106,15 @@ class ProviderOrchestrator:
     """
 
     async def get_live_status(self, train_number: str) -> Optional[RailwayStatus]:
-        cache_key = f"railpulse:status:{train_number}"
+        clean_num = str(train_number).strip()
+        cache_key = f"railpulse:status:{clean_num}"
         cached = await cache.get_json(cache_key)
         if cached:
             try:
-                if str(cached.get("train_number")) == str(train_number):
-                    return RailwayStatus(**cached)
+                if str(cached.get("train_number")) == clean_num:
+                    status = RailwayStatus(**cached)
+                    status.train_name = clean_train_name(status.train_name, clean_num)
+                    return status
             except Exception:
                 pass
 
@@ -56,20 +122,54 @@ class ProviderOrchestrator:
         for p in providers:
             start_t = time.time()
             try:
-                res = await p.get_live_status(train_number)
+                res = await p.get_live_status(clean_num)
                 latency = (time.time() - start_t) * 1000
                 if res:
                     registry.record_success(p.provider_name)
+                    # Canonical train name resolution
+                    res.train_name = clean_train_name(res.train_name, clean_num)
+
+                    # Enrich halts if missing from upstream live status
+                    if not res.halts and clean_num in REFERENCE_TRAINS:
+                        ref = REFERENCE_TRAINS[clean_num]
+                        ref_halts: List[StationHalt] = []
+                        for idx, h in enumerate(ref.get("halts", [])):
+                            ref_halts.append(
+                                StationHalt(
+                                    station_code=h["code"],
+                                    station_name=h["name"],
+                                    arrival_time=h.get("sch_arr"),
+                                    departure_time=h.get("sch_dep"),
+                                    distance_km=float(h.get("dist", 0.0)),
+                                    day_count=1,
+                                    platform=h.get("platform", "1"),
+                                    delay_minutes=res.delay_minutes,
+                                    has_arrived=idx == 0,
+                                    has_departed=False,
+                                    latitude=h.get("lat"),
+                                    longitude=h.get("lng"),
+                                )
+                            )
+                        res.halts = ref_halts
+
+                    # Enrich coordinates if missing
+                    if (res.latitude is None or res.longitude is None) and res.halts:
+                        for h in res.halts:
+                            if h.latitude is not None and h.longitude is not None:
+                                res.latitude = h.latitude
+                                res.longitude = h.longitude
+                                break
+
                     # Cache for 45 seconds
                     await cache.set_json(cache_key, res.model_dump(mode="json"), ttl_seconds=45)
                     # Broadcast to WebSocket channel
-                    await cache.publish_event(f"train_telemetry:{train_number}", res.model_dump(mode="json"))
+                    await cache.publish_event(f"train_telemetry:{clean_num}", res.model_dump(mode="json"))
                     return res
                 else:
                     registry.record_failure(p.provider_name)
             except Exception as e:
                 registry.record_failure(p.provider_name)
-                logger.warning("Provider %s error on get_live_status(%s): %s", p.provider_name, train_number, e)
+                logger.warning("Provider %s error on get_live_status(%s): %s", p.provider_name, clean_num, e)
 
         return None
 

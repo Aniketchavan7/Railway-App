@@ -45,10 +45,10 @@ function CoachContent() {
         <div>
           <h1 className="text-lg sm:text-2xl font-display font-bold text-ink tracking-tight flex items-center gap-2">
             <LayoutGrid className="w-5 h-5 text-accent" />
-            <span>Coach composition and rake layout visualizer</span>
+            <span>Coach layout</span>
           </h1>
           <p className="text-xs text-muted mt-1">
-            Physical rake arrangement from Locomotive to Rear Guard van across Executive, Chair Car, AC, Sleeper, and General coaches.
+            Coach arrangement and seat classes from locomotive to rear guard.
           </p>
         </div>
 
@@ -68,12 +68,12 @@ function CoachContent() {
             disabled={!trainNum.trim() || loading}
             className="bg-accent hover:opacity-90 active:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed text-accent-ink font-medium text-xs px-4 py-2 rounded-pill transition-opacity cursor-pointer focus-visible:outline-2 focus-visible:outline-accent shrink-0"
           >
-            Inspect rake
+            View layout
           </button>
         </form>
 
         <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-rule text-xs">
-          <span className="text-muted text-[11px] font-medium">Popular rakes:</span>
+          <span className="text-muted text-[11px] font-medium">Popular trains:</span>
           {["22225", "12158", "12101", "12951", "22436"].map((num) => (
             <button
               key={num}
@@ -98,7 +98,7 @@ function CoachContent() {
       {loading ? (
         <div className="flex flex-col items-center justify-center p-12 bg-paper-2 rounded-card border border-rule space-y-2">
           <Loader2 className="w-6 h-6 motion-safe:animate-spin motion-reduce:animate-none text-accent" />
-          <p className="text-xs text-muted font-outlier">Retrieving coach rake composition…</p>
+          <p className="text-xs text-muted font-outlier">Loading coach layout…</p>
         </div>
       ) : error ? (
         <div className="p-6 bg-paper-2 rounded-card border border-bad text-center text-xs text-bad">
@@ -117,7 +117,7 @@ export default function CoachPage() {
       fallback={
         <div className="flex flex-col items-center justify-center p-12 space-y-2">
           <Loader2 className="w-6 h-6 motion-safe:animate-spin motion-reduce:animate-none text-accent" />
-          <p className="text-xs text-muted font-outlier">Loading coach visualizer…</p>
+          <p className="text-xs text-muted font-outlier">Loading coach layout…</p>
         </div>
       }
     >

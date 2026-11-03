@@ -14,7 +14,7 @@ export function ChatDrawer() {
     {
       role: "assistant",
       content:
-        "Namaste! I am your Indian Railways travel assistant.\n\nAsk me about train locations, delays, estimated arrivals, coach layouts, or ticket fares (for example: Where is train 12101 currently? How late is it, and when will it reach Pune?).",
+        "Ask for live train locations, delays, platform numbers, coach layouts, or ticket fares.",
     },
   ]);
   const [input, setInput] = useState("");
@@ -82,10 +82,6 @@ export function ChatDrawer() {
             </p>
           </div>
         </div>
-
-        <span className="text-[10px] sm:text-[11px] text-muted font-outlier hidden xs:inline">
-          Live queries
-        </span>
       </div>
 
       {/* Suggested Queries */}

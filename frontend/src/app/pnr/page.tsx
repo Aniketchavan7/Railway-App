@@ -45,10 +45,10 @@ export default function PNRPage() {
         <div>
           <h1 className="text-lg sm:text-2xl font-display font-bold text-ink tracking-tight flex items-center gap-2">
             <Ticket className="w-5 h-5 text-accent" />
-            <span>PNR status enquiry and charting state</span>
+            <span>PNR status enquiry</span>
           </h1>
           <p className="text-xs text-muted mt-1">
-            Passenger reservation status, coach, berth position, and chart preparation.
+            Current booking status, coach allotment, berth position, and chart preparation.
           </p>
         </div>
 
@@ -81,7 +81,7 @@ export default function PNRPage() {
         <div className="flex items-start gap-2.5 p-3 bg-paper-3 rounded-pill border border-rule text-xs text-muted">
           <ShieldCheck className="w-3.5 h-3.5 text-ok shrink-0 mt-0.5" />
           <span>
-            <strong className="text-ink">Privacy guarantee:</strong> PNR lookups are processed strictly in transit without retaining passenger personal names, contact info, or caching records in browser local storage.
+            <strong className="text-ink">Privacy:</strong> Lookups are processed in transit. No names, phone numbers, or records are saved.
           </span>
         </div>
       </div>
@@ -159,7 +159,7 @@ export default function PNRPage() {
           {/* Passengers List */}
           <div className="pt-4 border-t border-rule">
             <h3 className="text-xs font-semibold text-muted mb-3">
-              Passenger booking details
+              Passengers
             </h3>
 
             <div className="divide-y divide-rule border-y border-rule">

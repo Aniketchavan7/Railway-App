@@ -167,7 +167,7 @@ export function CrowdTelemetryReporter({
   };
 
   return (
-    <div className="bg-paper-2 rounded-card border border-rule p-4 sm:p-5 transition-all">
+    <div className="bg-paper-2 rounded-card border border-rule p-4 sm:p-5 transition-colors">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-start gap-3">
           <div
@@ -178,7 +178,7 @@ export function CrowdTelemetryReporter({
             }`}
           >
             {isBroadcasting ? (
-              <Radio className="w-5 h-5 motion-safe:animate-pulse motion-reduce:animate-none" />
+              <Radio className="w-5 h-5 text-ok" />
             ) : (
               <Compass className="w-5 h-5" />
             )}
@@ -186,7 +186,7 @@ export function CrowdTelemetryReporter({
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <h3 className="text-sm font-display font-bold text-ink">
-                Onboard Crowd Telemetry Relay
+                Share train location
               </h3>
               {crowdMeta && crowdMeta.active_reporters > 0 && (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-pill text-[10px] font-outlier font-semibold bg-ok-soft text-ok border border-ok/30">
@@ -196,7 +196,7 @@ export function CrowdTelemetryReporter({
               )}
             </div>
             <p className="text-xs text-muted leading-relaxed">
-              Traveling on <strong className="text-ink">#{trainNumber} {trainName}</strong>? Share anonymous device GPS to stream exact real-time train positioning for all passengers.
+              Traveling on <strong className="text-ink">#{trainNumber} {trainName}</strong>? Share anonymous device GPS to improve real-time positioning for all passengers.
             </p>
           </div>
         </div>
@@ -209,23 +209,23 @@ export function CrowdTelemetryReporter({
               className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-pill bg-bad/10 hover:bg-bad/20 active:bg-bad/30 text-bad border border-bad/30 text-xs font-semibold cursor-pointer transition-colors focus-visible:outline-2 focus-visible:outline-bad"
             >
               <StopCircle className="w-4 h-4" />
-              <span>Stop GPS Relay</span>
+              <span>Stop sharing</span>
             </button>
           ) : (
             <button
               type="button"
               onClick={startBroadcasting}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-pill bg-accent hover:opacity-90 active:opacity-80 text-accent-ink text-xs font-semibold cursor-pointer transition-opacity shadow-sm focus-visible:outline-2 focus-visible:outline-accent"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-pill bg-accent hover:opacity-90 active:opacity-80 text-accent-ink text-xs font-semibold cursor-pointer transition-opacity whitespace-nowrap focus-visible:outline-2 focus-visible:outline-accent"
             >
               <MapPin className="w-4 h-4" />
-              <span>I&apos;m on this train &bull; Share Live GPS</span>
+              <span>Share location</span>
             </button>
           )}
         </div>
       </div>
 
       {gpsError && (
-        <div className="mt-3 p-2.5 rounded-card bg-bad/10 border border-bad/30 text-bad text-xs font-medium flex items-center gap-2">
+        <div className="mt-3 p-2.5 rounded-pill bg-bad/10 border border-bad/30 text-bad text-xs font-medium flex items-center gap-2">
           <Activity className="w-4 h-4 shrink-0" />
           <span>{gpsError}</span>
         </div>
@@ -263,7 +263,7 @@ export function CrowdTelemetryReporter({
 
             {/* Transmissions */}
             <div className="p-2.5 rounded-pill bg-paper-3 border border-rule flex items-center gap-2">
-              <Radio className="w-4 h-4 text-accent shrink-0 motion-safe:animate-pulse" />
+              <Radio className="w-4 h-4 text-accent shrink-0" />
               <div>
                 <span className="text-[10px] text-muted block leading-none">Pings Relayed</span>
                 <span className="font-outlier font-bold text-ink">
@@ -277,7 +277,7 @@ export function CrowdTelemetryReporter({
               {isSubmitting ? (
                 <Loader2 className="w-4 h-4 text-accent motion-safe:animate-spin shrink-0" />
               ) : (
-                <div className="w-2.5 h-2.5 rounded-full bg-ok motion-safe:animate-ping shrink-0" />
+                <div className="w-2.5 h-2.5 rounded-full bg-ok shrink-0" />
               )}
               <div className="overflow-hidden">
                 <span className="text-[10px] text-muted block leading-none">Status</span>
@@ -301,11 +301,11 @@ export function CrowdTelemetryReporter({
         </div>
       )}
 
-      {/* Strict Privacy Guarantee Banner */}
+      {/* Privacy Note */}
       <div className="mt-3 pt-2.5 border-t border-rule/60 flex items-center gap-2 text-[11px] text-muted">
         <ShieldCheck className="w-4 h-4 text-ok shrink-0" />
         <span>
-          <strong className="text-ink font-medium">Strict Zero-PII Policy:</strong> Anonymous relay. No user accounts, IP logs, or personal device identifiers are stored or disclosed. Only raw geographic coordinates are aligned to the train corridor.
+          <strong className="text-ink font-medium">Privacy:</strong> Anonymous coordinates only. No accounts, identifiers, or personal data are stored.
         </span>
       </div>
     </div>

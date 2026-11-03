@@ -25,6 +25,43 @@ REFERENCE_TRAINS: Dict[str, Dict[str, Any]] = {
             {"code": "SUR", "name": "Solapur Jn", "sch_arr": "22:40", "sch_dep": None, "dist": 455, "lat": 17.6599, "lng": 75.9064, "platform": "1"},
         ],
     },
+    # 12115 Siddheshwar Superfast Express (Mumbai CSMT to Solapur)
+    "12115": {
+        "number": "12115",
+        "name": "Siddheshwar Superfast Express",
+        "origin": "CSMT",
+        "destination": "SUR",
+        "halts": [
+            {"code": "CSMT", "name": "Mumbai CSMT", "sch_arr": None, "sch_dep": "22:40", "dist": 0, "lat": 18.9402, "lng": 72.8358, "platform": "16"},
+            {"code": "DR", "name": "Dadar Central", "sch_arr": "22:52", "sch_dep": "22:55", "dist": 9, "lat": 19.0178, "lng": 72.8478, "platform": "5"},
+            {"code": "TNA", "name": "Thane", "sch_arr": "23:22", "sch_dep": "23:25", "dist": 34, "lat": 19.1860, "lng": 72.9757, "platform": "5"},
+            {"code": "KYN", "name": "Kalyan Jn", "sch_arr": "23:47", "sch_dep": "23:50", "dist": 54, "lat": 19.2364, "lng": 73.1302, "platform": "6"},
+            {"code": "KJT", "name": "Karjat", "sch_arr": "00:38", "sch_dep": "00:40", "dist": 100, "lat": 18.9100, "lng": 73.3283, "platform": "1"},
+            {"code": "LNL", "name": "Lonavala", "sch_arr": "01:28", "sch_dep": "01:30", "dist": 128, "lat": 18.7546, "lng": 73.4074, "platform": "2"},
+            {"code": "PUNE", "name": "Pune Jn", "sch_arr": "02:40", "sch_dep": "02:45", "dist": 192, "lat": 18.5289, "lng": 73.8744, "platform": "3"},
+            {"code": "DD", "name": "Daund Jn", "sch_arr": "04:00", "sch_dep": "04:05", "dist": 268, "lat": 18.4639, "lng": 74.5786, "platform": "5"},
+            {"code": "KWV", "name": "Kurduvadi Jn", "sch_arr": "05:38", "sch_dep": "05:40", "dist": 377, "lat": 18.0858, "lng": 75.4344, "platform": "3"},
+            {"code": "SUR", "name": "Solapur Jn", "sch_arr": "06:45", "sch_dep": None, "dist": 455, "lat": 17.6599, "lng": 75.9064, "platform": "1"},
+        ],
+    },
+    # 12116 Siddheshwar Superfast Express (Solapur to Mumbai CSMT)
+    "12116": {
+        "number": "12116",
+        "name": "Siddheshwar Superfast Express",
+        "origin": "SUR",
+        "destination": "CSMT",
+        "halts": [
+            {"code": "SUR", "name": "Solapur Jn", "sch_arr": None, "sch_dep": "22:30", "dist": 0, "lat": 17.6599, "lng": 75.9064, "platform": "1"},
+            {"code": "KWV", "name": "Kurduvadi Jn", "sch_arr": "23:33", "sch_dep": "23:35", "dist": 79, "lat": 18.0858, "lng": 75.4344, "platform": "2"},
+            {"code": "DD", "name": "Daund Jn", "sch_arr": "01:33", "sch_dep": "01:35", "dist": 187, "lat": 18.4639, "lng": 74.5786, "platform": "5"},
+            {"code": "PUNE", "name": "Pune Jn", "sch_arr": "02:50", "sch_dep": "02:55", "dist": 263, "lat": 18.5289, "lng": 73.8744, "platform": "2"},
+            {"code": "LNL", "name": "Lonavala", "sch_arr": "04:08", "sch_dep": "04:10", "dist": 327, "lat": 18.7546, "lng": 73.4074, "platform": "2"},
+            {"code": "KYN", "name": "Kalyan Jn", "sch_arr": "05:37", "sch_dep": "05:40", "dist": 401, "lat": 19.2364, "lng": 73.1302, "platform": "6"},
+            {"code": "TNA", "name": "Thane", "sch_arr": "05:58", "sch_dep": "06:00", "dist": 421, "lat": 19.1860, "lng": 72.9757, "platform": "7"},
+            {"code": "DR", "name": "Dadar Central", "sch_arr": "06:22", "sch_dep": "06:25", "dist": 446, "lat": 19.0178, "lng": 72.8478, "platform": "7"},
+            {"code": "CSMT", "name": "Mumbai CSMT", "sch_arr": "06:50", "sch_dep": None, "dist": 455, "lat": 18.9402, "lng": 72.8358, "platform": "18"},
+        ],
+    },
     # 22226 Solapur - Mumbai CSMT Vande Bharat Express
     "22226": {
         "number": "22226",

@@ -80,7 +80,7 @@ function TrainTrackingContent() {
       <div className="flex flex-col items-center justify-center min-h-[400px] space-y-3">
         <Loader2 className="w-6 h-6 text-accent motion-safe:animate-spin motion-reduce:animate-none" />
         <p className="text-xs text-muted font-outlier">
-          Retrieving telemetry for train {trainNumber}…
+          Checking train {trainNumber} status…
         </p>
       </div>
     );
@@ -91,7 +91,7 @@ function TrainTrackingContent() {
       <div className="max-w-xl mx-auto my-12 p-8 bg-paper-2 rounded-card border border-bad text-center space-y-4">
         <AlertTriangle className="w-10 h-10 text-bad mx-auto" />
         <h2 className="text-lg font-display font-bold text-ink">
-          Telemetry unavailable
+          Status unavailable
         </h2>
         <p className="text-xs text-muted">
           {error || `Unable to fetch status for train ${trainNumber}. Please verify the number.`}
@@ -109,7 +109,7 @@ function TrainTrackingContent() {
             href="/"
             className="px-4 py-2 bg-paper-3 hover:bg-paper active:bg-paper-2 text-ink rounded-pill text-xs font-medium border border-rule transition-colors focus-visible:outline-2 focus-visible:outline-accent"
           >
-            Back to dashboard
+            Back to search
           </Link>
         </div>
       </div>
@@ -169,14 +169,14 @@ function TrainTrackingContent() {
               onClick={fetchStatus}
               disabled={loading}
               className="p-1.5 rounded-pill border border-rule bg-paper-3 hover:bg-paper active:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed text-muted hover:text-ink transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-accent"
-              title="Refresh telemetry"
+              title="Refresh status"
             >
               <RefreshCw className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
 
-        {/* Telemetry Metrics Bar */}
+        {/* Status Metrics Bar */}
         <div className="mt-4 sm:mt-6 pt-4 sm:pt-5 border-t border-rule grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-4">
           {/* Current Delay */}
           <div className="p-3 rounded-pill bg-paper-3 border border-rule">
@@ -194,7 +194,7 @@ function TrainTrackingContent() {
                   : "On time"}
               </span>
               <span className="text-[10px] text-muted">
-                {status.delay_minutes > 0 ? "behind schedule" : "at nominal speed"}
+                {status.delay_minutes > 0 ? "behind schedule" : "normal speed"}
               </span>
             </div>
           </div>
@@ -215,7 +215,7 @@ function TrainTrackingContent() {
           {/* Next Station */}
           <div className="p-3 rounded-pill bg-paper-3 border border-rule">
             <span className="text-[11px] text-muted block font-medium">
-              Next scheduled halt
+              Next station
             </span>
             <div className="mt-1 text-xs font-semibold text-ink line-clamp-1">
               {status.next_station || "Terminus"}
@@ -225,7 +225,7 @@ function TrainTrackingContent() {
           {/* Speedometer */}
           <div className="p-3 rounded-pill bg-paper-3 border border-rule">
             <span className="text-[11px] text-muted block font-medium">
-              Speedometer
+              Speed
             </span>
             <div className="mt-1 flex items-baseline gap-1">
               <span className="text-base font-outlier font-bold text-ink">
@@ -295,7 +295,7 @@ export default function TrainTrackingPage() {
       fallback={
         <div className="flex flex-col items-center justify-center min-h-[400px] space-y-3">
           <Loader2 className="w-6 h-6 text-accent motion-safe:animate-spin motion-reduce:animate-none" />
-          <p className="text-xs text-muted font-outlier">Loading train tracking telemetry…</p>
+          <p className="text-xs text-muted font-outlier">Loading train status…</p>
         </div>
       }
     >

@@ -77,18 +77,12 @@ export default function HomePage() {
       <section className="bg-paper-2 border border-rule rounded-card p-5 sm:p-8 md:p-10 relative overflow-hidden">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
           <div className="lg:col-span-7 space-y-4">
-            {/* Signal Indicator Pill */}
-            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-pill bg-paper-3 border border-rule text-muted text-xs font-outlier">
-              <span className="w-1.5 h-1.5 rounded-full bg-accent motion-safe:animate-pulse motion-reduce:animate-none" />
-              <span>Live train status and schedules</span>
-            </div>
-
             <h1 className="text-2xl sm:text-4xl md:text-5xl font-display font-bold tracking-tight text-ink">
-              Track Any Indian Train with Precision
+              Track any train across India
             </h1>
 
             <p className="lead text-ink-2 text-xs sm:text-sm md:text-base">
-              Live GPS telemetry, station schedules, coach layouts and telescopic fares.
+              Live location, station arrival schedules, coach layouts, and ticket fares.
             </p>
 
             {/* Search Form */}
@@ -118,7 +112,7 @@ export default function HomePage() {
 
             {/* Quick Shortcuts */}
             <div className="flex flex-wrap items-center gap-2 text-xs pt-1">
-              <span className="text-muted text-[11px] font-medium">Quick inspect:</span>
+              <span className="text-muted text-[11px] font-medium">Popular trains:</span>
               {quickTrains.map((item) => (
                 <button
                   key={item.num}
@@ -146,7 +140,7 @@ export default function HomePage() {
               </div>
               <div className="flex items-center gap-1.5">
                 <HelpCircle className="w-3.5 h-3.5 text-accent" />
-                <span>Instant route and fare answers</span>
+                <span>Route halts and fares</span>
               </div>
             </div>
           </div>
@@ -163,9 +157,6 @@ export default function HomePage() {
               height={1288}
               className="w-full h-full object-cover"
             />
-            <div className="absolute bottom-2.5 left-2.5 px-2.5 py-1 rounded-pill bg-paper-3/90 border border-rule text-[10px] font-outlier text-muted z-10">
-              Night express transit corridor
-            </div>
           </div>
         </div>
       </section>
@@ -177,7 +168,6 @@ export default function HomePage() {
             <Train className="w-4 h-4 text-accent" />
             <span>Active express routes</span>
           </h2>
-          <span className="text-xs text-muted font-outlier">Live transit matrix</span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
@@ -252,7 +242,7 @@ export default function HomePage() {
       <section className="space-y-4">
         <div className="border-b border-rule pb-2">
           <h2 className="text-sm sm:text-base font-display font-bold text-ink tracking-tight">
-            Railway operations suite
+            Services
           </h2>
         </div>
 
@@ -268,7 +258,7 @@ export default function HomePage() {
               Station live boards
             </h3>
             <p className="text-xs text-muted">
-              Live arrival and departure feeds for CSMT, PUNE, NDLS, and HWH terminals.
+              Arrival and departure schedules at major junction stations.
             </p>
           </Link>
 
@@ -280,10 +270,10 @@ export default function HomePage() {
               <Ticket className="w-4 h-4" />
             </div>
             <h3 className="font-display font-semibold text-sm text-ink mb-1 group-hover:text-ok transition-colors">
-              PNR reservation status
+              PNR status enquiry
             </h3>
             <p className="text-xs text-muted">
-              Booking verification, coach berth allotment, and chart preparation state.
+              Current booking status, coach allotment, and chart preparation.
             </p>
           </Link>
 
@@ -298,7 +288,7 @@ export default function HomePage() {
               Coach composition
             </h3>
             <p className="text-xs text-muted">
-              Interactive physical rake visualizer from Locomotive to SLR across classes.
+              Coach order and seat positions from engine to rear.
             </p>
           </Link>
 
@@ -310,10 +300,10 @@ export default function HomePage() {
               <Calculator className="w-4 h-4" />
             </div>
             <h3 className="font-display font-semibold text-sm text-ink mb-1 group-hover:text-accent transition-colors">
-              Telescopic fare calculator
+              Fare calculator
             </h3>
             <p className="text-xs text-muted">
-              Railway Board distance formulas with Tatkal, Superfast, and GST breakdowns.
+              Base fares, reservation fees, Tatkal charges, and GST by distance.
             </p>
           </Link>
         </div>

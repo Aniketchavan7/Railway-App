@@ -41,7 +41,7 @@ export function CoachRake({ composition }: CoachRakeProps) {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-2 mb-4">
         <div>
           <h3 className="text-sm font-display font-bold text-ink">
-            Rake composition and coach sequence
+            Coach sequence
           </h3>
           <p className="text-xs text-muted">
             {composition.train_name} ({composition.train_number}) / {composition.total_coaches} coaches

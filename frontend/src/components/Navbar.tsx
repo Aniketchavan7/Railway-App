@@ -35,7 +35,7 @@ export function Navbar() {
     { href: "/stations", label: "Station boards", icon: Building2 },
     { href: "/pnr", label: "PNR enquiry", icon: Ticket },
     { href: "/coach", label: "Coach layout", icon: LayoutGrid },
-    { href: "/fare", label: "Fare engine", icon: Calculator },
+    { href: "/fare", label: "Fare calculator", icon: Calculator },
     { href: "/ai-assistant", label: "Assistant", icon: Bot },
     { href: "/admin", label: "Service status", icon: Activity },
   ];
@@ -51,19 +51,9 @@ export function Navbar() {
           <div className="w-8 h-8 rounded-pill bg-paper-3 border border-rule flex items-center justify-center font-bold text-accent transition-colors group-hover:border-accent">
             <Train className="w-4 h-4 text-accent" />
           </div>
-          <div className="flex flex-col">
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              <span className="font-display font-bold text-base tracking-tight text-ink">
-                RailPulse
-              </span>
-              <span className="text-[10px] sm:text-[11px] px-1.5 py-0.2 rounded-pill bg-paper-3 text-muted border border-rule font-outlier">
-                live
-              </span>
-            </div>
-            <span className="text-[11px] text-muted -mt-0.5 hidden sm:inline">
-              Live train tracking and schedules
-            </span>
-          </div>
+          <span className="font-display font-bold text-base tracking-tight text-ink">
+            RailPulse
+          </span>
         </Link>
 
         {/* Global Quick Search (Desktop) */}

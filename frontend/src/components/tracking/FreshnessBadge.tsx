@@ -49,8 +49,8 @@ export function FreshnessBadge({
       case "LIVE":
         return {
           bg: "bg-ok-soft border-ok/30 text-ok",
-          dot: "bg-ok motion-safe:animate-pulse motion-reduce:animate-none",
-          label: "Live telemetry",
+          dot: "bg-ok",
+          label: "Live location",
         };
       case "RECENT":
         return {
@@ -62,7 +62,7 @@ export function FreshnessBadge({
         return {
           bg: "bg-accent-soft border-accent/30 text-accent",
           dot: "bg-accent",
-          label: "Delayed telemetry",
+          label: "Delayed update",
         };
       default:
         return {

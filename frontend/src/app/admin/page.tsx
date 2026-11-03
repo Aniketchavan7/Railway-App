@@ -50,10 +50,10 @@ export default function AdminPage() {
         <div>
           <h1 className="text-lg sm:text-2xl font-display font-bold text-ink tracking-tight flex items-center gap-2">
             <Activity className="w-5 h-5 text-accent" />
-            <span>Service status and connectivity</span>
+            <span>Service status</span>
           </h1>
           <p className="text-xs text-muted mt-1">
-            Live connection health and response metrics for railway data services.
+            Live connection health and response metrics for railway data feeds.
           </p>
         </div>
 
@@ -64,7 +64,7 @@ export default function AdminPage() {
           className="self-start sm:self-auto flex items-center gap-1.5 px-3 py-1.5 bg-paper-3 hover:bg-paper active:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed text-ink border border-rule rounded-pill text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-accent"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? "motion-safe:animate-spin motion-reduce:animate-none text-accent" : ""}`} />
-          <span>Refresh metrics</span>
+          <span>Refresh</span>
         </button>
       </div>
 
@@ -97,7 +97,7 @@ export default function AdminPage() {
                     data.circuit_state
                   )}`}
                 >
-                  Status: {data.circuit_state}
+                  {data.circuit_state?.toLowerCase()}
                 </span>
               </div>
 
@@ -109,7 +109,7 @@ export default function AdminPage() {
                 </div>
                 <div>
                   <span className="text-muted block text-[11px]">Recovery state</span>
-                  <span className="font-medium text-ink">Active auto-retry</span>
+                  <span className="font-medium text-ink">Automatic retry active</span>
                 </div>
               </div>
 

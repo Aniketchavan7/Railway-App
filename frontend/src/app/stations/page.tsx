@@ -55,10 +55,10 @@ export default function StationsPage() {
           <div>
             <h1 className="text-lg sm:text-2xl font-display font-bold text-ink tracking-tight flex items-center gap-2">
               <Building2 className="w-5 h-5 text-accent" />
-              <span>Station live arrival and departure board</span>
+              <span>Station live board</span>
             </h1>
             <p className="text-xs text-muted mt-1">
-              Station movements, platform allocations, and estimated arrivals.
+              Real-time arrivals, departures, and platform numbers.
             </p>
           </div>
 
@@ -117,13 +117,13 @@ export default function StationsPage() {
             disabled={!stationCode.trim() || loading}
             className="bg-accent hover:opacity-90 active:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed text-accent-ink font-medium text-xs px-4 py-2 rounded-pill transition-opacity focus-visible:outline-2 focus-visible:outline-accent shrink-0"
           >
-            Update board
+            View board
           </button>
         </form>
 
         {/* Popular Station Chips */}
         <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-rule text-xs">
-          <span className="text-muted text-[11px] font-medium">Quick select:</span>
+          <span className="text-muted text-[11px] font-medium">Popular stations:</span>
           {popularStations.map((st) => (
             <button
               key={st.code}
@@ -149,7 +149,7 @@ export default function StationsPage() {
       {loading ? (
         <div className="flex flex-col items-center justify-center p-12 bg-paper-2 rounded-card border border-rule space-y-2">
           <Loader2 className="w-6 h-6 motion-safe:animate-spin motion-reduce:animate-none text-accent" />
-          <p className="text-xs text-muted font-outlier">Querying station live board…</p>
+          <p className="text-xs text-muted font-outlier">Loading station board…</p>
         </div>
       ) : error ? (
         <div className="p-6 bg-paper-2 rounded-card border border-bad text-center text-xs text-bad">

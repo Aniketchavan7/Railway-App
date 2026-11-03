@@ -100,12 +100,12 @@ export function TrainMap({ status, routeData }: TrainMapProps) {
         el.className = "relative flex items-center justify-center cursor-pointer";
 
         const pulseRing = document.createElement("div");
-        pulseRing.className = `absolute w-7 h-7 rounded-full motion-safe:animate-ping motion-reduce:animate-none ${
-          status.is_simulated ? "bg-accent/40" : "bg-ok/40"
+        pulseRing.className = `absolute w-6 h-6 rounded-full ${
+          status.is_simulated ? "bg-accent/20" : "bg-ok/20"
         }`;
 
         const markerBody = document.createElement("div");
-        markerBody.className = `relative w-4 h-4 rounded-full border border-paper shadow-sm flex items-center justify-center ${
+        markerBody.className = `relative w-3.5 h-3.5 rounded-full border border-paper flex items-center justify-center ${
           status.is_simulated ? "bg-accent" : "bg-ok"
         }`;
 
@@ -119,7 +119,7 @@ export function TrainMap({ status, routeData }: TrainMapProps) {
               Speed: <strong>${status.speed_kmph ?? 0} km/h</strong> / Delay: <strong>${status.delay_minutes}m</strong>
             </p>
             <p style="margin: 4px 0 0 0; font-size: 10px; color: ${status.is_simulated ? "#e5a93b" : "#4ade80"};">
-              ${status.is_simulated ? "Simulated demo position" : "Live GPS telemetry"}
+              ${status.is_simulated ? "Timetable estimate" : "Live GPS"}
             </p>
           </div>
         `);
@@ -146,7 +146,7 @@ export function TrainMap({ status, routeData }: TrainMapProps) {
       <div className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 bg-paper-3 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-pill border border-rule text-[11px] sm:text-xs flex items-center gap-1.5 sm:gap-2 max-w-[95%] overflow-hidden">
         <span
           className={`w-2 h-2 rounded-full shrink-0 ${
-            status.is_simulated ? "bg-accent" : "bg-ok motion-safe:animate-pulse motion-reduce:animate-none"
+            status.is_simulated ? "bg-accent" : "bg-ok"
           }`}
         />
         <span className="font-semibold text-ink font-outlier truncate">

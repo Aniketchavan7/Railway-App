@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import "./globals.css";
 import { Navbar } from "@/components/Navbar";
 
 export const metadata: Metadata = {
-  title: "RailPulse — Live Indian Train Tracker and Station Schedules",
+  title: "RailPulse: Live Indian Train Tracker and Station Schedules",
   description:
     "Track Indian train locations in real time with live delay updates, station departure boards, coach layouts, and fare calculators.",
 };
@@ -35,15 +36,25 @@ export default function RootLayout({
                 RailPulse
               </p>
               <p className="text-[11px] text-muted mt-0.5">
-                Live train tracking, station schedules, coach layouts, and fare calculation
+                Indian Railways live train tracking, station schedules, coach layouts, and fares
               </p>
             </div>
-            <div className="flex flex-wrap items-center gap-x-4 sm:gap-x-6 gap-y-2 text-[11px] text-muted">
-              <span>Live train tracking</span>
-              <span className="text-rule-2">/</span>
-              <span>Station departure boards</span>
-              <span className="text-rule-2">/</span>
-              <span>PNR status and fares</span>
+            <div className="flex flex-wrap items-center gap-4 text-[11px] text-muted">
+              <Link href="/stations" className="hover:text-ink transition-colors">
+                Station boards
+              </Link>
+              <Link href="/pnr" className="hover:text-ink transition-colors">
+                PNR status
+              </Link>
+              <Link href="/coach" className="hover:text-ink transition-colors">
+                Coach layout
+              </Link>
+              <Link href="/fare" className="hover:text-ink transition-colors">
+                Fare calculator
+              </Link>
+              <Link href="/admin" className="hover:text-ink transition-colors">
+                Service status
+              </Link>
             </div>
           </div>
         </footer>
