@@ -332,6 +332,48 @@ class RailwayAIAgent:
                     "telemetry_context": summary.model_dump(mode="json"),
                 }
 
+        # Check for Coach Platform Position query
+        # e.g., "where will coach B4 stop on train 12115", "coach position for S2", "platform pole for coach B1"
+        coach_keywords = ["coach", "bogie", "bogey", "rake", "platform pole", "where will coach", "coach position", "coach location", "where does coach"]
+        is_coach_query = any(k in q_lower for k in coach_keywords)
+        coach_match = re.search(r"\b([A-Z]{1,2}\d{1,2}|LOCO|SLR|GS|GEN|PC|EV)\b", query, re.IGNORECASE)
+        target_coach = coach_match.group(0).upper() if coach_match else None
+
+        if is_coach_query and train_num:
+            comp = await orchestrator.get_coach_composition(train_num)
+            if comp and comp.coaches:
+                if target_coach:
+                    matched_coach = next((c for c in comp.coaches if c.coach_code.upper() == target_coach), None)
+                    if matched_coach:
+                        response_text = (
+                            f"🚉 **Platform Coach Location for {comp.train_name} ({comp.train_number})**:\n"
+                            f"- **Coach**: `{matched_coach.coach_code}` ({matched_coach.coach_type.value})\n"
+                            f"- **Position from Locomotive**: Coach #{matched_coach.position_number} of {comp.total_coaches}\n"
+                            f"- **Platform Stopping Pole**: **Pole #{matched_coach.platform_pole_number}**\n"
+                            f"- **Distance from Engine**: ~{matched_coach.distance_from_engine_m} meters\n"
+                            f"- **Nearest Foot Overbridge (FOB)**: **{matched_coach.nearest_fob}**\n"
+                            f"- **Platform Walking Tip**: Board near **{matched_coach.nearest_fob}** for direct access to Coach {matched_coach.coach_code}."
+                        )
+                        return {
+                            "response": response_text,
+                            "model": "deterministic_grounded_agent",
+                            "grounded": True,
+                            "telemetry_context": matched_coach.model_dump(mode="json"),
+                        }
+                coach_sequence = " → ".join([c.coach_code for c in comp.coaches])
+                return {
+                    "response": (
+                        f"🚉 **Coach Layout & Platform Sequence for {comp.train_name} ({comp.train_number})**:\n"
+                        f"- **Total Rake Length**: {comp.total_coaches} coaches (~{comp.total_length_meters} meters)\n"
+                        f"- **Engine Direction**: {comp.engine_direction}\n"
+                        f"- **Coach Sequence**: {coach_sequence}\n\n"
+                        f"*Tip: Specify your coach code (e.g., B4, S2, H1) to get the exact platform pole number and nearest foot-overbridge.*"
+                    ),
+                    "model": "deterministic_grounded_agent",
+                    "grounded": True,
+                    "telemetry_context": comp.model_dump(mode="json"),
+                }
+
         # Default: Train tracking query
         target_train = train_num or "12101"
         status_json = await get_live_train_status.ainvoke({"train_number": target_train})

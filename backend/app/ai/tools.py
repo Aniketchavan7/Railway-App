@@ -115,6 +115,38 @@ async def get_train_coach_composition(train_number: str) -> str:
 
 
 @tool
+async def get_platform_coach_location(train_number: str, coach_code: str) -> str:
+    """Find the exact physical platform stopping position, pole number, distance from locomotive, and nearest foot overbridge (FOB) for a specific coach (e.g. B4, S2, H1, C1) on a train."""
+    comp = await orchestrator.get_coach_composition(train_number)
+    if not comp or not comp.coaches:
+        return f"Coach layout for train {train_number} not available."
+
+    target = coach_code.strip().upper()
+    matched = None
+    for c in comp.coaches:
+        if c.coach_code.upper() == target:
+            matched = c
+            break
+
+    if not matched:
+        all_codes = [c.coach_code for c in comp.coaches]
+        return f"Coach {coach_code} not found on train {train_number} ({comp.train_name}). Available coaches on this rake are: {', '.join(all_codes)}."
+
+    return json.dumps({
+        "train_number": comp.train_number,
+        "train_name": comp.train_name,
+        "coach_code": matched.coach_code,
+        "coach_type": matched.coach_type,
+        "position_from_engine": matched.position_number,
+        "platform_pole_number": matched.platform_pole_number,
+        "distance_from_engine_meters": matched.distance_from_engine_m,
+        "nearest_foot_overbridge": matched.nearest_fob,
+        "total_coaches_on_rake": comp.total_coaches,
+        "platform_walking_advisory": f"Coach {matched.coach_code} stops at Platform Pole #{matched.platform_pole_number}, approximately {matched.distance_from_engine_m} meters from the locomotive near {matched.nearest_fob}."
+    })
+
+
+@tool
 async def get_fare_enquiry(
     train_number: str, origin_station: str, destination_station: str, quota: str = "GN"
 ) -> str:
@@ -184,6 +216,7 @@ RAILWAY_TOOLS = [
     search_trains_by_name_or_number,
     get_station_live_arrivals_departures,
     get_train_coach_composition,
+    get_platform_coach_location,
     get_fare_enquiry,
     get_pnr_status,
     get_railway_disruptions_and_mega_blocks,

@@ -24,6 +24,9 @@ class CoachPosition(BaseModel):
     coach_type: CoachType
     total_berths: int = 72
     deck_type: str = "SINGLE"  # SINGLE, DOUBLE
+    platform_pole_number: Optional[int] = None
+    distance_from_engine_m: Optional[int] = None
+    nearest_fob: Optional[str] = None
 
 
 class CoachComposition(BaseModel):
@@ -33,6 +36,8 @@ class CoachComposition(BaseModel):
     coaches: List[CoachPosition] = Field(default_factory=list)
     source_provider: str
     is_simulated: bool = False
+    engine_direction: str = "FRONT"  # FRONT (Forward towards destination) or REAR
+    total_length_meters: int = 550
 
 
 class PlatformInfo(BaseModel):

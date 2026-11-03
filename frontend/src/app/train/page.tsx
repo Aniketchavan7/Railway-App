@@ -5,11 +5,15 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
 import { createTrainWebSocket } from "@/lib/ws";
-import { RailwayAlert, RailwayStatus, TelemetryPacket } from "@/lib/types";
+import { CoachComposition, RailwayAlert, RailwayStatus, TelemetryPacket } from "@/lib/types";
 import { FreshnessBadge } from "@/components/tracking/FreshnessBadge";
 import { LocationTypePill } from "@/components/tracking/LocationTypePill";
 import { StationTimeline } from "@/components/tracking/StationTimeline";
 import { CrowdTelemetryReporter } from "@/components/tracking/CrowdTelemetryReporter";
+import { StationWakeupAlarm } from "@/components/tracking/StationWakeupAlarm";
+import { SpeedometerHUD } from "@/components/tracking/SpeedometerHUD";
+import { TripShareModal } from "@/components/tracking/TripShareModal";
+import { PlatformCoachGuide } from "@/components/coach/PlatformCoachGuide";
 import { TrainMap } from "@/components/map/TrainMap";
 import {
   Train,
@@ -26,6 +30,8 @@ import {
   Radio,
   Clock,
   Gauge,
+  Bell,
+  Share2,
 } from "lucide-react";
 
 function TrainTrackingContent() {
@@ -46,6 +52,23 @@ function TrainTrackingContent() {
   const [mobileTab, setMobileTab] = useState<"map" | "timeline" | "gps">("map");
   const [showGpsReporter, setShowGpsReporter] = useState(false);
   const [disruptions, setDisruptions] = useState<RailwayAlert[]>([]);
+  const [coachComposition, setCoachComposition] = useState<CoachComposition | null>(null);
+  const [activePassengerTool, setActivePassengerTool] = useState<"none" | "alarm" | "speed" | "coach">("none");
+  const [isOnline, setIsOnline] = useState<boolean>(true);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setIsOnline(navigator.onLine);
+      const handleOnline = () => setIsOnline(true);
+      const handleOffline = () => setIsOnline(false);
+      window.addEventListener("online", handleOnline);
+      window.addEventListener("offline", handleOffline);
+      return () => {
+        window.removeEventListener("online", handleOnline);
+        window.removeEventListener("offline", handleOffline);
+      };
+    }
+  }, []);
 
   const fetchStatus = async () => {
     try {
@@ -55,12 +78,14 @@ function TrainTrackingContent() {
       setStatus(data);
 
       try {
-        const [route, alerts] = await Promise.all([
+        const [route, alerts, coaches] = await Promise.all([
           api.getTrainRoute(trainNumber).catch(() => null),
           api.getTrainDisruptions(trainNumber).catch(() => []),
+          api.getCoachComposition(trainNumber).catch(() => null),
         ]);
         if (route) setRouteData(route);
         if (alerts) setDisruptions(alerts);
+        if (coaches) setCoachComposition(coaches);
       } catch {
         // Non-critical supplementary data error
       }
@@ -140,6 +165,11 @@ function TrainTrackingContent() {
     status.halts && status.halts.length > 0
       ? status.halts[status.halts.length - 1]
       : null;
+  const currentHalt =
+    status.halts?.find((h) => h.station_code === status.current_station) ||
+    status.halts?.find((h) => h.has_arrived && !h.has_departed) ||
+    originHalt;
+  const currentKm = currentHalt?.distance_km ?? 0;
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -208,6 +238,63 @@ function TrainTrackingContent() {
                 </>
               )}
             </div>
+
+            <TripShareModal
+              trainNumber={status.train_number}
+              trainName={status.train_name}
+              currentStationName={status.current_station}
+              nextStationName={destHalt?.station_name}
+              nextStationPlatform={destHalt?.platform}
+              speedKmH={status.speed_kmph ?? 0}
+              delayMinutes={status.delay_minutes}
+            />
+
+            <button
+              type="button"
+              onClick={() =>
+                setActivePassengerTool((prev) => (prev === "speed" ? "none" : "speed"))
+              }
+              className={`px-3 py-1 rounded-pill text-xs font-medium border transition-colors flex items-center gap-1.5 cursor-pointer ${
+                activePassengerTool === "speed"
+                  ? "bg-accent text-accent-ink border-accent font-semibold"
+                  : "bg-paper-3 hover:bg-paper text-ink border-rule"
+              }`}
+            >
+              <Gauge className="w-3.5 h-3.5" />
+              <span>{Math.round(status.speed_kmph || 0)} km/h</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() =>
+                setActivePassengerTool((prev) => (prev === "alarm" ? "none" : "alarm"))
+              }
+              className={`px-3 py-1 rounded-pill text-xs font-medium border transition-colors flex items-center gap-1.5 cursor-pointer ${
+                activePassengerTool === "alarm"
+                  ? "bg-emerald-600 text-white border-emerald-500 font-semibold"
+                  : "bg-paper-3 hover:bg-paper text-ink border-rule"
+              }`}
+            >
+              <Bell className="w-3.5 h-3.5" />
+              <span>Wakeup Alarm</span>
+            </button>
+
+            {coachComposition && (
+              <button
+                type="button"
+                onClick={() =>
+                  setActivePassengerTool((prev) => (prev === "coach" ? "none" : "coach"))
+                }
+                className={`px-3 py-1 rounded-pill text-xs font-medium border transition-colors flex items-center gap-1.5 cursor-pointer ${
+                  activePassengerTool === "coach"
+                    ? "bg-blue-600 text-white border-blue-500 font-semibold"
+                    : "bg-paper-3 hover:bg-paper text-ink border-rule"
+                }`}
+              >
+                <LayoutGrid className="w-3.5 h-3.5" />
+                <span>Coach Guide</span>
+              </button>
+            )}
 
             <button
               type="button"
@@ -287,6 +374,53 @@ function TrainTrackingContent() {
               </p>
             </div>
           </div>
+        )}
+
+        {/* Offline Satellite GPS Mode Banner */}
+        {!isOnline && (
+          <div className="p-3 sm:p-4 rounded-lg bg-emerald-950/30 border border-emerald-500/40 text-emerald-200 text-xs flex items-center gap-2.5">
+            <Radio className="w-4 h-4 text-emerald-400 shrink-0 animate-pulse" />
+            <div>
+              <span className="font-bold">🛰️ Offline Satellite GPS Mode Active:</span> Cellular data is offline. RailPulse is actively tracking your train using device hardware satellite GPS fixes snapped to cached timetables with zero cellular data required.
+            </div>
+          </div>
+        )}
+
+        {/* Active Passenger Tool Drawers */}
+        {activePassengerTool === "speed" && (
+          <SpeedometerHUD
+            speedKmH={status.speed_kmph ?? 0}
+            trainName={status.train_name}
+            trainNumber={status.train_number}
+            maxPermissibleSpeedKmH={130}
+          />
+        )}
+
+        {activePassengerTool === "alarm" && (
+          <StationWakeupAlarm
+            trainNumber={status.train_number}
+            trainName={status.train_name}
+            halts={(status.halts || []).map((h) => ({
+              stationCode: h.station_code,
+              stationName: h.station_name,
+              distanceKm: h.distance_km,
+              platform: h.platform,
+              scheduledArrival: h.arrival_time,
+              actualArrival: h.actual_arrival,
+            }))}
+            currentKm={currentKm}
+            currentStationCode={status.current_station || ""}
+            currentSpeedKmH={status.speed_kmph ?? 0}
+          />
+        )}
+
+        {activePassengerTool === "coach" && coachComposition && (
+          <PlatformCoachGuide
+            trainNumber={status.train_number}
+            trainName={status.train_name}
+            coaches={coachComposition.coaches}
+            platformNumber={destHalt?.platform}
+          />
         )}
 
         {/* Visual Route Corridor Bar */}

@@ -308,13 +308,31 @@ class ProviderOrchestrator:
                 logger.warning("Provider %s error on get_station_board: %s", p.provider_name, e)
         return None
 
+    def _enrich_coach_platform_metadata(self, comp: CoachComposition) -> CoachComposition:
+        total = len(comp.coaches)
+        comp.total_length_meters = total * 24
+        for idx, c in enumerate(comp.coaches, start=1):
+            if c.platform_pole_number is None:
+                c.platform_pole_number = idx
+            if c.distance_from_engine_m is None:
+                c.distance_from_engine_m = (idx - 1) * 24
+            if not c.nearest_fob:
+                if idx <= max(1, int(total * 0.3)):
+                    c.nearest_fob = "FOB 1 (Rear Station Bridge)"
+                elif idx <= max(2, int(total * 0.7)):
+                    c.nearest_fob = "FOB 2 (Central Concourse Bridge)"
+                else:
+                    c.nearest_fob = "FOB 3 (Front Exit Ramp / Gate)"
+        return comp
+
     async def get_coach_composition(self, train_number: str) -> Optional[CoachComposition]:
         cache_key = f"railpulse:coaches:{train_number}"
         cached = await cache.get_json(cache_key)
         if cached:
             try:
                 if str(cached.get("train_number")) == str(train_number):
-                    return CoachComposition(**cached)
+                    comp = CoachComposition(**cached)
+                    return self._enrich_coach_platform_metadata(comp)
             except Exception:
                 pass
 
@@ -324,8 +342,9 @@ class ProviderOrchestrator:
                 res = await p.get_coach_composition(train_number)
                 if res:
                     registry.record_success(p.provider_name)
-                    await cache.set_json(cache_key, res.model_dump(mode="json"), ttl_seconds=12 * 3600)
-                    return res
+                    enriched = self._enrich_coach_platform_metadata(res)
+                    await cache.set_json(cache_key, enriched.model_dump(mode="json"), ttl_seconds=12 * 3600)
+                    return enriched
                 registry.record_failure(p.provider_name)
             except Exception as e:
                 registry.record_failure(p.provider_name)

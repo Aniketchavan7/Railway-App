@@ -218,6 +218,121 @@ async def run_live_production_audit():
             assert len(d.get("response", "")) > 10
         await check("AI Railway Assistant Chat (/api/v1/ai/chat)", t19)
 
+        # 20. Train 12919 Malwa Express Live Status
+        async def t20():
+            r = await client.get(f"{LIVE_BACKEND_URL}/v1/train/12919/status")
+            assert r.status_code == 200
+            d = r.json().get("data", {})
+            assert d.get("train_number") == "12919"
+        await check("Train 12919 Malwa Express Status (/v1/train/12919/status)", t20)
+
+        # 21. Live Station Concourse Board for Pune
+        async def t21():
+            r = await client.get(f"{LIVE_BACKEND_URL}/v1/stations/PUNE/live?hours=2")
+            assert r.status_code == 200
+            d = r.json().get("data", {})
+            assert d.get("station_code") == "PUNE"
+            trains = d.get("trains", [])
+            assert len(trains) > 0
+            # Verify each train has destination and platform info
+            assert any(t.get("destination") for t in trains)
+        await check("Live Station Concourse Board (/v1/stations/PUNE/live?hours=2)", t21)
+
+        # 22. Network Disruptions Intelligence Summary
+        async def t22():
+            r = await client.get(f"{LIVE_BACKEND_URL}/v1/alerts/disruptions")
+            assert r.status_code == 200
+            d = r.json().get("data", {})
+            assert d.get("total_active_alerts", 0) >= 6
+            assert d.get("mega_blocks_count", 0) >= 1
+            assert d.get("diverted_trains_count", 0) >= 1
+        await check("Disruption Intelligence Summary (/v1/alerts/disruptions)", t22)
+
+        # 23. Corridor Mega Blocks Query
+        async def t23():
+            r = await client.get(f"{LIVE_BACKEND_URL}/v1/alerts/mega-blocks")
+            assert r.status_code == 200
+            d = r.json().get("data", [])
+            assert len(d) >= 1
+            assert any("Mega Block" in b.get("title", "") or "Block" in b.get("title", "") for b in d)
+        await check("Corridor Mega Blocks Query (/v1/alerts/mega-blocks)", t23)
+
+        # 24. Train-Specific Route Diversions (Train 12115)
+        async def t24():
+            r = await client.get(f"{LIVE_BACKEND_URL}/v1/alerts/train/12115")
+            assert r.status_code == 200
+            d = r.json().get("data", [])
+            assert len(d) >= 1
+            assert "12115" in d[0].get("title", "")
+            assert d[0].get("diverted_via") is not None
+        await check("Train 12115 Route Diversion Alert (/v1/alerts/train/12115)", t24)
+
+        # 25. AI Concourse Intelligence (Pune next 30 mins, where heading, platform)
+        async def t25():
+            payload = {
+                "messages": [
+                    {"role": "user", "content": "If a person is at Pune what trains are coming in next 30 min, where heading, and which platform?"}
+                ],
+                "model": "mistralai/mistral-small-2603",
+            }
+            r = await client.post(f"{LIVE_BACKEND_URL}/api/v1/ai/chat", json=payload)
+            assert r.status_code == 200
+            resp_text = r.json().get("data", {}).get("response", "")
+            assert "Pune" in resp_text or "Platform" in resp_text
+            assert len(resp_text) > 50
+        await check("AI Concourse Intelligence Query (/api/v1/ai/chat)", t25)
+
+        # 26. Frontend Cloudflare Pages Concourse Board URL
+        async def t26():
+            r = await client.get(f"{FRONTEND_ORIGIN}/stations/?code=PUNE")
+            assert r.status_code == 200
+            assert len(r.content) > 1000
+        await check(f"Cloudflare Pages Concourse Board ({FRONTEND_ORIGIN}/stations/?code=PUNE)", t26)
+
+        # 27. Platform Coach Position Metadata
+        async def t27():
+            r = await client.get(f"{LIVE_BACKEND_URL}/v1/train/12115/coaches")
+            assert r.status_code == 200
+            d = r.json().get("data", {})
+            coaches = d.get("coaches", [])
+            assert len(coaches) > 0
+            first_coach = coaches[0]
+            assert first_coach.get("platform_pole_number") is not None
+            assert first_coach.get("distance_from_engine_m") is not None
+            assert first_coach.get("nearest_fob") is not None
+        await check("Coach Platform Metadata Enrichment (/v1/train/12115/coaches)", t27)
+
+        # 28. AI Platform Coach Locator Query
+        async def t28():
+            payload = {
+                "messages": [
+                    {"role": "user", "content": "Where will coach S2 stop on train 12115?"}
+                ],
+                "model": "mistralai/mistral-small-2603",
+            }
+            r = await client.post(f"{LIVE_BACKEND_URL}/api/v1/ai/chat", json=payload)
+            assert r.status_code == 200
+            resp_text = r.json().get("data", {}).get("response", "")
+            assert "S2" in resp_text
+            assert "Pole" in resp_text or "Platform" in resp_text
+        await check("AI Platform Coach Locator Query (/api/v1/ai/chat)", t28)
+
+        # 29. Cloudflare Pages PWA Web App Manifest
+        async def t29():
+            r = await client.get(f"{FRONTEND_ORIGIN}/manifest.json")
+            assert r.status_code == 200
+            d = r.json()
+            assert d.get("short_name") == "RailPulse"
+            assert d.get("display") == "standalone"
+        await check(f"Cloudflare Pages PWA Manifest ({FRONTEND_ORIGIN}/manifest.json)", t29)
+
+        # 30. Cloudflare Pages Offline Service Worker
+        async def t30():
+            r = await client.get(f"{FRONTEND_ORIGIN}/sw.js")
+            assert r.status_code == 200
+            assert "railpulse-v1" in r.text
+        await check(f"Cloudflare Pages Service Worker ({FRONTEND_ORIGIN}/sw.js)", t30)
+
     print("=" * 60)
     print(f"AUDIT COMPLETE: {passed}/{total} CHECKS PASSED ({(passed/total)*100:.1f}%)")
     print("=" * 60)

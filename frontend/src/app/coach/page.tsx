@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
 import { CoachComposition } from "@/lib/types";
 import { CoachRake } from "@/components/coach/CoachRake";
+import { PlatformCoachGuide } from "@/components/coach/PlatformCoachGuide";
 import { LayoutGrid, Search, Loader2 } from "lucide-react";
 
 function CoachContent() {
@@ -105,7 +106,14 @@ function CoachContent() {
           {error}
         </div>
       ) : composition ? (
-        <CoachRake composition={composition} />
+        <div className="space-y-6">
+          <PlatformCoachGuide
+            trainNumber={composition.train_number}
+            trainName={composition.train_name}
+            coaches={composition.coaches}
+          />
+          <CoachRake composition={composition} />
+        </div>
       ) : null}
     </div>
   );

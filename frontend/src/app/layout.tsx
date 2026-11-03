@@ -1,13 +1,18 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Link from "next/link";
 import "./globals.css";
 import { Navbar } from "@/components/Navbar";
 import { RailPulseLogo } from "@/components/brand/RailPulseLogo";
 
+export const viewport: Viewport = {
+  themeColor: "#0b0f19",
+};
+
 export const metadata: Metadata = {
   title: "RailPulse: Live Indian Train Tracker and Station Schedules",
   description:
     "Track Indian train locations in real time with live delay updates, station departure boards, coach layouts, and fare calculators.",
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({
