@@ -38,7 +38,7 @@ class Settings(BaseSettings):
         "http://localhost:3000",
         "http://localhost:3001",
         "https://railpulse.pages.dev",
-        "https://*.pages.dev",
+        "https://railpulse-01i.pages.dev",
     ]
 
     model_config = SettingsConfigDict(

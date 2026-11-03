@@ -43,9 +43,20 @@ app = FastAPI(
 )
 
 # CORS Middleware
+cors_origins = [
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "https://railpulse.pages.dev",
+    "https://railpulse-01i.pages.dev",
+]
+for origin in settings.CORS_ORIGINS:
+    if "*" not in origin and origin not in cors_origins:
+        cors_origins.append(origin)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"] if settings.ENVIRONMENT == "development" else settings.CORS_ORIGINS,
+    allow_origins=["*"] if settings.ENVIRONMENT == "development" else cors_origins,
+    allow_origin_regex=r"^https://.*\.pages\.dev$" if settings.ENVIRONMENT != "development" else None,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
