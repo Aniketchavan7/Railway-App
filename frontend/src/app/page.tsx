@@ -26,7 +26,7 @@ export default function HomePage() {
     e.preventDefault();
     const q = trainQuery.trim();
     if (!q) return;
-    router.push(`/train/${q}`);
+    router.push(`/train?number=${q}`);
   };
 
   const featuredTrains = [
@@ -131,7 +131,7 @@ export default function HomePage() {
           {featuredTrains.map((train) => (
             <Link
               key={train.number}
-              href={`/train/${train.number}`}
+              href={`/train?number=${train.number}`}
               className="group p-5 bg-white rounded-xl border border-slate-200 hover:border-blue-400 hover:shadow-md transition-all flex flex-col justify-between"
             >
               <div>

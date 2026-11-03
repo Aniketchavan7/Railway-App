@@ -1,7 +1,8 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
 import { createTrainWebSocket } from "@/lib/ws";
 import { RailwayStatus, TelemetryPacket } from "@/lib/types";
@@ -23,13 +24,9 @@ import {
   WifiOff,
 } from "lucide-react";
 
-interface PageProps {
-  params: Promise<{ trainNumber: string }>;
-}
-
-export default function TrainTrackingPage({ params }: PageProps) {
-  const resolvedParams = use(params);
-  const trainNumber = resolvedParams.trainNumber;
+function TrainTrackingContent() {
+  const searchParams = useSearchParams();
+  const trainNumber = searchParams.get("number") || searchParams.get("train") || "12101";
 
   const [status, setStatus] = useState<RailwayStatus | null>(null);
   const [routeData, setRouteData] = useState<any>(null);
@@ -105,7 +102,7 @@ export default function TrainTrackingPage({ params }: PageProps) {
         <div className="pt-2 flex justify-center gap-3">
           <button
             onClick={fetchStatus}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold"
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold cursor-pointer"
           >
             Try Again
           </button>
@@ -170,7 +167,7 @@ export default function TrainTrackingPage({ params }: PageProps) {
 
             <button
               onClick={fetchStatus}
-              className="p-2 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-600 transition-colors"
+              className="p-2 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-600 transition-colors cursor-pointer"
               title="Refresh Telemetry"
             >
               <RefreshCw className="w-4 h-4" />
@@ -281,5 +278,20 @@ export default function TrainTrackingPage({ params }: PageProps) {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function TrainTrackingPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex flex-col items-center justify-center min-h-[400px] space-y-3">
+          <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+          <p className="text-sm text-slate-500 font-medium">Loading train tracking telemetry...</p>
+        </div>
+      }
+    >
+      <TrainTrackingContent />
+    </Suspense>
   );
 }

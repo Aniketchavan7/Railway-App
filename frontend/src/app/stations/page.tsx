@@ -214,7 +214,7 @@ export default function StationsPage() {
 
                     <td className="py-3.5 px-4 text-right">
                       <Link
-                        href={`/train/${t.train_number}`}
+                        href={`/train?number=${t.train_number}`}
                         className="text-blue-600 hover:text-blue-800 font-bold text-xs inline-flex items-center gap-1"
                       >
                         <span>Track</span>

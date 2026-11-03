@@ -24,7 +24,7 @@ export function Navbar() {
     const q = searchQuery.trim();
     if (!q) return;
     if (/^\d{5}$/.test(q)) {
-      router.push(`/train/${q}`);
+      router.push(`/train?number=${q}`);
     } else {
       router.push(`/?search=${encodeURIComponent(q)}`);
     }
