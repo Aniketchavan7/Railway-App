@@ -148,13 +148,13 @@ class RailwayEngineProvider(RailwayProvider):
         return await self._get(f"/train/{train_number}/route")
 
     async def search_trains(self, query: str) -> List[Dict[str, Any]]:
-        data = await self._get("/trains/search", params={"q": query})
+        data = await self._get("/trains/search", params={"q": query, "limit": 10})
         if isinstance(data, list):
             return data
         return []
 
     async def search_stations(self, query: str) -> List[Station]:
-        data = await self._get("/stations/search", params={"q": query})
+        data = await self._get("/stations/search", params={"q": query, "limit": 10})
         stations: List[Station] = []
         if isinstance(data, list):
             for s in data:
@@ -206,7 +206,7 @@ class RailwayEngineProvider(RailwayProvider):
         )
 
     async def get_coach_composition(self, train_number: str) -> Optional[CoachComposition]:
-        data = await self._get(f"/train/{train_number}/coaches")
+        data = await self._get(f"/train/{train_number}/coaches", params={"blueprints": "true"})
         if not data:
             return None
 
@@ -287,7 +287,7 @@ class RailwayEngineProvider(RailwayProvider):
     ) -> Optional[FareEnquiryResult]:
         data = await self._get(
             f"/train/{train_number}/fare",
-            params={"origin": origin, "dest": dest, "quota": quota},
+            params={"source": origin, "destination": dest, "quota": quota},
         )
         if not data:
             return None
