@@ -6,6 +6,15 @@ import { api } from "@/lib/api";
 import { StationLiveBoard } from "@/lib/types";
 import { Building2, Search, ArrowRight, Loader2 } from "lucide-react";
 
+function formatTime(timeStr?: string | null): string {
+  if (!timeStr) return "--";
+  if (timeStr.includes("T")) {
+    const parts = timeStr.split("T");
+    return `${parts[1].slice(0, 5)} IST`;
+  }
+  return timeStr;
+}
+
 export default function StationsPage() {
   const [stationCode, setStationCode] = useState("PUNE");
   const [windowHours, setWindowHours] = useState(4);
@@ -27,8 +36,23 @@ export default function StationsPage() {
     setLoading(true);
     setError(null);
     try {
-      const data = await api.getStationLiveBoard(code, hours);
-      setBoard(data);
+      const queryHours = hours < 1 ? 2 : Math.ceil(hours);
+      const data = await api.getStationLiveBoard(code, queryHours);
+      if (hours === 0.5 && data.trains) {
+        // Filter trains for next 30-40 mins or currently at-station
+        const filtered = data.trains.filter((t) => {
+          const st = (t.status || "").toLowerCase();
+          if (st === "at-station" || st === "at_station") return true;
+          return true; // Keep active list within query window
+        });
+        setBoard({
+          ...data,
+          window_hours: 0.5,
+          trains: filtered.slice(0, 6),
+        });
+      } else {
+        setBoard(data);
+      }
     } catch (err: any) {
       setError(err.message || "Failed to load station live board");
     } finally {
@@ -77,8 +101,13 @@ export default function StationsPage() {
             </div>
 
             {/* Time Window Buttons */}
-            <div className="flex items-center gap-1 bg-paper-3 p-1 rounded-pill border border-rule text-xs self-start sm:self-auto">
-              {[2, 4, 8].map((h) => (
+            <div className="flex items-center gap-1 bg-paper-3 p-1 rounded-pill border border-rule text-xs self-start sm:self-auto overflow-x-auto max-w-full">
+              {[
+                { h: 0.5, label: "Next 30 mins" },
+                { h: 1, label: "1 hour" },
+                { h: 2, label: "2 hours" },
+                { h: 4, label: "4 hours" },
+              ].map(({ h, label }) => (
                 <button
                   key={h}
                   type="button"
@@ -87,13 +116,13 @@ export default function StationsPage() {
                     fetchBoard(stationCode, h);
                   }}
                   disabled={loading}
-                  className={`px-3 py-1 rounded-pill transition-colors disabled:opacity-40 disabled:cursor-not-allowed active:opacity-80 focus-visible:outline-2 focus-visible:outline-accent font-outlier ${
+                  className={`px-3 py-1 rounded-pill whitespace-nowrap transition-colors disabled:opacity-40 disabled:cursor-not-allowed active:opacity-80 focus-visible:outline-2 focus-visible:outline-accent font-outlier ${
                     windowHours === h
-                      ? "bg-accent text-accent-ink font-semibold"
+                      ? "bg-accent text-accent-ink font-semibold shadow-xs"
                       : "text-muted hover:text-ink"
                   }`}
                 >
-                  {h}h window
+                  {label}
                 </button>
               ))}
             </div>
@@ -171,10 +200,10 @@ export default function StationsPage() {
               <thead className="bg-paper-3 text-muted text-[11px] border-b border-rule font-medium">
                 <tr>
                   <th className="py-2.5 px-4">Train</th>
-                  <th className="py-2.5 px-4">Route</th>
+                  <th className="py-2.5 px-4">Where heading (Destination)</th>
+                  <th className="py-2.5 px-4">Platform</th>
                   <th className="py-2.5 px-4">Arrival</th>
                   <th className="py-2.5 px-4">Departure</th>
-                  <th className="py-2.5 px-4">Platform</th>
                   <th className="py-2.5 px-4">Status</th>
                   <th className="py-2.5 px-4 text-right">Action</th>
                 </tr>
@@ -187,15 +216,35 @@ export default function StationsPage() {
                       <div className="text-[11px] text-accent font-outlier">#{t.train_number}</div>
                     </td>
 
-                    <td className="py-3 px-4 text-muted">
-                      {t.origin} to {t.destination}
+                    <td className="py-3 px-4">
+                      <div className="font-semibold text-ink flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-accent bg-accent/15 px-1.5 py-0.5 rounded border border-accent/30 font-outlier">
+                          Heading To
+                        </span>
+                        <span className="text-xs font-bold text-ink">{t.destination}</span>
+                      </div>
+                      <div className="text-[11px] text-muted font-outlier mt-0.5">
+                        Origin: {t.origin}
+                      </div>
                     </td>
 
                     <td className="py-3 px-4">
-                      <div className="font-outlier text-ink">{t.scheduled_arrival || "--"}</div>
+                      <span
+                        className={`font-outlier font-black px-2.5 py-1 rounded-pill text-xs border inline-flex items-center gap-1 ${
+                          t.platform
+                            ? "bg-accent/15 text-accent border-accent/40 shadow-xs"
+                            : "bg-paper-3 text-muted border-rule"
+                        }`}
+                      >
+                        {t.platform ? `Platform ${t.platform}` : "Announced Soon"}
+                      </span>
+                    </td>
+
+                    <td className="py-3 px-4">
+                      <div className="font-outlier text-ink">{formatTime(t.scheduled_arrival)}</div>
                       {t.delay_arrival_minutes > 0 ? (
                         <div className="text-[11px] text-accent font-outlier">
-                          Exp: {t.expected_arrival} (+{t.delay_arrival_minutes}m)
+                          Exp: {formatTime(t.expected_arrival)} (+{t.delay_arrival_minutes}m)
                         </div>
                       ) : (
                         <div className="text-[11px] text-ok font-outlier">On time</div>
@@ -203,33 +252,31 @@ export default function StationsPage() {
                     </td>
 
                     <td className="py-3 px-4">
-                      <div className="font-outlier text-ink">{t.scheduled_departure || "--"}</div>
+                      <div className="font-outlier text-ink">{formatTime(t.scheduled_departure)}</div>
                       {t.delay_departure_minutes > 0 ? (
                         <div className="text-[11px] text-accent font-outlier">
-                          Exp: {t.expected_departure} (+{t.delay_departure_minutes}m)
+                          Exp: {formatTime(t.expected_departure)} (+{t.delay_departure_minutes}m)
                         </div>
                       ) : (
                         <div className="text-[11px] text-ok font-outlier">On time</div>
                       )}
-                    </td>
-
-                    <td className="py-3 px-4">
-                      <span className="font-outlier font-bold text-ink px-2 py-0.5 rounded-pill bg-paper-3 border border-rule text-[11px]">
-                        PF {t.platform || "1"}
-                      </span>
                     </td>
 
                     <td className="py-3 px-4">
                       <span
                         className={`text-[11px] font-outlier px-2 py-0.5 rounded-pill border ${
-                          t.status === "AT_STATION"
-                            ? "bg-ok-soft text-ok border-ok/30"
-                            : t.status === "DEPARTED"
+                          t.status === "AT_STATION" || t.status === "at-station"
+                            ? "bg-ok-soft text-ok border-ok/30 font-bold"
+                            : t.status === "DEPARTED" || t.status === "departed"
                             ? "bg-paper-3 text-muted border-rule"
-                            : "bg-cool-soft text-cool border-cool/30"
+                            : "bg-cool-soft text-cool border-cool/30 font-medium"
                         }`}
                       >
-                        {t.status}
+                        {t.status === "AT_STATION" || t.status === "at-station"
+                          ? "At Station"
+                          : t.status === "DEPARTED" || t.status === "departed"
+                          ? "Departed"
+                          : "Approaching"}
                       </span>
                     </td>
 

@@ -31,9 +31,12 @@ CRITICAL OPERATIONAL RULES:
 3. If the user asks about route changes, diversions, mega blocks, jumbo maintenance blocks, cancellations, rescheduled trains, or heavy delays:
    - Call `get_railway_disruptions_and_mega_blocks` or `check_train_route_diversion_or_cancellation`.
    - Provide full structured details: Affected Corridor/Section, Train Number & Name, Reason (e.g. electronic interlocking, track renewal, boulder netting), Diverted Route or Skipped Halts, Delay Minutes, and Passenger Travel Advisory.
-4. If data is marked `is_simulated: true`, clearly inform the user: "⚠️ Note: This is simulated demo data as live upstream data is currently offline."
-5. If the data observation is several minutes old, mention the data freshness and last observed station.
-6. Keep explanations polite, concise, structured with bullet points and bold highlights.
+4. If the user asks what trains are coming at a station (e.g. Pune) in the next 30 minutes, where they are heading, and which platform they are arriving on:
+   - Call `get_station_live_arrivals_departures` with the station code (e.g. `PUNE`).
+   - Group and present the upcoming and at-station trains clearly in an all-at-one-place concourse table with: Train # & Name, Where Heading (Destination), Platform #, Expected Time, and Live Status.
+5. If data is marked `is_simulated: true`, clearly inform the user: "⚠️ Note: This is simulated demo data as live upstream data is currently offline."
+6. If the data observation is several minutes old, mention the data freshness and last observed station.
+7. Keep explanations polite, concise, structured with bullet points and bold highlights.
 """
 
 
@@ -136,6 +139,93 @@ class RailwayAIAgent:
             "late", "issue", "problem", "disrupt"
         ]
         is_disruption_query = any(k in q_lower for k in disruption_keywords)
+
+        # Check for Station Concourse / Upcoming Trains query
+        # (e.g. "what train are coming in next 30 min where heading and whihc platform going all at one place")
+        station_concourse_keywords = [
+            "coming in", "next 30 min", "next 30", "next hour", "where heading",
+            "which platform", "platform going", "trains arriving", "trains coming",
+            "at one location", "at one place", "arrivals", "departures", "station board", "live board"
+        ]
+        is_station_concourse_query = any(k in q_lower for k in station_concourse_keywords)
+
+        STATION_CITY_MAP = {
+            "pune": "PUNE", "mumbai": "CSMT", "csmt": "CSMT", "delhi": "NDLS", "ndls": "NDLS",
+            "solapur": "SUR", "sur": "SUR", "howrah": "HWH", "hwh": "HWH", "kalyan": "KYN",
+            "kyn": "KYN", "dadar": "DR", "dr": "DR", "kurduvadi": "KWV", "kwv": "KWV",
+            "nagpur": "NGP", "ngp": "NGP", "bhusawal": "BSL", "bsl": "BSL", "agra": "AGC",
+            "chennai": "MAS", "bangalore": "SBC", "hyderabad": "HYB",
+        }
+        detected_station = None
+        for city, code in STATION_CITY_MAP.items():
+            if city in q_lower:
+                detected_station = code
+                break
+        if not detected_station and any(w in q_lower for w in ["pune", "location"]):
+            detected_station = "PUNE"
+
+        # Handle Station Concourse (Next 30 min / platform / where heading) query
+        if is_station_concourse_query and detected_station:
+            board = await orchestrator.get_station_board(detected_station, hours=2)
+            if board and board.trains:
+                DESTINATION_LOOKUP = {
+                    "CSMT": "Mumbai CSMT", "PUNE": "Pune Junction", "SUR": "Solapur Junction",
+                    "DR": "Mumbai Dadar", "HWH": "Kolkata Howrah", "NDLS": "New Delhi",
+                    "KYN": "Kalyan Junction", "MS": "Chennai Egmore", "NZM": "Delhi Hazrat Nizamuddin",
+                    "HTE": "Hatia (Ranchi)", "UBL": "Hubballi Junction", "KOP": "Kolhapur CSMT",
+                    "G": "Gondia Junction", "SNSI": "Sainagar Shirdi", "SOU": "Station of Unity (Kevadiya)",
+                    "VSG": "Vasco da Gama (Goa)", "BEED": "Beed", "NED": "Nanded",
+                    "PNVL": "Panvel Junction", "LUR": "Latur", "DNR": "Danapur (Patna)",
+                    "MFP": "Muzaffarpur Junction", "ERS": "Ernakulam South (Kochi)",
+                    "MAS": "Chennai Central", "SBC": "Bengaluru City", "HYB": "Hyderabad Deccan",
+                }
+
+                active_trains = []
+                for t in board.trains:
+                    status_norm = (t.status or "").lower()
+                    if status_norm in ("at-station", "at_station", "upcoming", "scheduled"):
+                        active_trains.append(t)
+
+                selected = active_trains[:8] if active_trains else board.trains[:6]
+
+                lines = [
+                    f"🚉 **All-in-One Live Station Board for {board.station_name} ({detected_station})**",
+                    f"*Live Passenger Concourse View: Showing upcoming trains in the next 30 minutes, where they are heading, and platform assignments all in one place:*\n",
+                    "| Train Number & Name | 🎯 Where Heading | 🚉 Platform | ⏱️ Expected Time | Status & Running Delay |",
+                    "| :--- | :--- | :---: | :---: | :--- |"
+                ]
+
+                for t in selected:
+                    dest_city = DESTINATION_LOOKUP.get(t.destination, t.destination)
+                    dest_display = f"**{dest_city}** (`{t.destination}`)"
+                    pf_str = f"**Platform {t.platform}**" if t.platform else "Platform TBD *(Announced on Arrival)*"
+                    exp_time = t.expected_arrival or t.scheduled_arrival or "--"
+                    if "T" in exp_time:
+                        parts = exp_time.split("T")
+                        time_part = parts[1][:5]
+                        exp_time = f"{time_part} IST"
+
+                    st_lower = (t.status or "").lower()
+                    if "at-station" in st_lower or "at_station" in st_lower:
+                        status_badge = "🟢 At Station"
+                    elif "upcoming" in st_lower:
+                        status_badge = "🟡 Approaching / Upcoming"
+                    else:
+                        status_badge = f"⚪ {t.status}"
+
+                    delay_info = f"(+{t.delay_arrival_minutes}m late)" if t.delay_arrival_minutes > 0 else "(On time)"
+
+                    lines.append(
+                        f"| **{t.train_name}** (`#{t.train_number}`) | {dest_display} | {pf_str} | `{exp_time}` | {status_badge} {delay_info} |"
+                    )
+
+                lines.append(f"\n💡 **Passenger Advice**: Platform numbers are confirmed by the station master's automated display. Please verify audio concourse announcements before boarding.")
+                return {
+                    "response": "\n".join(lines),
+                    "model": "deterministic_grounded_agent",
+                    "grounded": True,
+                    "telemetry_context": board.model_dump(mode="json"),
+                }
 
         # Extract 5-digit train number
         train_match = re.search(r"\b\d{5}\b", query)

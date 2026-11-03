@@ -24,9 +24,9 @@ export function ChatDrawer() {
   const fixedModel = "mistralai/mistral-small-2603";
 
   const sampleQuestions = [
+    "What trains are coming in Pune in the next 30 min, where heading, and which platform?",
     "What Mega Blocks, train diversions, or cancellations are active today?",
     "Is train 12115 Siddheshwar Express running diverted or delayed?",
-    "Check heavy running delays and maintenance blocks on Central Railway",
     "Where is train 22225 Vande Bharat? When will it reach Solapur?",
   ];
 

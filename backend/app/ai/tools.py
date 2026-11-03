@@ -58,11 +58,51 @@ async def search_trains_by_name_or_number(query: str) -> str:
 
 @tool
 async def get_station_live_arrivals_departures(station_code: str, hours: int = 4) -> str:
-    """Get upcoming train arrivals and departures at an Indian Railway station within a time window (2 to 8 hours)."""
-    board = await orchestrator.get_station_board(station_code, hours=hours)
+    """Get upcoming train arrivals and departures at an Indian Railway station (e.g. PUNE, CSMT, NDLS).
+    Returns for each train: Train Number, Train Name, Origin, Destination (Where Heading),
+    Scheduled & Expected Arrival/Departure, Delay in Minutes, Platform Number, and Current Live Status (at-station, upcoming, departed).
+    """
+    clean_code = station_code.upper().strip()
+    board = await orchestrator.get_station_board(clean_code, hours=hours)
     if not board:
-        return f"No board data found for station {station_code}."
-    return json.dumps(board.model_dump(mode="json"))
+        return f"No board data found for station {clean_code}."
+
+    STATION_NAME_MAP = {
+        "CSMT": "Mumbai CSMT", "PUNE": "Pune Junction", "SUR": "Solapur Junction",
+        "DR": "Mumbai Dadar", "HWH": "Kolkata Howrah", "NDLS": "New Delhi",
+        "KYN": "Kalyan Junction", "MS": "Chennai Egmore", "NZM": "Delhi Hazrat Nizamuddin",
+        "HTE": "Hatia (Ranchi)", "UBL": "Hubballi Junction", "KOP": "Kolhapur CSMT",
+        "G": "Gondia Junction", "SNSI": "Sainagar Shirdi", "SOU": "Station of Unity (Kevadiya)",
+        "VSG": "Vasco da Gama (Goa)", "BEED": "Beed", "NED": "Nanded",
+        "PNVL": "Panvel Junction", "LUR": "Latur", "DNR": "Danapur (Patna)",
+        "MFP": "Muzaffarpur Junction", "ERS": "Ernakulam South (Kochi)",
+        "MAS": "Chennai Central", "SBC": "Bengaluru City", "HYB": "Hyderabad Deccan",
+    }
+
+    enriched_trains = []
+    for t in board.trains:
+        dest_name = STATION_NAME_MAP.get(t.destination, t.destination)
+        orig_name = STATION_NAME_MAP.get(t.origin, t.origin)
+        enriched_trains.append({
+            "train_number": t.train_number,
+            "train_name": t.train_name,
+            "where_heading": f"{dest_name} ({t.destination})",
+            "origin": f"{orig_name} ({t.origin})",
+            "platform": f"Platform {t.platform}" if t.platform else "Platform TBD (Announced on arrival)",
+            "scheduled_arrival": t.scheduled_arrival,
+            "expected_arrival": t.expected_arrival,
+            "scheduled_departure": t.scheduled_departure,
+            "expected_departure": t.expected_departure,
+            "delay_minutes": t.delay_arrival_minutes,
+            "live_status": t.status,
+        })
+
+    return json.dumps({
+        "station_code": board.station_code,
+        "station_name": board.station_name,
+        "total_trains": len(enriched_trains),
+        "trains": enriched_trains,
+    })
 
 
 @tool
