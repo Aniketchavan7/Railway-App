@@ -1,0 +1,35 @@
+services:
+  - type: web
+    name: railpulse-backend
+    env: python
+    region: singapore
+    plan: free
+    rootDir: backend
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    healthCheckPath: "/api/system/health"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: ENVIRONMENT
+        value: production
+      - key: ENABLE_SIMULATOR
+        value: "true"
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: XKIRO_BASE_URL
+        value: "https://api.xkiro.com/v1"
+      - key: XKIRO_API_KEY
+        sync: false
+      - key: RAILWAY_ENGINE_BASE_URL
+        value: "https://railway-engine.apkscope.workers.dev/v1"
+      - key: RAILWAY_ENGINE_API_KEY
+        sync: false
+      - key: RAILRADAR_BASE_URL
+        value: "https://api.railradar.in/v1"
+      - key: RAILRADAR_API_KEY
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true

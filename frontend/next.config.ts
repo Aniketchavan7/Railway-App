@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: process.env.NEXT_EXPORT === "true" ? "export" : undefined,
+  output: "export",
+  trailingSlash: true,
   images: {
     unoptimized: true,
   },
