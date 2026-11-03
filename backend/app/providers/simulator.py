@@ -274,6 +274,8 @@ class OfflineSimulatorProvider(RailwayProvider):
                     delay_minutes=delay,
                     has_arrived=arrived,
                     has_departed=departed,
+                    latitude=h.get("lat"),
+                    longitude=h.get("lng"),
                 )
             )
 

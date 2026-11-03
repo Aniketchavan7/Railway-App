@@ -9,6 +9,7 @@ import { RailwayStatus, TelemetryPacket } from "@/lib/types";
 import { FreshnessBadge } from "@/components/tracking/FreshnessBadge";
 import { LocationTypePill } from "@/components/tracking/LocationTypePill";
 import { StationTimeline } from "@/components/tracking/StationTimeline";
+import { CrowdTelemetryReporter } from "@/components/tracking/CrowdTelemetryReporter";
 import { TrainMap } from "@/components/map/TrainMap";
 import {
   Train,
@@ -120,6 +121,7 @@ function TrainTrackingContent() {
       <LocationTypePill
         locationType={status.location_type}
         isSimulated={status.is_simulated}
+        sourceProvider={status.source_provider}
       />
 
       {/* Main Header Card */}
@@ -262,6 +264,13 @@ function TrainTrackingContent() {
           </div>
         </div>
       </div>
+
+      {/* Crowd-Sourced Passenger GPS Telemetry Relay */}
+      <CrowdTelemetryReporter
+        trainNumber={status.train_number}
+        trainName={status.train_name}
+        onTelemetryRelayed={fetchStatus}
+      />
 
       {/* Map & Timeline Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">

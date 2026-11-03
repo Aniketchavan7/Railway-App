@@ -62,26 +62,41 @@ export default function StationsPage() {
             </p>
           </div>
 
-          {/* Time Window Buttons */}
-          <div className="flex items-center gap-1 bg-paper-3 p-1 rounded-pill border border-rule text-xs self-start sm:self-auto">
-            {[2, 4, 8].map((h) => (
-              <button
-                key={h}
-                type="button"
-                onClick={() => {
-                  setWindowHours(h);
-                  fetchBoard(stationCode, h);
-                }}
-                disabled={loading}
-                className={`px-3 py-1 rounded-pill transition-colors disabled:opacity-40 disabled:cursor-not-allowed active:opacity-80 focus-visible:outline-2 focus-visible:outline-accent font-outlier ${
-                  windowHours === h
-                    ? "bg-accent text-accent-ink font-semibold"
-                    : "text-muted hover:text-ink"
-                }`}
-              >
-                {h}h window
-              </button>
-            ))}
+          <div className="flex items-center gap-3">
+            <div
+              data-slot="station-architecture"
+              className="hidden md:block w-36 h-12 rounded-pill overflow-hidden relative border border-rule shrink-0"
+            >
+              <img
+                src="https://upload.wikimedia.org/wikipedia/commons/7/70/Prague_Main_Railway_Station_Ceiling_Lights.jpg"
+                alt="Station concourse terminal lights"
+                width={200}
+                height={80}
+                className="w-full h-full object-cover"
+              />
+            </div>
+
+            {/* Time Window Buttons */}
+            <div className="flex items-center gap-1 bg-paper-3 p-1 rounded-pill border border-rule text-xs self-start sm:self-auto">
+              {[2, 4, 8].map((h) => (
+                <button
+                  key={h}
+                  type="button"
+                  onClick={() => {
+                    setWindowHours(h);
+                    fetchBoard(stationCode, h);
+                  }}
+                  disabled={loading}
+                  className={`px-3 py-1 rounded-pill transition-colors disabled:opacity-40 disabled:cursor-not-allowed active:opacity-80 focus-visible:outline-2 focus-visible:outline-accent font-outlier ${
+                    windowHours === h
+                      ? "bg-accent text-accent-ink font-semibold"
+                      : "text-muted hover:text-ink"
+                  }`}
+                >
+                  {h}h window
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 

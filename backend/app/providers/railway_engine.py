@@ -115,6 +115,8 @@ class RailwayEngineProvider(RailwayProvider):
                     delay_minutes=int(h.get("delay_minutes", 0)),
                     has_arrived=bool(h.get("has_arrived", False)),
                     has_departed=bool(h.get("has_departed", False)),
+                    latitude=h.get("lat") or h.get("latitude"),
+                    longitude=h.get("lng") or h.get("longitude"),
                 )
             )
 

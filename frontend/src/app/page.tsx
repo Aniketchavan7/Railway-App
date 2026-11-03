@@ -14,6 +14,8 @@ import {
   ShieldCheck,
   Clock,
   HelpCircle,
+  Gauge,
+  MapPin,
 } from "lucide-react";
 
 export default function HomePage() {
@@ -32,8 +34,10 @@ export default function HomePage() {
       number: "12101",
       name: "Jnaneswari Super Deluxe Express",
       origin: "LTT",
-      destination: "HWH",
-      route: "Mumbai to Howrah",
+      dest: "HWH",
+      originCity: "Mumbai",
+      destCity: "Howrah",
+      speed: "75 km/h",
       delay: "15m late",
       status: "In transit near Igatpuri",
     },
@@ -41,8 +45,10 @@ export default function HomePage() {
       number: "12951",
       name: "Mumbai Tejas Rajdhani Express",
       origin: "MMCT",
-      destination: "NDLS",
-      route: "Mumbai to New Delhi",
+      dest: "NDLS",
+      originCity: "Mumbai",
+      destCity: "New Delhi",
+      speed: "110 km/h",
       delay: "On time",
       status: "Departed Mumbai Central",
     },
@@ -50,69 +56,115 @@ export default function HomePage() {
       number: "22436",
       name: "Vande Bharat Express",
       origin: "NDLS",
-      destination: "BSB",
-      route: "New Delhi to Varanasi",
+      dest: "BSB",
+      originCity: "New Delhi",
+      destCity: "Varanasi",
+      speed: "130 km/h",
       delay: "On time",
       status: "Approaching Kanpur Central",
     },
   ];
 
+  const quickTrains = [
+    { num: "12101", label: "12101 Jnaneswari" },
+    { num: "12951", label: "12951 Rajdhani" },
+    { num: "22436", label: "22436 Vande Bharat" },
+  ];
+
   return (
     <div className="space-y-8 sm:space-y-12">
       {/* Hero Section */}
-      <section className="bg-paper-2 border border-rule rounded-card p-5 sm:p-8 md:p-10">
-        <div className="max-w-2xl space-y-4">
-          <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-pill bg-paper-3 border border-rule text-muted text-xs font-outlier">
-            <span className="w-1.5 h-1.5 rounded-full bg-accent" />
-            <span>Live train status and schedules</span>
+      <section className="bg-paper-2 border border-rule rounded-card p-5 sm:p-8 md:p-10 relative overflow-hidden">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+          <div className="lg:col-span-7 space-y-4">
+            {/* Signal Indicator Pill */}
+            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-pill bg-paper-3 border border-rule text-muted text-xs font-outlier">
+              <span className="w-1.5 h-1.5 rounded-full bg-accent motion-safe:animate-pulse motion-reduce:animate-none" />
+              <span>Live train status and schedules</span>
+            </div>
+
+            <h1 className="text-2xl sm:text-4xl md:text-5xl font-display font-bold tracking-tight text-ink">
+              Track Any Indian Train with Precision
+            </h1>
+
+            <p className="lead text-ink-2 text-xs sm:text-sm md:text-base">
+              Live GPS telemetry, station schedules, coach layouts and telescopic fares.
+            </p>
+
+            {/* Search Form */}
+            <form
+              onSubmit={handleSearch}
+              className="pt-2 flex flex-col sm:flex-row gap-2 max-w-lg"
+            >
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 text-muted absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type="text"
+                  value={trainQuery}
+                  onChange={(e) => setTrainQuery(e.target.value)}
+                  placeholder="Enter 5-digit train number (e.g. 12101) …"
+                  className="w-full bg-paper text-ink placeholder:text-muted rounded-pill pl-9 pr-4 py-2.5 text-xs outline-none border border-rule transition-colors focus:border-accent disabled:opacity-40"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={!trainQuery.trim()}
+                className="bg-accent hover:opacity-90 active:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed text-accent-ink font-medium text-xs px-5 py-2.5 rounded-pill transition-opacity flex items-center justify-center gap-2 shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-accent"
+              >
+                <span>Track train</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </form>
+
+            {/* Quick Shortcuts */}
+            <div className="flex flex-wrap items-center gap-2 text-xs pt-1">
+              <span className="text-muted text-[11px] font-medium">Quick inspect:</span>
+              {quickTrains.map((item) => (
+                <button
+                  key={item.num}
+                  type="button"
+                  onClick={() => {
+                    setTrainQuery(item.num);
+                    router.push(`/train?number=${item.num}`);
+                  }}
+                  className="px-2.5 py-0.5 rounded-pill bg-paper-3 hover:bg-paper active:opacity-80 text-muted hover:text-ink border border-rule transition-colors font-outlier text-[11px] cursor-pointer focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-40"
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Feature Highlights */}
+            <div className="pt-2 flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2.5 sm:gap-6 text-xs text-muted border-t border-rule/60">
+              <div className="flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-ok" />
+                <span>Live location and delay updates</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-cool" />
+                <span>Platform and arrival times</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <HelpCircle className="w-3.5 h-3.5 text-accent" />
+                <span>Instant route and fare answers</span>
+              </div>
+            </div>
           </div>
 
-          <h1 className="text-2xl sm:text-4xl md:text-5xl font-display font-bold tracking-tight text-ink">
-            Track Any Indian Train with Precision
-          </h1>
-
-          <p className="lead text-ink-2 text-xs sm:text-sm md:text-base">
-            Live GPS telemetry, station schedules, coach layouts and telescopic fares.
-          </p>
-
-          {/* Search Form */}
-          <form
-            onSubmit={handleSearch}
-            className="pt-2 flex flex-col sm:flex-row gap-2 max-w-lg"
+          {/* Hero Atmosphere Image Slot */}
+          <div
+            data-slot="hero-railway"
+            className="lg:col-span-5 h-[240px] sm:h-[320px] rounded-pill overflow-hidden relative border border-rule"
           >
-            <div className="relative flex-1">
-              <Search className="w-4 h-4 text-muted absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-              <input
-                type="text"
-                value={trainQuery}
-                onChange={(e) => setTrainQuery(e.target.value)}
-                placeholder="Enter 5-digit train number (e.g. 12101) …"
-                className="w-full bg-paper text-ink placeholder:text-muted rounded-pill pl-9 pr-4 py-2.5 text-xs outline-none border border-rule transition-colors focus:border-accent"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={!trainQuery.trim()}
-              className="bg-accent hover:opacity-90 active:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed text-accent-ink font-medium text-xs px-5 py-2.5 rounded-pill transition-opacity flex items-center justify-center gap-2 shrink-0 cursor-pointer"
-            >
-              <span>Track train</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </form>
-
-          {/* Feature Highlights */}
-          <div className="pt-2 flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2.5 sm:gap-6 text-xs text-muted">
-            <div className="flex items-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5 text-ok" />
-              <span>Live location and delay updates</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-cool" />
-              <span>Platform and arrival times</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <HelpCircle className="w-3.5 h-3.5 text-accent" />
-              <span>Instant route and fare answers</span>
+            <img
+              src="https://upload.wikimedia.org/wikipedia/commons/6/6e/Night_Train.jpg"
+              alt="Night train in transit with lit passenger windows"
+              width={1936}
+              height={1288}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute bottom-2.5 left-2.5 px-2.5 py-1 rounded-pill bg-paper-3/90 border border-rule text-[10px] font-outlier text-muted z-10">
+              Night express transit corridor
             </div>
           </div>
         </div>
@@ -125,7 +177,7 @@ export default function HomePage() {
             <Train className="w-4 h-4 text-accent" />
             <span>Active express routes</span>
           </h2>
-          <span className="text-xs text-muted">Tap to inspect live status</span>
+          <span className="text-xs text-muted font-outlier">Live transit matrix</span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
@@ -133,10 +185,11 @@ export default function HomePage() {
             <Link
               key={train.number}
               href={`/train?number=${train.number}`}
-              className="group p-4 sm:p-5 bg-paper-2 rounded-card border border-rule hover:border-accent active:bg-paper-3 transition-colors flex flex-col justify-between"
+              className="group p-4 sm:p-5 bg-paper-2 rounded-card border border-rule hover:border-accent active:bg-paper-3 transition-colors flex flex-col justify-between focus-visible:outline-2 focus-visible:outline-accent"
             >
               <div>
-                <div className="flex items-center justify-between gap-2 mb-2 sm:mb-3">
+                {/* Header Badge Row */}
+                <div className="flex items-center justify-between gap-2 mb-3">
                   <span className="text-xs font-outlier font-bold px-2 py-0.5 rounded-pill bg-paper-3 text-ink border border-rule">
                     #{train.number}
                   </span>
@@ -151,17 +204,44 @@ export default function HomePage() {
                   </span>
                 </div>
 
+                {/* Train Name */}
                 <h3 className="font-display font-semibold text-ink text-sm transition-colors group-hover:text-accent">
                   {train.name}
                 </h3>
-                <p className="text-xs text-muted mt-1">{train.route}</p>
+
+                {/* Tactical Route Diagram */}
+                <div className="mt-3 py-2 px-2.5 rounded-pill bg-paper-3 border border-rule flex items-center justify-between text-xs font-outlier">
+                  <div>
+                    <span className="font-bold text-ink">{train.origin}</span>
+                    <span className="text-[10px] text-muted block -mt-0.5">{train.originCity}</span>
+                  </div>
+                  <div className="flex-1 mx-3 flex items-center gap-1 opacity-50">
+                    <span className="h-px bg-rule-2 flex-1" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-accent" />
+                    <span className="h-px bg-rule-2 flex-1" />
+                  </div>
+                  <div className="text-right">
+                    <span className="font-bold text-ink">{train.dest}</span>
+                    <span className="text-[10px] text-muted block -mt-0.5">{train.destCity}</span>
+                  </div>
+                </div>
               </div>
 
+              {/* Status and Speed Footer */}
               <div className="mt-4 pt-3 border-t border-rule flex items-center justify-between text-xs text-muted">
-                <span className="line-clamp-1">{train.status}</span>
-                <span className="text-accent shrink-0 motion-safe:group-hover:translate-x-0.5 motion-safe:transition-transform">
-                  Inspect
-                </span>
+                <div className="flex items-center gap-1.5 line-clamp-1">
+                  <MapPin className="w-3 h-3 text-cool shrink-0" />
+                  <span className="truncate">{train.status}</span>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="font-outlier text-[11px] text-ink font-semibold flex items-center gap-1">
+                    <Gauge className="w-3 h-3 text-accent" />
+                    {train.speed}
+                  </span>
+                  <span className="text-accent motion-safe:group-hover:translate-x-0.5 motion-safe:transition-transform font-medium">
+                    Inspect
+                  </span>
+                </div>
               </div>
             </Link>
           ))}
@@ -179,12 +259,14 @@ export default function HomePage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <Link
             href="/stations"
-            className="p-4 sm:p-5 bg-paper-2 rounded-card border border-rule hover:border-rule-2 active:bg-paper-3 transition-colors group"
+            className="p-4 sm:p-5 bg-paper-2 rounded-card border border-rule hover:border-cool active:bg-paper-3 transition-colors group focus-visible:outline-2 focus-visible:outline-accent"
           >
             <div className="w-8 h-8 rounded-pill bg-paper-3 border border-rule text-cool flex items-center justify-center mb-3 group-hover:border-cool transition-colors">
               <Building2 className="w-4 h-4" />
             </div>
-            <h3 className="font-display font-semibold text-sm text-ink mb-1">Station live boards</h3>
+            <h3 className="font-display font-semibold text-sm text-ink mb-1 group-hover:text-cool transition-colors">
+              Station live boards
+            </h3>
             <p className="text-xs text-muted">
               Live arrival and departure feeds for CSMT, PUNE, NDLS, and HWH terminals.
             </p>
@@ -192,12 +274,14 @@ export default function HomePage() {
 
           <Link
             href="/pnr"
-            className="p-4 sm:p-5 bg-paper-2 rounded-card border border-rule hover:border-rule-2 active:bg-paper-3 transition-colors group"
+            className="p-4 sm:p-5 bg-paper-2 rounded-card border border-rule hover:border-ok active:bg-paper-3 transition-colors group focus-visible:outline-2 focus-visible:outline-accent"
           >
             <div className="w-8 h-8 rounded-pill bg-paper-3 border border-rule text-ok flex items-center justify-center mb-3 group-hover:border-ok transition-colors">
               <Ticket className="w-4 h-4" />
             </div>
-            <h3 className="font-display font-semibold text-sm text-ink mb-1">PNR reservation status</h3>
+            <h3 className="font-display font-semibold text-sm text-ink mb-1 group-hover:text-ok transition-colors">
+              PNR reservation status
+            </h3>
             <p className="text-xs text-muted">
               Booking verification, coach berth allotment, and chart preparation state.
             </p>
@@ -205,12 +289,14 @@ export default function HomePage() {
 
           <Link
             href="/coach"
-            className="p-4 sm:p-5 bg-paper-2 rounded-card border border-rule hover:border-rule-2 active:bg-paper-3 transition-colors group"
+            className="p-4 sm:p-5 bg-paper-2 rounded-card border border-rule hover:border-accent active:bg-paper-3 transition-colors group focus-visible:outline-2 focus-visible:outline-accent"
           >
             <div className="w-8 h-8 rounded-pill bg-paper-3 border border-rule text-accent flex items-center justify-center mb-3 group-hover:border-accent transition-colors">
               <LayoutGrid className="w-4 h-4" />
             </div>
-            <h3 className="font-display font-semibold text-sm text-ink mb-1">Coach composition</h3>
+            <h3 className="font-display font-semibold text-sm text-ink mb-1 group-hover:text-accent transition-colors">
+              Coach composition
+            </h3>
             <p className="text-xs text-muted">
               Interactive physical rake visualizer from Locomotive to SLR across classes.
             </p>
@@ -218,12 +304,14 @@ export default function HomePage() {
 
           <Link
             href="/fare"
-            className="p-4 sm:p-5 bg-paper-2 rounded-card border border-rule hover:border-rule-2 active:bg-paper-3 transition-colors group"
+            className="p-4 sm:p-5 bg-paper-2 rounded-card border border-rule hover:border-ink active:bg-paper-3 transition-colors group focus-visible:outline-2 focus-visible:outline-accent"
           >
             <div className="w-8 h-8 rounded-pill bg-paper-3 border border-rule text-ink flex items-center justify-center mb-3 group-hover:border-accent transition-colors">
               <Calculator className="w-4 h-4" />
             </div>
-            <h3 className="font-display font-semibold text-sm text-ink mb-1">Telescopic fare calculator</h3>
+            <h3 className="font-display font-semibold text-sm text-ink mb-1 group-hover:text-accent transition-colors">
+              Telescopic fare calculator
+            </h3>
             <p className="text-xs text-muted">
               Railway Board distance formulas with Tatkal, Superfast, and GST breakdowns.
             </p>

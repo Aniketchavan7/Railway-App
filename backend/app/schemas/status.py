@@ -40,6 +40,16 @@ class StationHalt(BaseModel):
     delay_minutes: int = 0
     has_arrived: bool = False
     has_departed: bool = False
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+
+
+class PassengerTelemetryReport(BaseModel):
+    latitude: float
+    longitude: float
+    speed_kmph: Optional[float] = None
+    accuracy_meters: Optional[float] = None
+    heading: Optional[float] = None
 
 
 class RailwayStatus(BaseModel):
