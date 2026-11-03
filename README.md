@@ -1,6 +1,15 @@
 # RailPulse — AI-Powered Indian Railway Tracking SaaS
 
-A production-oriented Indian Railway tracking platform with **Next.js 15+**, **FastAPI**, **PostgreSQL**, **Redis**, **MapLibre GL + OpenStreetMap**, **WebSockets**, and a grounded **LangGraph AI travel assistant** powered by the **xKiro API**.
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Cloudflare Pages](https://img.shields.io/badge/Frontend-Cloudflare_Pages_Live-green?logo=cloudflare)](https://railpulse-01i.pages.dev)
+[![Render Backend](https://img.shields.io/badge/Backend-Render_Live-46E3B7?logo=render)](https://railpulse-backend-fv1m.onrender.com)
+[![Neon Postgres](https://img.shields.io/badge/Database-Neon_Postgres_18-00E599?logo=postgresql)](https://neon.tech)
+[![Upstash Redis](https://img.shields.io/badge/Cache-Upstash_Redis_TLS-FF4F8B?logo=redis)](https://upstash.com)
+
+> **Live Production App**: [https://railpulse-01i.pages.dev](https://railpulse-01i.pages.dev)  
+> **Backend API & Swagger Docs**: [https://railpulse-backend-fv1m.onrender.com/docs](https://railpulse-backend-fv1m.onrender.com/docs)
+
+A production-oriented Indian Railway tracking platform built with **Next.js 15+**, **FastAPI**, **PostgreSQL (Neon)**, **Redis (Upstash)**, **MapLibre GL + OpenStreetMap**, **WebSockets**, and a grounded **LangGraph AI travel assistant** powered by the **xKiro API**.
 
 ---
 
@@ -150,3 +159,9 @@ docker-compose up --build -d
    - `XKIRO_API_KEY`: Your xKiro key from `api.xkiro.com`.
    - `XKIRO_BASE_URL`: `https://api.xkiro.com/v1`.
    - `XKIRO_MODEL`: Your model ID (e.g. `google/gemini-2.5-flash`).
+
+---
+
+## 7. License
+
+This project is licensed under the [MIT License](LICENSE) - see the [LICENSE](LICENSE) file for details.

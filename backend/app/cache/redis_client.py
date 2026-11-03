@@ -68,17 +68,25 @@ class CacheManager:
         self.is_redis_active = False
 
     async def initialize(self):
-        if settings.REDIS_URL:
+        redis_url = settings.REDIS_URL.strip().strip('"').strip("'") if settings.REDIS_URL else ""
+        if redis_url:
+            # Handle accidental CLI syntax or quotes
+            if "-u " in redis_url:
+                redis_url = redis_url.split("-u ")[-1].strip()
+            # Upstash requires rediss:// (TLS)
+            if "upstash.io" in redis_url and redis_url.startswith("redis://"):
+                redis_url = "rediss://" + redis_url[len("redis://"):]
+            
             try:
                 import redis.asyncio as aioredis
                 self._redis = aioredis.from_url(
-                    settings.REDIS_URL,
+                    redis_url,
                     decode_responses=True,
-                    socket_connect_timeout=2.0,
+                    socket_connect_timeout=3.0,
                 )
                 await self._redis.ping()
                 self.is_redis_active = True
-                logger.info("Connected to Redis cache: %s", settings.REDIS_URL)
+                logger.info("Connected to Redis cache successfully (%s)", redis_url.split("@")[-1])
             except Exception as e:
                 logger.warning("Redis connection failed (%s), using in-memory TTL fallback.", e)
                 self._redis = None
