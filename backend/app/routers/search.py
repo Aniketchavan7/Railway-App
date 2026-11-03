@@ -18,18 +18,16 @@ async def search_stations(q: str = Query(..., min_length=1, description="Station
 
 
 @router.get("/stations/{station_code}", response_model=ResponseEnvelope)
+@router.get("/station/{station_code}", response_model=ResponseEnvelope)
 async def get_station_details(station_code: str):
-    stations = await orchestrator.search_stations(station_code)
-    matched = next((s for s in stations if s.station_code.upper() == station_code.upper()), None)
-    if not matched:
-        if stations:
-            matched = stations[0]
-        else:
-            raise HTTPException(status_code=404, detail=f"Station code {station_code} not found")
-    return ResponseEnvelope(data=matched.model_dump())
+    st = await orchestrator.get_station(station_code)
+    if not st:
+        raise HTTPException(status_code=404, detail=f"Station code {station_code} not found")
+    return ResponseEnvelope(data=st.model_dump())
 
 
 @router.get("/stations/{station_code}/live", response_model=ResponseEnvelope)
+@router.get("/station/{station_code}/live", response_model=ResponseEnvelope)
 async def get_station_live_board(station_code: str, hours: int = Query(4, ge=1, le=8)):
     board = await orchestrator.get_station_board(station_code, hours=hours)
     if not board:

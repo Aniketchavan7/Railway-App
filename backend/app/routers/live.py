@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 from app.schemas.status import RailwayStatus, ResponseEnvelope
 from app.services.orchestrator import orchestrator
 
-router = APIRouter(prefix="/trains", tags=["Live Tracking"])
+router = APIRouter(tags=["Live Tracking"])
 
 
 @router.get("/{train_number}/status", response_model=ResponseEnvelope)

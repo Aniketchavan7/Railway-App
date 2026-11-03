@@ -14,13 +14,13 @@ export function ChatDrawer() {
     {
       role: "assistant",
       content:
-        "Namaste! I am RailPulse AI, your grounded Indian Railways travel assistant powered by LangGraph and Mistral Small.\n\nAsk me about train locations, delays, ETAs, fares, or coach layouts (e.g. Where is train 12101 currently? How late is it, and when will it reach Pune?).",
+        "Namaste! I am your Indian Railways travel assistant.\n\nAsk me about train locations, delays, estimated arrivals, coach layouts, or ticket fares (for example: Where is train 12101 currently? How late is it, and when will it reach Pune?).",
     },
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  // Model is fixed to Mistral Small — no user chooser
+  // Model is fixed to Mistral Small internally — no user chooser
   const fixedModel = "mistralai/mistral-small-2603";
 
   const sampleQuestions = [
@@ -57,7 +57,7 @@ export function ChatDrawer() {
         ...prev,
         {
           role: "assistant",
-          content: `Railway query error: ${err.message || "Network request failed"}. Please verify train number.`,
+          content: `Railway query error: ${err.message || "Network request failed"}. Please verify the train number.`,
         },
       ]);
     } finally {
@@ -66,33 +66,30 @@ export function ChatDrawer() {
   };
 
   return (
-    <div className="bg-paper-2 rounded-card border border-rule shadow-none flex flex-col h-[580px] overflow-hidden">
+    <div className="bg-paper-2 rounded-card border border-rule shadow-none flex flex-col h-[500px] sm:h-[580px] overflow-hidden">
       {/* Header */}
-      <div className="px-5 py-3.5 border-b border-rule bg-paper-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-pill bg-accent-soft border border-accent/30 flex items-center justify-center">
+      <div className="px-3 sm:px-5 py-3 sm:py-3.5 border-b border-rule bg-paper-3 flex items-center justify-between">
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          <div className="w-8 h-8 rounded-pill bg-accent-soft border border-accent/30 flex items-center justify-center shrink-0">
             <Bot className="w-4 h-4 text-accent" />
           </div>
           <div>
-            <h3 className="font-display font-bold text-sm tracking-tight text-ink flex items-center gap-2">
-              RailPulse Assistant
-              <span className="text-[11px] font-normal px-2 py-0.5 rounded-pill bg-paper border border-rule text-muted font-outlier">
-                mistral-small
-              </span>
+            <h3 className="font-display font-bold text-xs sm:text-sm tracking-tight text-ink">
+              Railway Assistant
             </h3>
-            <p className="text-[11px] text-muted">Grounded Indian Railway intelligence</p>
+            <p className="text-[10px] sm:text-[11px] text-muted">
+              Live information for Indian trains, halts, and fares
+            </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <span className="text-[11px] text-muted font-outlier">
-            Engine: Mistral Small
-          </span>
-        </div>
+        <span className="text-[10px] sm:text-[11px] text-muted font-outlier hidden xs:inline">
+          Live queries
+        </span>
       </div>
 
       {/* Suggested Queries */}
-      <div className="px-4 py-2 bg-paper-3/50 border-b border-rule overflow-x-auto flex items-center gap-2 scrollbar-none">
+      <div className="px-3 sm:px-4 py-2 bg-paper-3/50 border-b border-rule overflow-x-auto flex items-center gap-2 scrollbar-none">
         <span className="text-[11px] text-muted flex items-center gap-1 shrink-0 font-medium">
           <Sparkles className="w-3 h-3 text-accent" /> Sample queries:
         </span>
@@ -103,19 +100,19 @@ export function ChatDrawer() {
             onClick={() => handleSend(q)}
             className="text-[11px] whitespace-nowrap bg-paper-2 hover:bg-paper active:bg-paper-3 hover:text-ink text-muted font-normal px-2.5 py-1 rounded-pill border border-rule transition-colors shrink-0"
           >
-            {q.length > 44 ? q.slice(0, 44) + "…" : q}
+            {q.length > 36 ? q.slice(0, 36) + "…" : q}
           </button>
         ))}
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4">
         {messages.map((m, idx) => {
           const isUser = m.role === "user";
           return (
             <div
               key={idx}
-              className={`flex items-start gap-3 ${isUser ? "flex-row-reverse" : "flex-row"}`}
+              className={`flex items-start gap-2.5 sm:gap-3 ${isUser ? "flex-row-reverse" : "flex-row"}`}
             >
               <div
                 className={`w-7 h-7 rounded-pill border flex items-center justify-center shrink-0 text-xs font-medium ${
@@ -128,7 +125,7 @@ export function ChatDrawer() {
               </div>
 
               <div
-                className={`max-w-[85%] px-4 py-2.5 text-xs leading-relaxed border ${
+                className={`max-w-[90%] sm:max-w-[85%] px-3.5 py-2.5 text-xs leading-relaxed border ${
                   isUser
                     ? "bg-paper-3 text-ink border-rule-2 font-medium"
                     : "bg-paper text-ink-2 border-rule"
@@ -143,7 +140,7 @@ export function ChatDrawer() {
         {isLoading && (
           <div className="flex items-center gap-2 text-xs text-muted bg-paper-3 p-2.5 rounded-pill border border-rule w-fit">
             <Loader2 className="w-3.5 h-3.5 motion-safe:animate-spin motion-reduce:animate-none text-accent" />
-            <span>Consulting railway engine and verifying halts…</span>
+            <span>Checking train schedules and verifying halts…</span>
           </div>
         )}
       </div>
@@ -154,7 +151,7 @@ export function ChatDrawer() {
           e.preventDefault();
           handleSend();
         }}
-        className="p-3 bg-paper-3 border-t border-rule flex items-center gap-2"
+        className="p-2.5 sm:p-3 bg-paper-3 border-t border-rule flex items-center gap-2"
       >
         <input
           type="text"
@@ -166,9 +163,9 @@ export function ChatDrawer() {
         <button
           type="submit"
           disabled={!input.trim() || isLoading}
-          className="bg-accent hover:opacity-90 active:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed text-accent-ink px-4 py-2 rounded-pill transition-opacity font-medium text-xs flex items-center justify-center gap-1.5"
+          className="bg-accent hover:opacity-90 active:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed text-accent-ink px-3 sm:px-4 py-2 rounded-pill transition-opacity font-medium text-xs flex items-center justify-center gap-1.5 shrink-0"
         >
-          <span>Send</span>
+          <span className="hidden sm:inline">Send</span>
           <Send className="w-3.5 h-3.5" />
         </button>
       </form>

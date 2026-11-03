@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException
 from app.schemas.status import ResponseEnvelope
 from app.services.orchestrator import orchestrator
 
-router = APIRouter(prefix="/pnr", tags=["PNR Enquiry"])
+router = APIRouter(tags=["PNR Enquiry"])
 
 
 @router.get("/{pnr}", response_model=ResponseEnvelope)

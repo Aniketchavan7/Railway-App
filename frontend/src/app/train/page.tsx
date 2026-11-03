@@ -123,14 +123,14 @@ function TrainTrackingContent() {
       />
 
       {/* Main Header Card */}
-      <div className="bg-paper-2 rounded-card border border-rule p-6">
-        <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="bg-paper-2 rounded-card border border-rule p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
           <div className="space-y-1">
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2 sm:gap-2.5">
               <span className="text-xs font-outlier font-bold px-2 py-0.5 rounded-pill bg-paper-3 text-ink border border-rule">
                 #{status.train_number}
               </span>
-              <h1 className="text-xl md:text-2xl font-display font-bold text-ink tracking-tight">
+              <h1 className="text-lg sm:text-2xl font-display font-bold text-ink tracking-tight">
                 {status.train_name}
               </h1>
             </div>
@@ -141,7 +141,7 @@ function TrainTrackingContent() {
           </div>
 
           {/* Quick Actions & Live WS Indicator */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 self-start sm:self-auto">
             <div
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-pill text-xs font-outlier border ${
                 wsStatus === "connected"
@@ -175,7 +175,7 @@ function TrainTrackingContent() {
         </div>
 
         {/* Telemetry Metrics Bar */}
-        <div className="mt-6 pt-5 border-t border-rule grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="mt-4 sm:mt-6 pt-4 sm:pt-5 border-t border-rule grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-4">
           {/* Current Delay */}
           <div className="p-3 rounded-pill bg-paper-3 border border-rule">
             <span className="text-[11px] text-muted block font-medium">

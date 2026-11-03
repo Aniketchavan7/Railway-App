@@ -37,8 +37,8 @@ export function CoachRake({ composition }: CoachRakeProps) {
   };
 
   return (
-    <div className="bg-paper-2 rounded-card border border-rule p-5">
-      <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+    <div className="bg-paper-2 rounded-card border border-rule p-4 sm:p-5">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-2 mb-4">
         <div>
           <h3 className="text-sm font-display font-bold text-ink">
             Rake composition and coach sequence
@@ -48,7 +48,7 @@ export function CoachRake({ composition }: CoachRakeProps) {
           </p>
         </div>
 
-        <div className="flex items-center gap-3 text-xs">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs">
           <span className="flex items-center gap-1.5 font-normal text-muted">
             <span className="w-2 h-2 rounded-full bg-bad" /> Loco
           </span>

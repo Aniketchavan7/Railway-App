@@ -39,6 +39,9 @@ class RailwayProvider(ABC):
     async def search_stations(self, query: str) -> List[Station]:
         pass
 
+    async def get_station(self, code: str) -> Optional[Station]:
+        return None
+
     @abstractmethod
     async def get_station_board(self, station_code: str, hours: int = 4) -> Optional[StationLiveBoard]:
         pass

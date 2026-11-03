@@ -129,6 +129,35 @@ class ProviderOrchestrator:
                 logger.warning("Provider %s error on search_stations: %s", p.provider_name, e)
         return []
 
+    async def get_station(self, code: str) -> Optional[Station]:
+        clean = code.upper().strip()
+        cache_key = f"railpulse:station:{clean}"
+        cached = await cache.get_json(cache_key)
+        if cached:
+            try:
+                return Station(**cached)
+            except Exception:
+                pass
+
+        providers = registry.get_providers_for_capability("STATION_SEARCH")
+        for p in providers:
+            try:
+                if hasattr(p, "get_station"):
+                    res = await p.get_station(clean)
+                    if res:
+                        registry.record_success(p.provider_name)
+                        await cache.set_json(cache_key, res.model_dump(), ttl_seconds=86400 * 7)
+                        return res
+            except Exception as e:
+                logger.warning("Provider %s error on get_station: %s", p.provider_name, e)
+
+        # Fallback to search_stations
+        stations = await self.search_stations(clean)
+        for s in stations:
+            if s.station_code.upper() == clean:
+                return s
+        return None
+
     async def get_station_board(self, station_code: str, hours: int = 4) -> Optional[StationLiveBoard]:
         code = station_code.upper().strip()
         cache_key = f"railpulse:board:{code}:{hours}"

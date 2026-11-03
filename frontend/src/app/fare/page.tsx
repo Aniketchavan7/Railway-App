@@ -49,9 +49,9 @@ function FareContent() {
   return (
     <div className="space-y-6">
       {/* Header & Calculator Form */}
-      <div className="bg-paper-2 rounded-card border border-rule p-6 space-y-4">
+      <div className="bg-paper-2 rounded-card border border-rule p-4 sm:p-6 space-y-4">
         <div>
-          <h1 className="text-xl md:text-2xl font-display font-bold text-ink tracking-tight flex items-center gap-2">
+          <h1 className="text-lg sm:text-2xl font-display font-bold text-ink tracking-tight flex items-center gap-2">
             <Calculator className="w-5 h-5 text-accent" />
             <span>Telescopic distance fare calculator</span>
           </h1>
@@ -182,7 +182,7 @@ function FareContent() {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-xs text-left">
+            <table className="w-full text-xs text-left min-w-[580px]">
               <thead className="bg-paper-3 text-muted text-[11px] border-b border-rule font-medium">
                 <tr>
                   <th className="py-2.5 px-4">Class</th>

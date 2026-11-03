@@ -376,6 +376,27 @@ class OfflineSimulatorProvider(RailwayProvider):
                 )
         return results
 
+    async def get_station(self, code: str) -> Optional[Station]:
+        clean = code.upper().strip()
+        for s in REFERENCE_STATIONS:
+            if s["code"].upper() == clean:
+                return Station(
+                    station_code=s["code"],
+                    station_name=s["name"],
+                    state=s["state"],
+                    zone=s["zone"],
+                    latitude=s["lat"],
+                    longitude=s["lng"],
+                )
+        return Station(
+            station_code=clean,
+            station_name=f"{clean} Junction",
+            state="Maharashtra",
+            zone="CR",
+            latitude=19.0760,
+            longitude=72.8777,
+        )
+
     async def get_station_board(self, station_code: str, hours: int = 4) -> Optional[StationLiveBoard]:
         code = station_code.upper().strip()
         trains = [

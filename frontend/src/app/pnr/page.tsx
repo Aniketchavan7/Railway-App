@@ -41,9 +41,9 @@ export default function PNRPage() {
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       {/* Search Header */}
-      <div className="bg-paper-2 rounded-card border border-rule p-6 space-y-4">
+      <div className="bg-paper-2 rounded-card border border-rule p-4 sm:p-6 space-y-4">
         <div>
-          <h1 className="text-xl md:text-2xl font-display font-bold text-ink tracking-tight flex items-center gap-2">
+          <h1 className="text-lg sm:text-2xl font-display font-bold text-ink tracking-tight flex items-center gap-2">
             <Ticket className="w-5 h-5 text-accent" />
             <span>PNR status enquiry and charting state</span>
           </h1>
@@ -52,7 +52,7 @@ export default function PNRPage() {
           </p>
         </div>
 
-        <form onSubmit={handleSearch} className="flex gap-2 max-w-lg">
+        <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-2 max-w-lg">
           <div className="relative flex-1">
             <Search className="w-4 h-4 text-muted absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
@@ -67,7 +67,7 @@ export default function PNRPage() {
           <button
             type="submit"
             disabled={loading}
-            className="bg-accent hover:opacity-90 active:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed text-accent-ink font-medium text-xs px-5 py-2.5 rounded-pill transition-opacity flex items-center justify-center gap-1.5 focus-visible:outline-2 focus-visible:outline-accent"
+            className="bg-accent hover:opacity-90 active:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed text-accent-ink font-medium text-xs px-5 py-2.5 rounded-pill transition-opacity flex items-center justify-center gap-1.5 focus-visible:outline-2 focus-visible:outline-accent shrink-0"
           >
             {loading ? (
               <Loader2 className="w-3.5 h-3.5 motion-safe:animate-spin motion-reduce:animate-none" />

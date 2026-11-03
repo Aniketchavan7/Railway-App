@@ -9,35 +9,35 @@ interface LocationTypePillProps {
 export function LocationTypePill({ locationType, isSimulated }: LocationTypePillProps) {
   if (isSimulated || locationType === "SIMULATED") {
     return (
-      <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-900 text-xs font-semibold">
-        <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-        <span>SIMULATED DEMO DATA — Offline Timetable Mode (Not Genuine Satellite GPS)</span>
+      <div className="flex items-center gap-2 px-3 py-1.5 rounded-pill bg-accent-soft border border-accent/40 text-accent text-xs font-medium">
+        <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+        <span className="font-outlier">Simulated timetable mode (offline trajectory)</span>
       </div>
     );
   }
 
   if (locationType === "GPS_OBSERVED") {
     return (
-      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium">
-        <Radio className="w-3.5 h-3.5 text-emerald-600 animate-pulse" />
-        <span>Live RTIS/GPS Coordinates</span>
+      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-pill bg-ok-soft border border-ok/30 text-ok text-xs font-medium">
+        <Radio className="w-3 h-3 text-ok motion-safe:animate-pulse motion-reduce:animate-none" />
+        <span className="font-outlier">Live satellite telemetry</span>
       </div>
     );
   }
 
   if (locationType === "STATION_OBSERVED") {
     return (
-      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 border border-slate-200 text-slate-700 text-xs font-medium">
-        <MapPin className="w-3.5 h-3.5 text-slate-500" />
-        <span>Station Movement Event</span>
+      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-pill bg-paper-3 border border-rule text-ink text-xs font-medium">
+        <MapPin className="w-3 h-3 text-cool" />
+        <span className="font-outlier">Station movement observation</span>
       </div>
     );
   }
 
   return (
-    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-purple-50 border border-purple-200 text-purple-700 text-xs font-medium">
-      <Cpu className="w-3.5 h-3.5 text-purple-500" />
-      <span>Estimated Trajectory</span>
+    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-pill bg-cool-soft border border-cool/30 text-cool text-xs font-medium">
+      <Cpu className="w-3 h-3 text-cool" />
+      <span className="font-outlier">Estimated trajectory model</span>
     </div>
   );
 }

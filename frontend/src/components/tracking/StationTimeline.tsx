@@ -1,5 +1,5 @@
 import { StationHalt } from "@/lib/types";
-import { CheckCircle2, Clock, MapPin, AlertCircle } from "lucide-react";
+import { CheckCircle2, MapPin, AlertCircle } from "lucide-react";
 
 interface StationTimelineProps {
   halts: StationHalt[];
@@ -9,100 +9,102 @@ interface StationTimelineProps {
 export function StationTimeline({ halts, currentStation }: StationTimelineProps) {
   if (!halts || halts.length === 0) {
     return (
-      <div className="p-6 text-center text-sm text-slate-500 bg-white rounded-xl border border-slate-200">
+      <div className="p-6 text-center text-xs text-muted bg-paper-2 rounded-card border border-rule">
         No halting stations data available for this journey.
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
-      <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-4 flex items-center justify-between">
-        <span>Route Halts & Platform Timeline</span>
-        <span className="text-xs font-normal text-slate-500 lowercase">
+    <div className="bg-paper-2 rounded-card border border-rule p-4 sm:p-5">
+      <h3 className="text-sm font-display font-bold text-ink mb-4 flex items-center justify-between">
+        <span>Route halts and platform timeline</span>
+        <span className="text-xs font-normal text-muted font-outlier">
           {halts.length} stations
         </span>
       </h3>
 
-      <div className="relative pl-6 space-y-6 before:absolute before:left-2.5 before:top-3 before:bottom-3 before:w-0.5 before:bg-slate-200">
+      <div className="relative pl-6 space-y-4 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-px before:bg-rule">
         {halts.map((h, idx) => {
           const isPassed = h.has_departed;
           const isCurrent =
-            h.has_arrived && !h.has_departed ||
-            (currentStation &&
-              (currentStation.includes(h.station_code) ||
-                currentStation.includes(h.station_name)));
+            (h.has_arrived && !h.has_departed) ||
+            Boolean(
+              currentStation &&
+                (currentStation.includes(h.station_code) ||
+                  currentStation.includes(h.station_name))
+            );
 
           return (
             <div key={`${h.station_code}-${idx}`} className="relative group">
               {/* Marker Icon */}
               <div
-                className={`absolute -left-6 top-1 w-5 h-5 rounded-full flex items-center justify-center transition-all ${
+                className={`absolute -left-6 top-1.5 w-4 h-4 rounded-full flex items-center justify-center transition-colors ${
                   isCurrent
-                    ? "bg-blue-600 ring-4 ring-blue-100 text-white"
+                    ? "bg-accent text-accent-ink ring-2 ring-accent/30"
                     : isPassed
-                    ? "bg-emerald-500 text-white"
-                    : "bg-white border-2 border-slate-300 text-slate-400"
+                    ? "bg-ok text-paper"
+                    : "bg-paper-3 border border-rule text-muted"
                 }`}
               >
                 {isPassed ? (
-                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <CheckCircle2 className="w-3 h-3" />
                 ) : isCurrent ? (
-                  <MapPin className="w-3 h-3 animate-bounce" />
+                  <MapPin className="w-2.5 h-2.5 text-accent-ink" />
                 ) : (
-                  <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />
+                  <span className="w-1 h-1 rounded-full bg-rule-2" />
                 )}
               </div>
 
               {/* Station Info */}
               <div
-                className={`p-3 rounded-lg border transition-all ${
+                className={`p-3 rounded-pill border transition-colors ${
                   isCurrent
-                    ? "bg-blue-50/70 border-blue-200 shadow-sm"
-                    : "bg-slate-50/50 border-slate-100 hover:border-slate-200"
+                    ? "bg-paper-3 border-accent"
+                    : "bg-paper border-rule hover:border-rule-2"
                 }`}
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-sm text-slate-900">
+                    <span className="font-semibold text-xs text-ink">
                       {h.station_name}
                     </span>
-                    <span className="text-xs font-semibold px-2 py-0.5 rounded bg-slate-200/70 text-slate-700">
+                    <span className="text-[11px] font-outlier px-1.5 py-0.2 rounded-pill bg-paper-3 text-muted border border-rule">
                       {h.station_code}
                     </span>
                     {h.platform && (
-                      <span className="text-[11px] font-medium px-2 py-0.5 rounded bg-blue-100 text-blue-800">
-                        PF #{h.platform}
+                      <span className="text-[10px] font-outlier px-1.5 py-0.2 rounded-pill bg-cool-soft text-cool border border-cool/30">
+                        PF {h.platform}
                       </span>
                     )}
                   </div>
 
-                  <div className="text-xs text-slate-500 font-medium">
-                    {h.distance_km} km • Day {h.day_count}
+                  <div className="text-[11px] text-muted font-outlier">
+                    {h.distance_km} km / Day {h.day_count}
                   </div>
                 </div>
 
                 <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
                   <div>
-                    <span className="text-slate-400">Sch Arr: </span>
-                    <span className="font-medium text-slate-700">
+                    <span className="text-muted text-[11px]">Sch Arr: </span>
+                    <span className="font-outlier text-ink">
                       {h.arrival_time || "--"}
                     </span>
                   </div>
                   <div>
-                    <span className="text-slate-400">Sch Dep: </span>
-                    <span className="font-medium text-slate-700">
+                    <span className="text-muted text-[11px]">Sch Dep: </span>
+                    <span className="font-outlier text-ink">
                       {h.departure_time || "--"}
                     </span>
                   </div>
 
                   {h.delay_minutes > 0 ? (
-                    <div className="flex items-center gap-1 font-semibold text-amber-700">
+                    <div className="flex items-center gap-1 font-outlier text-accent text-[11px]">
                       <AlertCircle className="w-3 h-3" />
                       <span>{h.delay_minutes}m late</span>
                     </div>
                   ) : (
-                    <span className="font-medium text-emerald-600">On time</span>
+                    <span className="font-outlier text-ok text-[11px]">On time</span>
                   )}
                 </div>
               </div>

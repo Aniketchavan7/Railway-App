@@ -13,7 +13,7 @@ import {
   ArrowRight,
   ShieldCheck,
   Clock,
-  Zap,
+  HelpCircle,
 } from "lucide-react";
 
 export default function HomePage() {
@@ -24,28 +24,10 @@ export default function HomePage() {
     e.preventDefault();
     const q = trainQuery.trim();
     if (!q) return;
-    router.push(`/train/?number=${q}`);
+    router.push(`/train?number=${q}`);
   };
 
   const featuredTrains = [
-    {
-      number: "22225",
-      name: "Solapur Vande Bharat Express",
-      origin: "CSMT",
-      destination: "SUR",
-      route: "Mumbai CSMT to Solapur",
-      delay: "On time",
-      status: "In transit near Kalyan",
-    },
-    {
-      number: "12158",
-      name: "Hutatma Express",
-      origin: "SUR",
-      destination: "PUNE",
-      route: "Solapur to Pune",
-      delay: "On time",
-      status: "Departed Kurduvadi Jn",
-    },
     {
       number: "12101",
       name: "Jnaneswari Super Deluxe Express",
@@ -76,20 +58,20 @@ export default function HomePage() {
   ];
 
   return (
-    <div className="space-y-12">
+    <div className="space-y-8 sm:space-y-12">
       {/* Hero Section */}
-      <section className="bg-paper-2 border border-rule rounded-card p-6 md:p-10">
+      <section className="bg-paper-2 border border-rule rounded-card p-5 sm:p-8 md:p-10">
         <div className="max-w-2xl space-y-4">
           <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-pill bg-paper-3 border border-rule text-muted text-xs font-outlier">
             <span className="w-1.5 h-1.5 rounded-full bg-accent" />
-            <span>National railway telemetry feed</span>
+            <span>Live train status and schedules</span>
           </div>
 
-          <h1 className="text-3xl md:text-5xl font-display font-bold tracking-tight text-ink">
+          <h1 className="text-2xl sm:text-4xl md:text-5xl font-display font-bold tracking-tight text-ink">
             Track Any Indian Train with Precision
           </h1>
 
-          <p className="lead text-ink-2 text-sm md:text-base">
+          <p className="lead text-ink-2 text-xs sm:text-sm md:text-base">
             Live GPS telemetry, station schedules, coach layouts and telescopic fares.
           </p>
 
@@ -118,19 +100,19 @@ export default function HomePage() {
             </button>
           </form>
 
-          {/* Trust Guarantees */}
-          <div className="pt-2 flex flex-wrap items-center gap-6 text-xs text-muted">
+          {/* Feature Highlights */}
+          <div className="pt-2 flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2.5 sm:gap-6 text-xs text-muted">
             <div className="flex items-center gap-1.5">
               <ShieldCheck className="w-3.5 h-3.5 text-ok" />
-              <span>Grounded telemetry verification</span>
+              <span>Live location and delay updates</span>
             </div>
             <div className="flex items-center gap-1.5">
               <Clock className="w-3.5 h-3.5 text-cool" />
-              <span>Actual observation timestamps</span>
+              <span>Platform and arrival times</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <Zap className="w-3.5 h-3.5 text-accent" />
-              <span>Fixed Mistral Small agent</span>
+              <HelpCircle className="w-3.5 h-3.5 text-accent" />
+              <span>Instant route and fare answers</span>
             </div>
           </div>
         </div>
@@ -139,22 +121,22 @@ export default function HomePage() {
       {/* Featured Live Trains */}
       <section className="space-y-4">
         <div className="flex items-center justify-between border-b border-rule pb-2">
-          <h2 className="text-base font-display font-bold text-ink tracking-tight flex items-center gap-2">
+          <h2 className="text-sm sm:text-base font-display font-bold text-ink tracking-tight flex items-center gap-2">
             <Train className="w-4 h-4 text-accent" />
-            <span>Active express operations</span>
+            <span>Active express routes</span>
           </h2>
-          <span className="text-xs text-muted">Live telemetry matrix</span>
+          <span className="text-xs text-muted">Tap to inspect live status</span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
           {featuredTrains.map((train) => (
             <Link
               key={train.number}
-              href={`/train/?number=${train.number}`}
-              className="group p-5 bg-paper-2 rounded-card border border-rule hover:border-accent active:bg-paper-3 transition-colors flex flex-col justify-between"
+              href={`/train?number=${train.number}`}
+              className="group p-4 sm:p-5 bg-paper-2 rounded-card border border-rule hover:border-accent active:bg-paper-3 transition-colors flex flex-col justify-between"
             >
               <div>
-                <div className="flex items-center justify-between gap-2 mb-3">
+                <div className="flex items-center justify-between gap-2 mb-2 sm:mb-3">
                   <span className="text-xs font-outlier font-bold px-2 py-0.5 rounded-pill bg-paper-3 text-ink border border-rule">
                     #{train.number}
                   </span>
@@ -176,8 +158,8 @@ export default function HomePage() {
               </div>
 
               <div className="mt-4 pt-3 border-t border-rule flex items-center justify-between text-xs text-muted">
-                <span>{train.status}</span>
-                <span className="text-accent motion-safe:group-hover:translate-x-0.5 motion-safe:transition-transform">
+                <span className="line-clamp-1">{train.status}</span>
+                <span className="text-accent shrink-0 motion-safe:group-hover:translate-x-0.5 motion-safe:transition-transform">
                   Inspect
                 </span>
               </div>
@@ -189,15 +171,15 @@ export default function HomePage() {
       {/* Platform Services Grid */}
       <section className="space-y-4">
         <div className="border-b border-rule pb-2">
-          <h2 className="text-base font-display font-bold text-ink tracking-tight">
+          <h2 className="text-sm sm:text-base font-display font-bold text-ink tracking-tight">
             Railway operations suite
           </h2>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <Link
             href="/stations"
-            className="p-5 bg-paper-2 rounded-card border border-rule hover:border-rule-2 active:bg-paper-3 transition-colors group"
+            className="p-4 sm:p-5 bg-paper-2 rounded-card border border-rule hover:border-rule-2 active:bg-paper-3 transition-colors group"
           >
             <div className="w-8 h-8 rounded-pill bg-paper-3 border border-rule text-cool flex items-center justify-center mb-3 group-hover:border-cool transition-colors">
               <Building2 className="w-4 h-4" />
@@ -210,7 +192,7 @@ export default function HomePage() {
 
           <Link
             href="/pnr"
-            className="p-5 bg-paper-2 rounded-card border border-rule hover:border-rule-2 active:bg-paper-3 transition-colors group"
+            className="p-4 sm:p-5 bg-paper-2 rounded-card border border-rule hover:border-rule-2 active:bg-paper-3 transition-colors group"
           >
             <div className="w-8 h-8 rounded-pill bg-paper-3 border border-rule text-ok flex items-center justify-center mb-3 group-hover:border-ok transition-colors">
               <Ticket className="w-4 h-4" />
@@ -223,7 +205,7 @@ export default function HomePage() {
 
           <Link
             href="/coach"
-            className="p-5 bg-paper-2 rounded-card border border-rule hover:border-rule-2 active:bg-paper-3 transition-colors group"
+            className="p-4 sm:p-5 bg-paper-2 rounded-card border border-rule hover:border-rule-2 active:bg-paper-3 transition-colors group"
           >
             <div className="w-8 h-8 rounded-pill bg-paper-3 border border-rule text-accent flex items-center justify-center mb-3 group-hover:border-accent transition-colors">
               <LayoutGrid className="w-4 h-4" />
@@ -236,7 +218,7 @@ export default function HomePage() {
 
           <Link
             href="/fare"
-            className="p-5 bg-paper-2 rounded-card border border-rule hover:border-rule-2 active:bg-paper-3 transition-colors group"
+            className="p-4 sm:p-5 bg-paper-2 rounded-card border border-rule hover:border-rule-2 active:bg-paper-3 transition-colors group"
           >
             <div className="w-8 h-8 rounded-pill bg-paper-3 border border-rule text-ink flex items-center justify-center mb-3 group-hover:border-accent transition-colors">
               <Calculator className="w-4 h-4" />

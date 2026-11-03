@@ -50,10 +50,10 @@ export default function StationsPage() {
   return (
     <div className="space-y-6">
       {/* Header & Search */}
-      <div className="bg-paper-2 rounded-card border border-rule p-6 space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="bg-paper-2 rounded-card border border-rule p-4 sm:p-6 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
           <div>
-            <h1 className="text-xl md:text-2xl font-display font-bold text-ink tracking-tight flex items-center gap-2">
+            <h1 className="text-lg sm:text-2xl font-display font-bold text-ink tracking-tight flex items-center gap-2">
               <Building2 className="w-5 h-5 text-accent" />
               <span>Station live arrival and departure board</span>
             </h1>
@@ -63,7 +63,7 @@ export default function StationsPage() {
           </div>
 
           {/* Time Window Buttons */}
-          <div className="flex items-center gap-1 bg-paper-3 p-1 rounded-pill border border-rule text-xs">
+          <div className="flex items-center gap-1 bg-paper-3 p-1 rounded-pill border border-rule text-xs self-start sm:self-auto">
             {[2, 4, 8].map((h) => (
               <button
                 key={h}
@@ -86,7 +86,7 @@ export default function StationsPage() {
         </div>
 
         {/* Search Input */}
-        <form onSubmit={handleSearch} className="flex gap-2 max-w-md">
+        <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-2 max-w-md">
           <div className="relative flex-1">
             <Search className="w-4 h-4 text-muted absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
@@ -100,7 +100,7 @@ export default function StationsPage() {
           <button
             type="submit"
             disabled={!stationCode.trim() || loading}
-            className="bg-accent hover:opacity-90 active:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed text-accent-ink font-medium text-xs px-4 py-2 rounded-pill transition-opacity focus-visible:outline-2 focus-visible:outline-accent"
+            className="bg-accent hover:opacity-90 active:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed text-accent-ink font-medium text-xs px-4 py-2 rounded-pill transition-opacity focus-visible:outline-2 focus-visible:outline-accent shrink-0"
           >
             Update board
           </button>

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { FreshnessState } from "@/lib/types";
-import { Clock, RefreshCw } from "lucide-react";
+import { Clock } from "lucide-react";
 
 interface FreshnessBadgeProps {
   freshness: FreshnessState;
@@ -48,27 +48,27 @@ export function FreshnessBadge({
     switch (freshness) {
       case "LIVE":
         return {
-          bg: "bg-emerald-50 border-emerald-200 text-emerald-800",
-          dot: "bg-emerald-500 animate-pulse",
-          label: "LIVE TELEMETRY",
+          bg: "bg-ok-soft border-ok/30 text-ok",
+          dot: "bg-ok motion-safe:animate-pulse motion-reduce:animate-none",
+          label: "Live telemetry",
         };
       case "RECENT":
         return {
-          bg: "bg-blue-50 border-blue-200 text-blue-800",
-          dot: "bg-blue-500",
-          label: "RECENT DATA",
+          bg: "bg-cool-soft border-cool/30 text-cool",
+          dot: "bg-cool",
+          label: "Recent observation",
         };
       case "STALE":
         return {
-          bg: "bg-amber-50 border-amber-200 text-amber-800",
-          dot: "bg-amber-500",
-          label: "STALE TELEMETRY",
+          bg: "bg-accent-soft border-accent/30 text-accent",
+          dot: "bg-accent",
+          label: "Delayed telemetry",
         };
       default:
         return {
-          bg: "bg-slate-100 border-slate-200 text-slate-700",
-          dot: "bg-slate-400",
-          label: "RECORDED",
+          bg: "bg-paper-3 border-rule text-muted",
+          dot: "bg-muted",
+          label: "Recorded log",
         };
     }
   };
@@ -78,22 +78,22 @@ export function FreshnessBadge({
   return (
     <div className="flex flex-wrap items-center gap-2 text-xs">
       <div
-        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border font-semibold ${style.bg}`}
+        className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-pill border font-medium ${style.bg}`}
       >
-        <span className={`w-2 h-2 rounded-full ${style.dot}`} />
-        <span>{style.label}</span>
+        <span className={`w-1.5 h-1.5 rounded-full ${style.dot}`} />
+        <span className="font-outlier">{style.label}</span>
       </div>
 
-      <div className="flex items-center gap-1 text-slate-500 bg-white border border-slate-200 px-2.5 py-1 rounded-full">
-        <Clock className="w-3.5 h-3.5 text-slate-400" />
+      <div className="flex items-center gap-1 text-muted bg-paper-3 border border-rule px-2.5 py-0.5 rounded-pill font-outlier">
+        <Clock className="w-3 h-3 text-muted" />
         <span>
           {formatElapsed(elapsedSec)}
           {lastReportedStation ? ` at ${lastReportedStation}` : ""}
         </span>
       </div>
 
-      <div className="text-[11px] text-slate-400">
-        Source: <span className="font-medium text-slate-600">{sourceProvider}</span>
+      <div className="text-[11px] text-muted font-outlier">
+        Source: <span className="text-ink">{sourceProvider}</span>
       </div>
     </div>
   );

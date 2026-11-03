@@ -36,37 +36,37 @@ export function Navbar() {
     { href: "/pnr", label: "PNR enquiry", icon: Ticket },
     { href: "/coach", label: "Coach layout", icon: LayoutGrid },
     { href: "/fare", label: "Fare engine", icon: Calculator },
-    { href: "/ai-assistant", label: "Telemetry AI", icon: Bot },
-    { href: "/admin", label: "Provider status", icon: Activity },
+    { href: "/ai-assistant", label: "Assistant", icon: Bot },
+    { href: "/admin", label: "Service status", icon: Activity },
   ];
 
   return (
     <header className="sticky top-0 z-30 bg-paper-2 border-b border-rule">
-      <div className="max-w-[var(--container)] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+      <div className="max-w-[var(--container)] mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3 sm:gap-4">
         {/* Brand */}
         <Link
           href="/"
-          className="flex items-center gap-3 shrink-0 group focus-visible:outline-2 focus-visible:outline-accent active:opacity-85"
+          className="flex items-center gap-2.5 sm:gap-3 shrink-0 group focus-visible:outline-2 focus-visible:outline-accent active:opacity-85"
         >
           <div className="w-8 h-8 rounded-pill bg-paper-3 border border-rule flex items-center justify-center font-bold text-accent transition-colors group-hover:border-accent">
             <Train className="w-4 h-4 text-accent" />
           </div>
           <div className="flex flex-col">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <span className="font-display font-bold text-base tracking-tight text-ink">
                 RailPulse
               </span>
-              <span className="text-[11px] px-1.5 py-0.2 rounded-pill bg-paper-3 text-muted border border-rule font-outlier">
-                ops
+              <span className="text-[10px] sm:text-[11px] px-1.5 py-0.2 rounded-pill bg-paper-3 text-muted border border-rule font-outlier">
+                live
               </span>
             </div>
             <span className="text-[11px] text-muted -mt-0.5 hidden sm:inline">
-              Indian Railway telemetry
+              Live train tracking and schedules
             </span>
           </div>
         </Link>
 
-        {/* Global Quick Search */}
+        {/* Global Quick Search (Desktop) */}
         <form
           onSubmit={handleSearch}
           className="hidden md:flex items-center flex-1 max-w-xs relative"
@@ -82,7 +82,7 @@ export function Navbar() {
         </form>
 
         {/* Navigation Links */}
-        <nav className="flex items-center gap-1 overflow-x-auto py-1 scrollbar-none">
+        <nav className="flex items-center gap-1 overflow-x-auto py-1 scrollbar-none max-w-full">
           {navLinks.map((link) => {
             const Icon = link.icon;
             const isActive =
@@ -101,7 +101,7 @@ export function Navbar() {
                 }`}
               >
                 <Icon className="w-3.5 h-3.5" />
-                <span className="hidden lg:inline">{link.label}</span>
+                <span className="hidden sm:inline">{link.label}</span>
               </Link>
             );
           })}

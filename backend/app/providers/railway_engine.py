@@ -171,6 +171,20 @@ class RailwayEngineProvider(RailwayProvider):
                 )
         return stations
 
+    async def get_station(self, code: str) -> Optional[Station]:
+        data = await self._get(f"/station/{code.upper().strip()}")
+        if not data:
+            return None
+        return Station(
+            station_code=data.get("code") or data.get("station_code", code.upper()),
+            station_name=data.get("name") or data.get("station_name", code.upper()),
+            state=data.get("state"),
+            zone=data.get("zone"),
+            division=data.get("division"),
+            latitude=float(data.get("latitude")) if data.get("latitude") else None,
+            longitude=float(data.get("longitude")) if data.get("longitude") else None,
+        )
+
     async def get_station_board(self, station_code: str, hours: int = 4) -> Optional[StationLiveBoard]:
         data = await self._get(f"/station/{station_code}/live", params={"hours": hours})
         if not data:

@@ -66,11 +66,16 @@ app.add_middleware(
 async def root():
     return {"message": "RailPulse API is online", "status": "OK"}
 
-# Include Routers
+# Include Routers with /api/v1 and /v1 aliases
 app.include_router(system.router)
-app.include_router(live.router, prefix=settings.API_V1_STR)
-app.include_router(search.router, prefix=settings.API_V1_STR)
-app.include_router(details.router, prefix=settings.API_V1_STR)
-app.include_router(pnr.router, prefix=settings.API_V1_STR)
-app.include_router(ai.router, prefix=settings.API_V1_STR)
+
+for pfx in [settings.API_V1_STR, "/v1"]:
+    app.include_router(live.router, prefix=f"{pfx}/trains")
+    app.include_router(live.router, prefix=f"{pfx}/train")
+    app.include_router(details.router, prefix=f"{pfx}/trains")
+    app.include_router(details.router, prefix=f"{pfx}/train")
+    app.include_router(search.router, prefix=pfx)
+    app.include_router(pnr.router, prefix=f"{pfx}/pnr")
+    app.include_router(ai.router, prefix=pfx)
+
 app.include_router(ws.router)

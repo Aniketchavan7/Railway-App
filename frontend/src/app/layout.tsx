@@ -3,9 +3,9 @@ import "./globals.css";
 import { Navbar } from "@/components/Navbar";
 
 export const metadata: Metadata = {
-  title: "RailPulse — Grounded Indian Railway Telemetry & Operations",
+  title: "RailPulse — Live Indian Train Tracker and Station Schedules",
   description:
-    "Direct Indian Railway operations platform featuring live GPS telemetry, station movement timelines, MapLibre GL routes, coach configurations, and grounded intelligence.",
+    "Track Indian train locations in real time with live delay updates, station departure boards, coach layouts, and fare calculators.",
 };
 
 export default function RootLayout({
@@ -17,25 +17,25 @@ export default function RootLayout({
     <html lang="en" className="overflow-x-clip">
       <body className="min-h-screen flex flex-col bg-paper text-ink font-body antialiased overflow-x-clip">
         <Navbar />
-        <main className="flex-1 w-full max-w-[var(--container)] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <main className="flex-1 w-full max-w-[var(--container)] mx-auto px-3 sm:px-6 lg:px-8 py-5 sm:py-8">
           {children}
         </main>
-        <footer className="border-t border-rule bg-paper-3 py-8 text-xs text-muted">
-          <div className="max-w-[var(--container)] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <footer className="border-t border-rule bg-paper-3 py-6 sm:py-8 text-xs text-muted">
+          <div className="max-w-[var(--container)] mx-auto px-3 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
               <p className="font-medium text-ink-2">
-                RailPulse Operations Platform
+                RailPulse
               </p>
               <p className="text-[11px] text-muted mt-0.5">
-                Grounded Indian Railway telemetry and transit diagnostics
+                Live train tracking, station schedules, coach layouts, and fare calculation
               </p>
             </div>
-            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-[11px] text-muted">
-              <span>CRIS and NTES observation feed</span>
+            <div className="flex flex-wrap items-center gap-x-4 sm:gap-x-6 gap-y-2 text-[11px] text-muted">
+              <span>Live train tracking</span>
               <span className="text-rule-2">/</span>
-              <span>MapLibre GL open mapping</span>
+              <span>Station departure boards</span>
               <span className="text-rule-2">/</span>
-              <span>Mistral Small 24B telemetry runtime</span>
+              <span>PNR status and fares</span>
             </div>
           </div>
         </footer>

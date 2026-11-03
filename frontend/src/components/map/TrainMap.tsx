@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import maplibregl from "maplibre-gl";
 import { RailwayStatus } from "@/lib/types";
+import { Info } from "lucide-react";
 
 interface TrainMapProps {
   status: RailwayStatus;
@@ -17,7 +18,6 @@ export function TrainMap({ status, routeData }: TrainMapProps) {
   useEffect(() => {
     if (!mapContainer.current) return;
 
-    // Default center to India / Maharashtra
     const defaultCenter: [number, number] = [
       status.longitude ?? 77.209,
       status.latitude ?? 22.5,
@@ -56,14 +56,10 @@ export function TrainMap({ status, routeData }: TrainMapProps) {
     map.addControl(new maplibregl.NavigationControl(), "top-right");
 
     map.on("load", () => {
-      // Draw route line if coordinates are available
       let coordinates: [number, number][] = [];
 
       if (routeData?.coordinates && Array.isArray(routeData.coordinates)) {
         coordinates = routeData.coordinates;
-      } else if (status.halts && status.halts.length > 0) {
-        // Collect halts coordinates from halts data or fallback stations
-        // We'll filter valid coordinates
       }
 
       if (coordinates.length > 1) {
@@ -88,44 +84,42 @@ export function TrainMap({ status, routeData }: TrainMapProps) {
             "line-cap": "round",
           },
           paint: {
-            "line-color": "#2563eb",
-            "line-width": 4,
-            "line-opacity": 0.8,
+            "line-color": "#e5a93b",
+            "line-width": 3.5,
+            "line-opacity": 0.85,
           },
         });
 
-        // Fit bounds
         const bounds = new maplibregl.LngLatBounds();
         coordinates.forEach((coord) => bounds.extend(coord));
         map.fitBounds(bounds, { padding: 40 });
       }
 
-      // Add train marker if valid coordinates exist
       if (status.latitude && status.longitude) {
         const el = document.createElement("div");
         el.className = "relative flex items-center justify-center cursor-pointer";
 
         const pulseRing = document.createElement("div");
-        pulseRing.className = `absolute w-8 h-8 rounded-full ${
-          status.is_simulated ? "bg-amber-400/50 animate-ping" : "bg-emerald-500/50 animate-ping"
+        pulseRing.className = `absolute w-7 h-7 rounded-full motion-safe:animate-ping motion-reduce:animate-none ${
+          status.is_simulated ? "bg-accent/40" : "bg-ok/40"
         }`;
 
         const markerBody = document.createElement("div");
-        markerBody.className = `relative w-5 h-5 rounded-full border-2 border-white shadow-md flex items-center justify-center ${
-          status.is_simulated ? "bg-amber-600" : "bg-emerald-600"
+        markerBody.className = `relative w-4 h-4 rounded-full border border-paper shadow-sm flex items-center justify-center ${
+          status.is_simulated ? "bg-accent" : "bg-ok"
         }`;
 
         el.appendChild(pulseRing);
         el.appendChild(markerBody);
 
         const popup = new maplibregl.Popup({ offset: 25 }).setHTML(`
-          <div style="font-family: sans-serif; padding: 4px;">
-            <strong style="color: #0f172a; font-size: 13px;">${status.train_name} (${status.train_number})</strong>
-            <p style="margin: 4px 0 0 0; font-size: 11px; color: #64748b;">
-              Speed: <strong>${status.speed_kmph ?? 0} km/h</strong> • Delay: <strong>${status.delay_minutes}m</strong>
+          <div style="font-family: inherit; padding: 4px; background: #1c1d22; color: #f4f4f6; border-radius: 6px;">
+            <strong style="font-size: 12px; font-weight: 700;">${status.train_name} (${status.train_number})</strong>
+            <p style="margin: 4px 0 0 0; font-size: 11px; color: #a2a3ad;">
+              Speed: <strong>${status.speed_kmph ?? 0} km/h</strong> / Delay: <strong>${status.delay_minutes}m</strong>
             </p>
-            <p style="margin: 4px 0 0 0; font-size: 10px; color: ${status.is_simulated ? "#b45309" : "#047857"};">
-              ${status.is_simulated ? "⚠️ Simulated Demo Position" : "🟢 Live GPS Telemetry"}
+            <p style="margin: 4px 0 0 0; font-size: 10px; color: ${status.is_simulated ? "#e5a93b" : "#4ade80"};">
+              ${status.is_simulated ? "Simulated demo position" : "Live GPS telemetry"}
             </p>
           </div>
         `);
@@ -145,28 +139,29 @@ export function TrainMap({ status, routeData }: TrainMapProps) {
   }, [status.train_number, status.latitude, status.longitude, routeData]);
 
   return (
-    <div className="relative w-full h-[400px] md:h-[480px] rounded-xl overflow-hidden border border-slate-200 shadow-sm bg-slate-100">
+    <div className="relative w-full h-[320px] sm:h-[400px] md:h-[480px] rounded-card overflow-hidden border border-rule bg-paper-3">
       <div ref={mapContainer} className="w-full h-full" />
 
       {/* Floating Info Pill on Map */}
-      <div className="absolute bottom-3 left-3 bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-slate-200 text-xs shadow-md flex items-center gap-2">
+      <div className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 bg-paper-3 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-pill border border-rule text-[11px] sm:text-xs flex items-center gap-1.5 sm:gap-2 max-w-[95%] overflow-hidden">
         <span
-          className={`w-2.5 h-2.5 rounded-full ${
-            status.is_simulated ? "bg-amber-500" : "bg-emerald-500 animate-pulse"
+          className={`w-2 h-2 rounded-full shrink-0 ${
+            status.is_simulated ? "bg-accent" : "bg-ok motion-safe:animate-pulse motion-reduce:animate-none"
           }`}
         />
-        <span className="font-semibold text-slate-800">
-          {status.train_number} • {status.current_station || "In Transit"}
+        <span className="font-semibold text-ink font-outlier truncate">
+          #{status.train_number} / {status.current_station || "In transit"}
         </span>
-        <span className="text-slate-400">|</span>
-        <span className="text-slate-600 font-medium">
-          {status.speed_kmph ? `${status.speed_kmph} km/h` : "Speed N/A"}
+        <span className="text-rule-2">/</span>
+        <span className="text-muted font-outlier shrink-0">
+          {status.speed_kmph ? `${status.speed_kmph} km/h` : "Speed unavailable"}
         </span>
       </div>
 
       {!status.latitude && (
-        <div className="absolute top-3 left-3 right-3 bg-slate-900/85 backdrop-blur-sm text-white px-3 py-2 rounded-lg text-xs flex items-center justify-between">
-          <span>ℹ️ Precise GPS coordinates are not returned by the upstream provider. Showing station halting geometry.</span>
+        <div className="absolute top-2 left-2 right-2 sm:top-3 sm:left-3 sm:right-3 bg-paper-2 text-ink px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-pill border border-rule text-[11px] sm:text-xs flex items-center gap-2">
+          <Info className="w-3.5 h-3.5 text-accent shrink-0" />
+          <span className="line-clamp-2">Precise GPS coordinates are not returned by the upstream provider. Showing station halting geometry.</span>
         </div>
       )}
     </div>
