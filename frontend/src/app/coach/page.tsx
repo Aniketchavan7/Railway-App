@@ -1,13 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
 import { CoachComposition } from "@/lib/types";
 import { CoachRake } from "@/components/coach/CoachRake";
 import { LayoutGrid, Search, Loader2 } from "lucide-react";
 
-export default function CoachPage() {
-  const [trainNum, setTrainNum] = useState("12101");
+function CoachContent() {
+  const searchParams = useSearchParams();
+  const initialTrain = searchParams.get("train") || searchParams.get("number") || "22225";
+  const [trainNum, setTrainNum] = useState(initialTrain);
   const [composition, setComposition] = useState<CoachComposition | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,49 +41,52 @@ export default function CoachPage() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+      <div className="bg-paper-2 rounded-card border border-rule p-6 space-y-4">
         <div>
-          <h1 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-            <LayoutGrid className="w-6 h-6 text-purple-600" />
-            <span>Coach Composition & Rake Layout Visualizer</span>
+          <h1 className="text-xl md:text-2xl font-display font-bold text-ink tracking-tight flex items-center gap-2">
+            <LayoutGrid className="w-5 h-5 text-accent" />
+            <span>Coach composition and rake layout visualizer</span>
           </h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Visual rake arrangement from Locomotive to Rear Guard van across AC, Sleeper, and General coaches.
+          <p className="text-xs text-muted mt-1">
+            Physical rake arrangement from Locomotive to Rear Guard van across Executive, Chair Car, AC, Sleeper, and General coaches.
           </p>
         </div>
 
         <form onSubmit={handleSearch} className="flex gap-2 max-w-md">
           <div className="relative flex-1">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-muted absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
               value={trainNum}
               onChange={(e) => setTrainNum(e.target.value)}
-              placeholder="Train number (e.g. 12101, 12951)..."
-              className="w-full bg-slate-50 focus:bg-white text-xs font-bold pl-10 pr-3 py-2.5 rounded-xl border border-slate-200 focus:border-purple-500 outline-none"
+              placeholder="Train number (e.g. 22225, 12158, 12101)…"
+              className="w-full bg-paper focus:bg-paper-3 text-xs font-outlier font-bold pl-9 pr-3 py-2 rounded-pill border border-rule focus:border-accent outline-none text-ink placeholder:text-muted transition-colors disabled:opacity-40"
             />
           </div>
           <button
             type="submit"
-            className="bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs px-5 py-2.5 rounded-xl transition-all"
+            disabled={!trainNum.trim() || loading}
+            className="bg-accent hover:opacity-90 active:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed text-accent-ink font-medium text-xs px-4 py-2 rounded-pill transition-opacity cursor-pointer focus-visible:outline-2 focus-visible:outline-accent"
           >
-            Inspect Rake
+            Inspect rake
           </button>
         </form>
 
-        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100 text-xs">
-          <span className="text-slate-400 text-[11px] font-semibold">Popular Rakes:</span>
-          {["12101", "12951", "22436"].map((num) => (
+        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-rule text-xs">
+          <span className="text-muted text-[11px] font-medium">Popular rakes:</span>
+          {["22225", "12158", "12101", "12951", "22436"].map((num) => (
             <button
               key={num}
+              type="button"
+              disabled={loading}
               onClick={() => {
                 setTrainNum(num);
                 fetchComposition(num);
               }}
-              className={`px-2.5 py-1 rounded-lg border text-xs font-semibold transition-colors ${
+              className={`px-2.5 py-1 rounded-pill border text-xs transition-colors cursor-pointer font-outlier disabled:opacity-40 disabled:cursor-not-allowed active:opacity-80 focus-visible:outline-2 focus-visible:outline-accent ${
                 trainNum === num
-                  ? "bg-slate-900 text-white border-slate-900"
-                  : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                  ? "bg-paper-3 text-ink border-accent"
+                  : "bg-paper text-muted border-rule hover:text-ink hover:bg-paper-3"
               }`}
             >
               Train #{num}
@@ -90,17 +96,32 @@ export default function CoachPage() {
       </div>
 
       {loading ? (
-        <div className="flex flex-col items-center justify-center p-12 bg-white rounded-xl border border-slate-200 space-y-2">
-          <Loader2 className="w-6 h-6 animate-spin text-purple-600" />
-          <p className="text-xs text-slate-500">Retrieving coach rake composition...</p>
+        <div className="flex flex-col items-center justify-center p-12 bg-paper-2 rounded-card border border-rule space-y-2">
+          <Loader2 className="w-6 h-6 motion-safe:animate-spin motion-reduce:animate-none text-accent" />
+          <p className="text-xs text-muted font-outlier">Retrieving coach rake composition…</p>
         </div>
       ) : error ? (
-        <div className="p-6 bg-white rounded-xl border border-red-200 text-center text-xs text-rose-600">
+        <div className="p-6 bg-paper-2 rounded-card border border-bad text-center text-xs text-bad">
           {error}
         </div>
       ) : composition ? (
         <CoachRake composition={composition} />
       ) : null}
     </div>
+  );
+}
+
+export default function CoachPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex flex-col items-center justify-center p-12 space-y-2">
+          <Loader2 className="w-6 h-6 motion-safe:animate-spin motion-reduce:animate-none text-accent" />
+          <p className="text-xs text-muted font-outlier">Loading coach visualizer…</p>
+        </div>
+      }
+    >
+      <CoachContent />
+    </Suspense>
   );
 }

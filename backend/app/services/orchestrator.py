@@ -25,7 +25,8 @@ class ProviderOrchestrator:
         cached = await cache.get_json(cache_key)
         if cached:
             try:
-                return RailwayStatus(**cached)
+                if str(cached.get("train_number")) == str(train_number):
+                    return RailwayStatus(**cached)
             except Exception:
                 pass
 
@@ -53,7 +54,7 @@ class ProviderOrchestrator:
     async def get_schedule(self, train_number: str) -> Optional[Dict[str, Any]]:
         cache_key = f"railpulse:schedule:{train_number}"
         cached = await cache.get_json(cache_key)
-        if cached:
+        if cached and str(cached.get("train_number")) == str(train_number):
             return cached
 
         providers = registry.get_providers_for_capability("SCHEDULE")
@@ -73,7 +74,7 @@ class ProviderOrchestrator:
     async def get_route(self, train_number: str) -> Optional[Dict[str, Any]]:
         cache_key = f"railpulse:route:{train_number}"
         cached = await cache.get_json(cache_key)
-        if cached:
+        if cached and str(cached.get("train_number")) == str(train_number):
             return cached
 
         providers = registry.get_providers_for_capability("ROUTE")
@@ -93,7 +94,7 @@ class ProviderOrchestrator:
     async def search_trains(self, query: str) -> List[Dict[str, Any]]:
         cache_key = f"railpulse:search_trains:{query.lower()}"
         cached = await cache.get_json(cache_key)
-        if cached:
+        if cached and str(cached.get("train_number")) == str(train_number):
             return cached
 
         providers = registry.get_providers_for_capability("TRAIN_SEARCH")
@@ -157,7 +158,8 @@ class ProviderOrchestrator:
         cached = await cache.get_json(cache_key)
         if cached:
             try:
-                return CoachComposition(**cached)
+                if str(cached.get("train_number")) == str(train_number):
+                    return CoachComposition(**cached)
             except Exception:
                 pass
 

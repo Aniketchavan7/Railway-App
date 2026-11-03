@@ -14,21 +14,14 @@ export function ChatDrawer() {
     {
       role: "assistant",
       content:
-        "Namaste! I am RailPulse AI, your grounded Indian Railways travel assistant powered by LangGraph and xKiro API.\n\nAsk me about train locations, delays, ETAs, fares, or coach layouts (e.g. *Where is train 12101 currently? How late is it, and when will it reach Pune?*).",
+        "Namaste! I am RailPulse AI, your grounded Indian Railways travel assistant powered by LangGraph and Mistral Small.\n\nAsk me about train locations, delays, ETAs, fares, or coach layouts (e.g. Where is train 12101 currently? How late is it, and when will it reach Pune?).",
     },
   ]);
-  const [selectedModel, setSelectedModel] = useState("mistralai/mistral-small-2603");
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const freeModels = [
-    { id: "mistralai/mistral-small-2603", label: "Mistral Small 4 (Free)" },
-    { id: "mistralai/mistral-large-2512", label: "Mistral Large 3 (Free)" },
-    { id: "qwen/qwen3.7-flash:free", label: "Qwen 3.7 Flash 1M (Free)" },
-    { id: "qwen/qwen3.8-omni-flash:free", label: "Qwen 3.8 Omni Flash 1M (Free)" },
-    { id: "qwen/qwen3.7-max:free", label: "Qwen 3.7 Max (Free)" },
-    { id: "cohere/command-a-plus", label: "Cohere Command A+ (Free)" },
-  ];
+  // Model is fixed to Mistral Small — no user chooser
+  const fixedModel = "mistralai/mistral-small-2603";
 
   const sampleQuestions = [
     "Where is train 12101 currently? How late is it, and when will it reach Pune?",
@@ -52,7 +45,7 @@ export function ChatDrawer() {
           ...messages.map((m) => ({ role: m.role, content: m.content })),
           { role: "user", content: query },
         ],
-        selectedModel
+        fixedModel
       );
 
       setMessages((prev) => [
@@ -64,7 +57,7 @@ export function ChatDrawer() {
         ...prev,
         {
           role: "assistant",
-          content: `⚠️ Error retrieving railway information: ${err.message || "Network request failed"}`,
+          content: `Railway query error: ${err.message || "Network request failed"}. Please verify train number.`,
         },
       ]);
     } finally {
@@ -73,55 +66,44 @@ export function ChatDrawer() {
   };
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col h-[560px] overflow-hidden">
+    <div className="bg-paper-2 rounded-card border border-rule shadow-none flex flex-col h-[580px] overflow-hidden">
       {/* Header */}
-      <div className="px-5 py-3.5 border-b border-slate-200 bg-slate-900 text-white flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
-            <Bot className="w-4 h-4 text-white" />
+      <div className="px-5 py-3.5 border-b border-rule bg-paper-3 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-pill bg-accent-soft border border-accent/30 flex items-center justify-center">
+            <Bot className="w-4 h-4 text-accent" />
           </div>
           <div>
-            <h3 className="font-bold text-sm tracking-tight flex items-center gap-1.5">
+            <h3 className="font-display font-bold text-sm tracking-tight text-ink flex items-center gap-2">
               RailPulse Assistant
-              <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-blue-500/30 text-blue-300">
-                LangGraph + xKiro
+              <span className="text-[11px] font-normal px-2 py-0.5 rounded-pill bg-paper border border-rule text-muted font-outlier">
+                mistral-small
               </span>
             </h3>
-            <p className="text-[10px] text-slate-400">Grounded Railway Intelligence</p>
+            <p className="text-[11px] text-muted">Grounded Indian Railway intelligence</p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <select
-            value={selectedModel}
-            onChange={(e) => setSelectedModel(e.target.value)}
-            className="bg-slate-800 text-slate-200 text-[11px] font-medium px-2.5 py-1 rounded-lg border border-slate-700 outline-none hover:bg-slate-700 focus:border-blue-500 transition-colors"
-          >
-            {freeModels.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.label}
-              </option>
-            ))}
-          </select>
-          <div className="hidden sm:flex items-center gap-1 text-[11px] text-emerald-400 font-medium">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span>Free API</span>
-          </div>
+          <span className="text-[11px] text-muted font-outlier">
+            Engine: Mistral Small
+          </span>
         </div>
       </div>
 
-      {/* Suggested Chips */}
-      <div className="px-4 py-2 bg-slate-50 border-b border-slate-200 overflow-x-auto flex items-center gap-2 scrollbar-none">
-        <span className="text-[10px] uppercase font-bold text-slate-400 flex items-center gap-1 shrink-0">
-          <Sparkles className="w-3 h-3 text-amber-500" /> Prompts:
+      {/* Suggested Queries */}
+      <div className="px-4 py-2 bg-paper-3/50 border-b border-rule overflow-x-auto flex items-center gap-2 scrollbar-none">
+        <span className="text-[11px] text-muted flex items-center gap-1 shrink-0 font-medium">
+          <Sparkles className="w-3 h-3 text-accent" /> Sample queries:
         </span>
         {sampleQuestions.map((q, idx) => (
           <button
             key={idx}
+            type="button"
             onClick={() => handleSend(q)}
-            className="text-[11px] whitespace-nowrap bg-white hover:bg-slate-100 text-slate-700 font-medium px-2.5 py-1 rounded-full border border-slate-200 transition-colors shadow-2xs shrink-0"
+            className="text-[11px] whitespace-nowrap bg-paper-2 hover:bg-paper active:bg-paper-3 hover:text-ink text-muted font-normal px-2.5 py-1 rounded-pill border border-rule transition-colors shrink-0"
           >
-            {q.length > 40 ? q.slice(0, 40) + "..." : q}
+            {q.length > 44 ? q.slice(0, 44) + "…" : q}
           </button>
         ))}
       </div>
@@ -133,21 +115,23 @@ export function ChatDrawer() {
           return (
             <div
               key={idx}
-              className={`flex items-start gap-2.5 ${isUser ? "flex-row-reverse" : "flex-row"}`}
+              className={`flex items-start gap-3 ${isUser ? "flex-row-reverse" : "flex-row"}`}
             >
               <div
-                className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-xs font-bold ${
-                  isUser ? "bg-slate-800 text-white" : "bg-blue-600 text-white"
+                className={`w-7 h-7 rounded-pill border flex items-center justify-center shrink-0 text-xs font-medium ${
+                  isUser
+                    ? "bg-accent text-accent-ink border-accent"
+                    : "bg-paper-3 text-ink border-rule"
                 }`}
               >
-                {isUser ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
+                {isUser ? <User className="w-3.5 h-3.5" /> : <Bot className="w-3.5 h-3.5" />}
               </div>
 
               <div
-                className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-xs leading-relaxed ${
+                className={`max-w-[85%] px-4 py-2.5 text-xs leading-relaxed border ${
                   isUser
-                    ? "bg-slate-900 text-white rounded-tr-none font-medium"
-                    : "bg-slate-100 text-slate-800 rounded-tl-none border border-slate-200"
+                    ? "bg-paper-3 text-ink border-rule-2 font-medium"
+                    : "bg-paper text-ink-2 border-rule"
                 }`}
               >
                 <div className="whitespace-pre-wrap">{m.content}</div>
@@ -157,9 +141,9 @@ export function ChatDrawer() {
         })}
 
         {isLoading && (
-          <div className="flex items-center gap-2 text-xs text-slate-500 bg-slate-50 p-2.5 rounded-lg border border-slate-200 w-fit">
-            <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-600" />
-            <span>Consulting railway engine & calculating telemetry...</span>
+          <div className="flex items-center gap-2 text-xs text-muted bg-paper-3 p-2.5 rounded-pill border border-rule w-fit">
+            <Loader2 className="w-3.5 h-3.5 motion-safe:animate-spin motion-reduce:animate-none text-accent" />
+            <span>Consulting railway engine and verifying halts…</span>
           </div>
         )}
       </div>
@@ -170,21 +154,22 @@ export function ChatDrawer() {
           e.preventDefault();
           handleSend();
         }}
-        className="p-3 bg-white border-t border-slate-200 flex items-center gap-2"
+        className="p-3 bg-paper-3 border-t border-rule flex items-center gap-2"
       >
         <input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask e.g. 'Where is train 12101 currently? How late is it, and when will it reach Pune?'"
-          className="flex-1 text-xs bg-slate-100 rounded-lg px-3.5 py-2.5 border border-slate-200 outline-none focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all"
+          placeholder="Ask train location, delay, schedule or fare…"
+          className="flex-1 text-xs bg-paper text-ink placeholder:text-muted rounded-pill px-3.5 py-2 border border-rule outline-none transition-colors focus:border-accent"
         />
         <button
           type="submit"
           disabled={!input.trim() || isLoading}
-          className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white p-2.5 rounded-lg transition-colors font-medium text-xs flex items-center justify-center"
+          className="bg-accent hover:opacity-90 active:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed text-accent-ink px-4 py-2 rounded-pill transition-opacity font-medium text-xs flex items-center justify-center gap-1.5"
         >
-          <Send className="w-4 h-4" />
+          <span>Send</span>
+          <Send className="w-3.5 h-3.5" />
         </button>
       </form>
     </div>

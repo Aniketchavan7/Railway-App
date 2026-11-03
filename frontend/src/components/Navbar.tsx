@@ -31,45 +31,53 @@ export function Navbar() {
   };
 
   const navLinks = [
-    { href: "/", label: "Live Tracker", icon: Train },
-    { href: "/stations", label: "Station Board", icon: Building2 },
-    { href: "/pnr", label: "PNR Enquiry", icon: Ticket },
-    { href: "/coach", label: "Coach Layout", icon: LayoutGrid },
-    { href: "/fare", label: "Fare Calculator", icon: Calculator },
-    { href: "/ai-assistant", label: "AI Assistant", icon: Bot },
-    { href: "/admin", label: "Provider Health", icon: Activity },
+    { href: "/", label: "Live tracker", icon: Train },
+    { href: "/stations", label: "Station boards", icon: Building2 },
+    { href: "/pnr", label: "PNR enquiry", icon: Ticket },
+    { href: "/coach", label: "Coach layout", icon: LayoutGrid },
+    { href: "/fare", label: "Fare engine", icon: Calculator },
+    { href: "/ai-assistant", label: "Telemetry AI", icon: Bot },
+    { href: "/admin", label: "Provider status", icon: Activity },
   ];
 
   return (
-    <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+    <header className="sticky top-0 z-30 bg-paper-2 border-b border-rule">
+      <div className="max-w-[var(--container)] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
         {/* Brand */}
-        <Link href="/" className="flex items-center gap-2.5 shrink-0 group">
-          <div className="w-9 h-9 rounded-lg bg-slate-900 text-white flex items-center justify-center font-bold shadow-sm group-hover:bg-blue-600 transition-colors">
-            <Train className="w-5 h-5 text-emerald-400" />
+        <Link
+          href="/"
+          className="flex items-center gap-3 shrink-0 group focus-visible:outline-2 focus-visible:outline-accent active:opacity-85"
+        >
+          <div className="w-8 h-8 rounded-pill bg-paper-3 border border-rule flex items-center justify-center font-bold text-accent transition-colors group-hover:border-accent">
+            <Train className="w-4 h-4 text-accent" />
           </div>
-          <div>
-            <span className="font-extrabold text-lg tracking-tight text-slate-900 flex items-center gap-1.5">
-              RailPulse
-              <span className="text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
-                SaaS
+          <div className="flex flex-col">
+            <div className="flex items-center gap-2">
+              <span className="font-display font-bold text-base tracking-tight text-ink">
+                RailPulse
               </span>
+              <span className="text-[11px] px-1.5 py-0.2 rounded-pill bg-paper-3 text-muted border border-rule font-outlier">
+                ops
+              </span>
+            </div>
+            <span className="text-[11px] text-muted -mt-0.5 hidden sm:inline">
+              Indian Railway telemetry
             </span>
-            <p className="text-[10px] text-slate-500 font-medium -mt-1 hidden sm:block">
-              Indian Railway Intelligence
-            </p>
           </div>
         </Link>
 
         {/* Global Quick Search */}
-        <form onSubmit={handleSearch} className="hidden md:flex items-center flex-1 max-w-xs relative">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3" />
+        <form
+          onSubmit={handleSearch}
+          className="hidden md:flex items-center flex-1 max-w-xs relative"
+        >
+          <Search className="w-3.5 h-3.5 text-muted absolute left-3 pointer-events-none" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search train (e.g. 12101) or station..."
-            className="w-full text-xs bg-slate-100 hover:bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 rounded-full pl-9 pr-3 py-2 border border-slate-200 transition-all outline-none"
+            placeholder="Train number (e.g. 12101) or station…"
+            className="w-full text-xs bg-paper-3 text-ink placeholder:text-muted rounded-pill pl-8 pr-3 py-1.5 border border-rule outline-none transition-colors focus:border-accent focus-visible:border-accent disabled:opacity-40"
           />
         </form>
 
@@ -86,13 +94,13 @@ export function Navbar() {
               <Link
                 key={link.href}
                 href={link.href}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors shrink-0 ${
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-pill text-xs font-medium transition-colors shrink-0 active:opacity-80 ${
                   isActive
-                    ? "bg-slate-900 text-white shadow-sm"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                    ? "bg-accent-soft text-accent border border-accent/40"
+                    : "text-muted hover:text-ink hover:bg-paper-3"
                 }`}
               >
-                <Icon className={`w-3.5 h-3.5 ${isActive ? "text-emerald-400" : ""}`} />
+                <Icon className="w-3.5 h-3.5" />
                 <span className="hidden lg:inline">{link.label}</span>
               </Link>
             );
