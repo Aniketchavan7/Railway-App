@@ -14,7 +14,7 @@ export function ChatDrawer() {
     {
       role: "assistant",
       content:
-        "Ask for live train locations, delays, platform numbers, coach layouts, or ticket fares.",
+        "Welcome to RailPulse AI! Ask about live train status, mega blocks, route diversions, cancelled trains, running delays, platform numbers, or ticket fares.",
     },
   ]);
   const [input, setInput] = useState("");
@@ -24,10 +24,10 @@ export function ChatDrawer() {
   const fixedModel = "mistralai/mistral-small-2603";
 
   const sampleQuestions = [
-    "Where is train 12101 currently? How late is it, and when will it reach Pune?",
-    "Calculate fare for 12101 from CSMT to PUNE across all classes",
-    "Show coach layout for 12951 Mumbai Rajdhani",
-    "What is the schedule and halts for train 22436 Vande Bharat?",
+    "What Mega Blocks, train diversions, or cancellations are active today?",
+    "Is train 12115 Siddheshwar Express running diverted or delayed?",
+    "Check heavy running delays and maintenance blocks on Central Railway",
+    "Where is train 22225 Vande Bharat? When will it reach Solapur?",
   ];
 
   const handleSend = async (textToSend?: string) => {

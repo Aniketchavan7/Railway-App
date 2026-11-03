@@ -14,23 +14,27 @@ export default function AIAssistantPage() {
             <span>Railway assistant</span>
           </h1>
           <p className="text-xs text-muted mt-1">
-            Ask questions about live train running status, expected arrival times, platform numbers, and fares.
+            Real-time Indian Railways intelligence for live locations, delays, Mega Blocks, route diversions, cancellations, and fares.
           </p>
         </div>
 
         {/* Capabilities badges */}
-        <div className="mt-4 pt-3 sm:pt-4 border-t border-rule grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3 text-xs text-muted">
+        <div className="mt-4 pt-3 sm:pt-4 border-t border-rule grid grid-cols-1 sm:grid-cols-4 gap-2.5 sm:gap-3 text-xs text-muted">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-3.5 h-3.5 text-ok shrink-0" />
             <span>Live route and delay checks</span>
           </div>
           <div className="flex items-center gap-2">
             <ShieldCheck className="w-3.5 h-3.5 text-cool shrink-0" />
-            <span>Platform and station halts</span>
+            <span>Mega Blocks & diversions</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Bot className="w-3.5 h-3.5 text-warn shrink-0" />
+            <span>Cancellations & regulations</span>
           </div>
           <div className="flex items-center gap-2">
             <Ticket className="w-3.5 h-3.5 text-accent shrink-0" />
-            <span>Ticket classes and fares</span>
+            <span>Fares & coach composition</span>
           </div>
         </div>
       </div>

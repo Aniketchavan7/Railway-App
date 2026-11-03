@@ -7,7 +7,7 @@ from app.config import settings
 from app.db.base import Base
 import app.db.models  # Register all models with Base.metadata
 from app.db.session import engine
-from app.routers import ai, details, live, pnr, search, system, ws
+from app.routers import ai, alerts, details, live, pnr, search, system, ws
 
 logging.basicConfig(
     level=logging.INFO if not settings.DEBUG else logging.DEBUG,
@@ -76,6 +76,7 @@ for pfx in [settings.API_V1_STR, "/v1"]:
     app.include_router(details.router, prefix=f"{pfx}/train")
     app.include_router(search.router, prefix=pfx)
     app.include_router(pnr.router, prefix=f"{pfx}/pnr")
+    app.include_router(alerts.router, prefix=pfx)
     app.include_router(ai.router, prefix=pfx)
 
 app.include_router(ws.router)

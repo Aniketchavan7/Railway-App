@@ -1,6 +1,7 @@
 import json
 from typing import Optional
 from langchain_core.tools import tool
+from app.services.disruption_service import DisruptionService
 from app.services.eta_service import ETACalculator
 from app.services.orchestrator import orchestrator
 
@@ -91,6 +92,51 @@ async def get_pnr_status(pnr: str) -> str:
     return json.dumps(res.model_dump(mode="json"))
 
 
+@tool
+async def get_railway_disruptions_and_mega_blocks(
+    category: Optional[str] = None,
+    zone: Optional[str] = None,
+    train_number: Optional[str] = None,
+    station: Optional[str] = None,
+) -> str:
+    """Fetch active Indian Railways disruptions, including Mega Blocks, Jumbo Blocks, Route Diversions, Cancelled Trains, Rescheduled Services, and Heavy Delays.
+    Arguments:
+    - category: Filter by disruption type (MEGA_BLOCK, ROUTE_DIVERSION, CANCELLATION, RESCHEDULED, RUNNING_LATE)
+    - zone: Railway Zone code (CR, WR, NR, SCR, ECR, etc.)
+    - train_number: Optional 5-digit train number (e.g. 12115, 22225)
+    - station: Station code or name (e.g. CSMT, PUNE, NDLS, Kalyan)
+    """
+    summary = DisruptionService.get_disruption_summary(
+        alert_type=category, zone=zone, train_number=train_number, station=station
+    )
+    return json.dumps(summary.model_dump(mode="json"))
+
+
+@tool
+async def check_train_route_diversion_or_cancellation(train_number: str) -> str:
+    """Check if a specific train (e.g. 12115, 22225, 12158) is running on a diverted route, cancelled, short-terminated, or heavily delayed due to track work or mega blocks."""
+    alerts = DisruptionService.get_train_disruptions(train_number)
+    if not alerts:
+        return json.dumps({
+            "train_number": train_number,
+            "is_diverted": False,
+            "is_cancelled": False,
+            "active_disruptions": [],
+            "message": f"No route diversions or cancellations reported for train {train_number}. Operating on normal route."
+        })
+    return json.dumps({
+        "train_number": train_number,
+        "active_disruptions": [a.model_dump(mode="json") for a in alerts]
+    })
+
+
+@tool
+async def get_mega_blocks_by_zone_or_station(station_or_zone: Optional[str] = None) -> str:
+    """Fetch active Sunday mega blocks, jumbo maintenance blocks, and speed restrictions affecting suburban lines and long-distance corridors for a station (e.g. CSMT, PUNE, NDLS, Kalyan) or zone (CR, WR)."""
+    blocks = DisruptionService.get_corridor_mega_blocks(station_or_zone)
+    return json.dumps([b.model_dump(mode="json") for b in blocks])
+
+
 RAILWAY_TOOLS = [
     get_live_train_status,
     calculate_train_eta,
@@ -100,4 +146,7 @@ RAILWAY_TOOLS = [
     get_train_coach_composition,
     get_fare_enquiry,
     get_pnr_status,
+    get_railway_disruptions_and_mega_blocks,
+    check_train_route_diversion_or_cancellation,
+    get_mega_blocks_by_zone_or_station,
 ]

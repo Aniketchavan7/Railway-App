@@ -78,7 +78,7 @@ export default function PNRPage() {
         </form>
 
         {/* Privacy Note */}
-        <div className="flex items-start gap-2.5 p-3 bg-paper-3 rounded-pill border border-rule text-xs text-muted">
+        <div className="flex items-start gap-2.5 p-3 bg-paper-3/50 rounded-pill border border-rule/60 text-xs text-muted">
           <ShieldCheck className="w-3.5 h-3.5 text-ok shrink-0 mt-0.5" />
           <span>
             <strong className="text-ink">Privacy:</strong> Lookups are processed in transit. No names, phone numbers, or records are saved.

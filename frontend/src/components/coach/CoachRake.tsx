@@ -92,7 +92,7 @@ export function CoachRake({ composition }: CoachRakeProps) {
 
       {/* Selected Coach Inspector */}
       {selectedCoach && (
-        <div className="mt-4 p-4 rounded-pill bg-paper-3 border border-rule flex flex-wrap items-center justify-between gap-4 text-xs">
+        <div className="mt-4 pt-3 border-t border-rule flex flex-wrap items-center justify-between gap-4 text-xs">
           <div>
             <span className="text-muted">Coach code: </span>
             <span className="font-bold text-ink text-sm font-outlier">{selectedCoach.coach_code}</span>

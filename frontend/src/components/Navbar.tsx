@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { RailPulseLogo } from "@/components/brand/RailPulseLogo";
 import {
   Train,
@@ -19,6 +19,24 @@ export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
+  const [istTime, setIstTime] = useState<string>("");
+
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      setIstTime(
+        now.toLocaleTimeString("en-GB", {
+          timeZone: "Asia/Kolkata",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        }) + " IST"
+      );
+    };
+    updateTime();
+    const timer = setInterval(updateTime, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,6 +84,14 @@ export function Navbar() {
             className="w-full text-xs bg-paper-3 text-ink placeholder:text-muted rounded-pill pl-8 pr-3 py-1.5 border border-rule outline-none transition-colors focus:border-accent focus-visible:border-accent disabled:opacity-40"
           />
         </form>
+
+        {/* Live IST Telemetry Beacon */}
+        <div className="hidden xl:flex items-center gap-2 px-3 py-1 bg-paper-3 rounded-pill border border-rule text-[11px] font-outlier text-muted shrink-0">
+          <span className="w-2 h-2 rounded-full bg-ok" />
+          <span className="font-semibold text-ink">{istTime || "LIVE IST"}</span>
+          <span className="text-rule-2">/</span>
+          <span className="text-[10px] text-muted">LIVE RADAR</span>
+        </div>
 
         {/* Navigation Links */}
         <nav className="flex items-center gap-1 overflow-x-auto py-1 scrollbar-none max-w-full">

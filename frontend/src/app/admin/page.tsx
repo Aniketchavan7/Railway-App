@@ -79,9 +79,9 @@ export default function AdminPage() {
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-pill bg-paper-3 border border-rule flex items-center justify-center font-bold text-ink text-xs font-outlier">
+                  <span className="font-outlier font-bold text-ink text-xs bg-paper-3 px-2 py-1 rounded border border-rule">
                     {name.slice(0, 2).toLowerCase()}
-                  </div>
+                  </span>
                   <div>
                     <h3 className="font-display font-semibold text-sm text-ink capitalize">
                       {name.replace(/_/g, " ")}
@@ -102,7 +102,7 @@ export default function AdminPage() {
               </div>
 
               {/* Metrics */}
-              <div className="grid grid-cols-2 gap-2 sm:gap-3 text-xs bg-paper-3 p-3 rounded-pill border border-rule">
+              <div className="grid grid-cols-2 gap-3 text-xs pt-3 border-t border-rule/60">
                 <div>
                   <span className="text-muted block text-[11px]">Recorded errors</span>
                   <span className="font-outlier font-bold text-ink">{data.failure_count}</span>

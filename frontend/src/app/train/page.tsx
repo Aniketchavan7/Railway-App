@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
 import { createTrainWebSocket } from "@/lib/ws";
-import { RailwayStatus, TelemetryPacket } from "@/lib/types";
+import { RailwayAlert, RailwayStatus, TelemetryPacket } from "@/lib/types";
 import { FreshnessBadge } from "@/components/tracking/FreshnessBadge";
 import { LocationTypePill } from "@/components/tracking/LocationTypePill";
 import { StationTimeline } from "@/components/tracking/StationTimeline";
@@ -45,6 +45,7 @@ function TrainTrackingContent() {
   );
   const [mobileTab, setMobileTab] = useState<"map" | "timeline" | "gps">("map");
   const [showGpsReporter, setShowGpsReporter] = useState(false);
+  const [disruptions, setDisruptions] = useState<RailwayAlert[]>([]);
 
   const fetchStatus = async () => {
     try {
@@ -54,10 +55,14 @@ function TrainTrackingContent() {
       setStatus(data);
 
       try {
-        const route = await api.getTrainRoute(trainNumber);
-        setRouteData(route);
+        const [route, alerts] = await Promise.all([
+          api.getTrainRoute(trainNumber).catch(() => null),
+          api.getTrainDisruptions(trainNumber).catch(() => []),
+        ]);
+        if (route) setRouteData(route);
+        if (alerts) setDisruptions(alerts);
       } catch {
-        // Non-critical route geometry error
+        // Non-critical supplementary data error
       }
     } catch (err: any) {
       setError(err.message || "Failed to load train status");
@@ -229,9 +234,64 @@ function TrainTrackingContent() {
           </div>
         </div>
 
+        {/* Quick Express Switcher Bar */}
+        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-rule/50 text-xs">
+          <span className="text-muted text-[11px] font-medium font-outlier">
+            Live expresses:
+          </span>
+          {[
+            { num: "22225", label: "22225 Solapur VB" },
+            { num: "12101", label: "12101 Jnaneswari" },
+            { num: "12951", label: "12951 Rajdhani" },
+            { num: "12158", label: "12158 Hutatma" },
+            { num: "22436", label: "22436 Vande Bharat" },
+          ].map((item) => (
+            <Link
+              key={item.num}
+              href={`/train?number=${item.num}`}
+              className={`px-2.5 py-0.5 rounded-pill text-[11px] font-outlier transition-colors border ${
+                trainNumber === item.num
+                  ? "bg-accent text-accent-ink border-accent font-semibold"
+                  : "bg-paper-3 text-muted hover:text-ink hover:bg-paper border-rule"
+              }`}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </div>
+
+        {/* Active Disruption / Route Change / Mega Block Banner */}
+        {disruptions.length > 0 && (
+          <div className="p-3 sm:p-4 rounded-lg bg-accent/5 border border-accent/25 flex items-start gap-3">
+            <AlertTriangle className="w-4 h-4 text-accent shrink-0 mt-0.5" />
+            <div className="text-xs space-y-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-semibold text-accent text-xs px-1.5 py-0.5 rounded bg-accent/15 border border-accent/30 font-outlier">
+                  {disruptions[0].alert_type.replace(/_/g, " ")}
+                </span>
+                <strong className="text-ink font-semibold">{disruptions[0].title}</strong>
+              </div>
+              <p className="text-muted leading-relaxed">{disruptions[0].impact_description}</p>
+              {disruptions[0].diverted_via && (
+                <p className="text-ink font-medium">
+                  <span className="text-muted font-normal">Diverted via:</span> {disruptions[0].diverted_via}
+                </p>
+              )}
+              {disruptions[0].skipped_halts && disruptions[0].skipped_halts.length > 0 && (
+                <p className="text-accent font-medium">
+                  <span className="text-muted font-normal">Skipped halts:</span> {disruptions[0].skipped_halts.join(", ")}
+                </p>
+              )}
+              <p className="text-ok font-medium">
+                <span className="text-muted font-normal">Advisory:</span> {disruptions[0].action_advised}
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Visual Route Corridor Bar */}
         {originHalt && destHalt && (
-          <div className="py-2.5 px-3 sm:px-4 rounded-pill bg-paper-3 border border-rule flex items-center justify-between text-xs font-outlier">
+          <div className="py-2.5 px-3 sm:px-4 rounded-pill bg-paper-3/50 border border-rule/60 flex items-center justify-between text-xs font-outlier">
             <div className="flex items-center gap-1.5">
               <span className="font-bold text-ink">{originHalt.station_code}</span>
               <span className="text-[11px] text-muted hidden sm:inline">
@@ -256,65 +316,63 @@ function TrainTrackingContent() {
           </div>
         )}
 
-        {/* Metric Cards Bar */}
-        <div className="pt-2 border-t border-rule/60 grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3 text-xs">
+        {/* Typographic KPI Telemetry Strip - Type not tiles, no card-in-card */}
+        <div className="pt-3 border-t border-rule/70 grid grid-cols-2 md:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-rule text-xs">
           {/* Current Delay */}
-          <div className="p-3 rounded-pill bg-paper-3 border border-rule">
-            <span className="text-[10px] text-muted block font-medium">
+          <div className="p-3 sm:px-4">
+            <span className="text-[10px] text-muted block font-outlier">
               Delay status
             </span>
             <div className="mt-1 flex items-baseline gap-1.5">
               <span
-                className={`text-base font-outlier font-bold ${
+                className={`text-lg sm:text-xl font-outlier font-bold tracking-tight ${
                   status.delay_minutes > 0 ? "text-accent" : "text-ok"
                 }`}
               >
                 {status.delay_minutes > 0
-                  ? `+${status.delay_minutes} mins`
+                  ? `+${status.delay_minutes}m`
                   : "On time"}
               </span>
               <span className="text-[10px] text-muted">
-                {status.delay_minutes > 0 ? "behind schedule" : "normal speed"}
+                {status.delay_minutes > 0 ? "behind schedule" : "normal run"}
               </span>
             </div>
           </div>
 
           {/* Current Location */}
-          <div className="p-3 rounded-pill bg-paper-3 border border-rule">
-            <span className="text-[10px] text-muted block font-medium">
+          <div className="p-3 sm:px-4 pt-3 md:pt-3">
+            <span className="text-[10px] text-muted block font-outlier">
               Current position
             </span>
-            <div className="mt-1 flex items-center gap-1.5">
-              <MapPin className="w-3.5 h-3.5 text-cool shrink-0" />
-              <span className="text-xs font-semibold text-ink line-clamp-1">
-                {status.current_station || "In transit"}
-              </span>
+            <div className="mt-1 text-sm sm:text-base font-semibold text-ink truncate">
+              {status.current_station || "In transit"}
             </div>
+            <span className="text-[10px] text-muted block">live telemetry</span>
           </div>
 
           {/* Next Station */}
-          <div className="p-3 rounded-pill bg-paper-3 border border-rule">
-            <span className="text-[10px] text-muted block font-medium">
-              Next station
+          <div className="p-3 sm:px-4 pt-3 md:pt-3">
+            <span className="text-[10px] text-muted block font-outlier">
+              Next halt
             </span>
-            <div className="mt-1 text-xs font-semibold text-ink line-clamp-1 flex items-center gap-1">
-              <Clock className="w-3.5 h-3.5 text-accent shrink-0" />
-              <span>{status.next_station || "Terminus"}</span>
+            <div className="mt-1 text-sm sm:text-base font-semibold text-ink truncate">
+              {status.next_station || "Terminus"}
             </div>
+            <span className="text-[10px] text-muted block">scheduled stop</span>
           </div>
 
           {/* Speed */}
-          <div className="p-3 rounded-pill bg-paper-3 border border-rule">
-            <span className="text-[10px] text-muted block font-medium">
+          <div className="p-3 sm:px-4 pt-3 md:pt-3">
+            <span className="text-[10px] text-muted block font-outlier">
               Speed
             </span>
             <div className="mt-1 flex items-baseline gap-1">
-              <Gauge className="w-3.5 h-3.5 text-cool mr-0.5 shrink-0" />
-              <span className="text-base font-outlier font-bold text-ink">
+              <span className="text-lg sm:text-xl font-outlier font-bold text-ink tracking-tight">
                 {status.speed_kmph ?? 0}
               </span>
               <span className="text-xs text-muted font-outlier">km/h</span>
             </div>
+            <span className="text-[10px] text-muted block">instantaneous</span>
           </div>
         </div>
 
