@@ -83,21 +83,33 @@ class RailwayAIAgent:
             logger.error("Failed to compile LangGraph agent: %s. Using deterministic fallback.", e)
             self.app = None
 
-    async def answer(self, user_query: str) -> Dict[str, Any]:
+    async def answer(self, user_query: str, model: Optional[str] = None) -> Dict[str, Any]:
         """Processes user natural language query and returns grounded explanation."""
+        selected_model = model or settings.XKIRO_MODEL
+
         # Check if LangGraph with xKiro is active
-        if self.app:
+        if settings.XKIRO_API_KEY:
             try:
+                from langchain_openai import ChatOpenAI
+                from langgraph.prebuilt import create_react_agent
+
+                llm = ChatOpenAI(
+                    base_url=settings.XKIRO_BASE_URL,
+                    api_key=settings.XKIRO_API_KEY,
+                    model=selected_model,
+                    temperature=0.2,
+                )
+                agent_executor = create_react_agent(llm, RAILWAY_TOOLS, prompt=SYSTEM_PROMPT)
                 inputs = {"messages": [HumanMessage(content=user_query)]}
-                result = await self.app.ainvoke(inputs)
+                result = await agent_executor.ainvoke(inputs)
                 last_msg = result["messages"][-1]
                 return {
                     "response": last_msg.content,
-                    "model": settings.XKIRO_MODEL,
+                    "model": selected_model,
                     "grounded": True,
                 }
             except Exception as e:
-                logger.warning("xKiro LLM invocation failed (%s), using deterministic handler", e)
+                logger.warning("xKiro LLM invocation with model %s failed (%s), using deterministic handler", selected_model, e)
 
         # Deterministic grounded handler (100% offline & test-ready)
         return await self._deterministic_answer(user_query)

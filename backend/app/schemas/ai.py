@@ -14,6 +14,7 @@ class ChatRequest(BaseModel):
     session_id: Optional[str] = None
     stream: bool = False
     context_train_number: Optional[str] = None
+    model: Optional[str] = None
 
 
 class ToolCallRecord(BaseModel):

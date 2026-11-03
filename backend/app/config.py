@@ -25,10 +25,10 @@ class Settings(BaseSettings):
     # Offline Simulator (Disabled in production by default)
     ENABLE_SIMULATOR: bool = True
 
-    # xKiro AI Integration
+    # xKiro AI Integration (100% Free Tier on api.xkiro.com/v1)
     XKIRO_BASE_URL: str = "https://api.xkiro.com/v1"
     XKIRO_API_KEY: str = ""
-    XKIRO_MODEL: str = "google/gemini-2.5-flash"  # Configurable model ID
+    XKIRO_MODEL: str = "mistralai/mistral-small-2603"  # Free tier default (or qwen/qwen3.7-flash:free)
 
     # Security & CORS
     JWT_SECRET: str = "railpulse_super_secret_jwt_key_change_in_production_2026"

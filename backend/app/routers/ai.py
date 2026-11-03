@@ -14,5 +14,5 @@ async def chat_with_railway_ai(req: ChatRequest):
     if not last_user_message:
         return ResponseEnvelope(data={"response": "Hello! How can I help you with Indian Railways today?"})
 
-    res = await railway_ai.answer(last_user_message)
+    res = await railway_ai.answer(last_user_message, model=req.model)
     return ResponseEnvelope(data=res)

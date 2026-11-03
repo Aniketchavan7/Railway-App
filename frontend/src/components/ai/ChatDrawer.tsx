@@ -17,8 +17,18 @@ export function ChatDrawer() {
         "Namaste! I am RailPulse AI, your grounded Indian Railways travel assistant powered by LangGraph and xKiro API.\n\nAsk me about train locations, delays, ETAs, fares, or coach layouts (e.g. *Where is train 12101 currently? How late is it, and when will it reach Pune?*).",
     },
   ]);
+  const [selectedModel, setSelectedModel] = useState("mistralai/mistral-small-2603");
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  const freeModels = [
+    { id: "mistralai/mistral-small-2603", label: "Mistral Small 4 (Free)" },
+    { id: "mistralai/mistral-large-2512", label: "Mistral Large 3 (Free)" },
+    { id: "qwen/qwen3.7-flash:free", label: "Qwen 3.7 Flash 1M (Free)" },
+    { id: "qwen/qwen3.8-omni-flash:free", label: "Qwen 3.8 Omni Flash 1M (Free)" },
+    { id: "qwen/qwen3.7-max:free", label: "Qwen 3.7 Max (Free)" },
+    { id: "cohere/command-a-plus", label: "Cohere Command A+ (Free)" },
+  ];
 
   const sampleQuestions = [
     "Where is train 12101 currently? How late is it, and when will it reach Pune?",
@@ -37,10 +47,13 @@ export function ChatDrawer() {
     setIsLoading(true);
 
     try {
-      const res = await api.chatWithAI([
-        ...messages.map((m) => ({ role: m.role, content: m.content })),
-        { role: "user", content: query },
-      ]);
+      const res = await api.chatWithAI(
+        [
+          ...messages.map((m) => ({ role: m.role, content: m.content })),
+          { role: "user", content: query },
+        ],
+        selectedModel
+      );
 
       setMessages((prev) => [
         ...prev,
@@ -78,9 +91,22 @@ export function ChatDrawer() {
           </div>
         </div>
 
-        <div className="flex items-center gap-1 text-[11px] text-emerald-400 font-medium">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span>Active</span>
+        <div className="flex items-center gap-2">
+          <select
+            value={selectedModel}
+            onChange={(e) => setSelectedModel(e.target.value)}
+            className="bg-slate-800 text-slate-200 text-[11px] font-medium px-2.5 py-1 rounded-lg border border-slate-700 outline-none hover:bg-slate-700 focus:border-blue-500 transition-colors"
+          >
+            {freeModels.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.label}
+              </option>
+            ))}
+          </select>
+          <div className="hidden sm:flex items-center gap-1 text-[11px] text-emerald-400 font-medium">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span>Free API</span>
+          </div>
         </div>
       </div>
 
