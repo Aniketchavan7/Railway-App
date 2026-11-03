@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: railpulse-backend
+    env: python
+    region: oregon
+    plan: free
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: ENVIRONMENT
+        value: production
+      - key: ENABLE_SIMULATOR
+        value: "true"
+      - key: XKIRO_BASE_URL
+        value: "https://api.xkiro.com/v1"
+      - key: XKIRO_API_KEY
+        sync: false
+      - key: RAILWAY_ENGINE_API_KEY
+        sync: false
+      - key: RAILRADAR_API_KEY
+        sync: false

@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: railpulse-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: railpulse
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: railpulse-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
+  backend:
+    build: .
+    container_name: railpulse-backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: "postgresql+asyncpg://postgres:password@db:5432/railpulse"
+      REDIS_URL: "redis://redis:6379/0"
+      ENABLE_SIMULATOR: "true"
+      XKIRO_BASE_URL: "https://api.xkiro.com/v1"
+      XKIRO_API_KEY: "${XKIRO_API_KEY:-}"
+      RAILWAY_ENGINE_API_KEY: "${RAILWAY_ENGINE_API_KEY:-}"
+      RAILRADAR_API_KEY: "${RAILRADAR_API_KEY:-}"
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - redis
+
+volumes:
+  pgdata:
