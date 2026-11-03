@@ -60,6 +60,7 @@ class FareEnquiryResult(BaseModel):
     origin_station: str
     destination_station: str
     distance_km: float
+    total_distance_km: Optional[float] = None
     quota: str = "GN"  # GN (General), TQ (Tatkal), PT (Premium Tatkal), SS (Senior Citizen), LD (Ladies)
     classes: List[FareClassBreakdown] = Field(default_factory=list)
     pricing_engine: str = "railway_board_telescopic_v2024"

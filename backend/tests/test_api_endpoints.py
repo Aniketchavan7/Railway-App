@@ -6,49 +6,84 @@ from app.main import app
 @pytest.mark.asyncio
 async def test_all_11_railway_endpoints():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
-        # 1. Health
+        # 1. Root & Health Checks
+        res = await ac.get("/")
+        assert res.status_code == 200
+        assert res.json()["status"] == "OK"
+
         res = await ac.get("/health")
         assert res.status_code == 200
         assert res.json()["data"]["status"] == "HEALTHY"
 
-        # 2. Live Status
+        res = await ac.get("/api/system/health")
+        assert res.status_code == 200
+
+        # 2. Live Status (both /api/v1 and /v1 aliases)
         res = await ac.get("/api/v1/trains/12101/status")
         assert res.status_code == 200
         assert res.json()["success"] is True
 
+        res = await ac.get("/v1/train/12115/status")
+        assert res.status_code == 200
+        data_12115 = res.json()["data"]
+        assert data_12115["train_name"] == "Siddheshwar Superfast Express"
+
         # 3. Schedule
-        res = await ac.get("/api/v1/trains/12101/schedule")
+        res = await ac.get("/v1/train/12101/schedule")
         assert res.status_code == 200
 
         # 4. Route
-        res = await ac.get("/api/v1/trains/12101/route")
+        res = await ac.get("/v1/train/12101/route")
         assert res.status_code == 200
 
         # 5. Train Search
-        res = await ac.get("/api/v1/trains/search?q=12101")
+        res = await ac.get("/v1/trains/search?q=12101")
         assert res.status_code == 200
 
-        # 6. Station Search
-        res = await ac.get("/api/v1/stations/search?q=Pune")
+        # 6. Station Search & Station by Code
+        res = await ac.get("/v1/stations/search?q=Pune")
         assert res.status_code == 200
+
+        res = await ac.get("/v1/station/PUNE")
+        assert res.status_code == 200
+        assert res.json()["data"]["station_code"] == "PUNE"
 
         # 7. Station Live Board
-        res = await ac.get("/api/v1/stations/PUNE/live")
+        res = await ac.get("/v1/stations/PUNE/live")
         assert res.status_code == 200
 
         # 8. Coach Composition
-        res = await ac.get("/api/v1/trains/12101/coaches")
+        res = await ac.get("/v1/train/12101/coaches")
         assert res.status_code == 200
 
         # 9. Platform Numbers
-        res = await ac.get("/api/v1/trains/12101/platforms")
+        res = await ac.get("/v1/train/12101/platforms")
         assert res.status_code == 200
 
         # 10. Fare Enquiry
-        res = await ac.get("/api/v1/trains/12101/fare?origin=CSMT&dest=PUNE")
+        res = await ac.get("/v1/train/12101/fare?origin=CSMT&dest=PUNE")
         assert res.status_code == 200
 
         # 11. PNR Status
-        res = await ac.get("/api/v1/pnr/1234567890")
+        res = await ac.get("/v1/pnr/1234567890")
         assert res.status_code == 200
         assert res.json()["data"]["pnr"] == "1234567890"
+
+        # 12. Crowd-sourced GPS Telemetry Relay & Zero-PII Guarantee
+        report_payload = {
+            "latitude": 19.0178,
+            "longitude": 72.8478,
+            "speed_kmph": 88.0,
+            "accuracy_meters": 4.5,
+        }
+        res = await ac.post("/v1/train/12115/telemetry/report", json=report_payload)
+        assert res.status_code == 200
+        relay_data = res.json()["data"]
+        assert relay_data["status"] == "relayed"
+        assert relay_data["location_type"] == "GPS_OBSERVED"
+        assert "Zero-PII" in relay_data["privacy_notice"]
+
+        # Check crowd active metadata
+        res = await ac.get("/v1/train/12115/crowd")
+        assert res.status_code == 200
+        assert res.json()["data"]["active_reporters"] >= 1

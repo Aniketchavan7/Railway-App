@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import "./globals.css";
 import { Navbar } from "@/components/Navbar";
+import { RailPulseLogo } from "@/components/brand/RailPulseLogo";
 
 export const metadata: Metadata = {
   title: "RailPulse: Live Indian Train Tracker and Station Schedules",
@@ -32,10 +33,8 @@ export default function RootLayout({
         <footer className="border-t border-rule bg-paper-3 py-6 sm:py-8 text-xs text-muted">
           <div className="max-w-[var(--container)] mx-auto px-3 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <p className="font-medium text-ink-2">
-                RailPulse
-              </p>
-              <p className="text-[11px] text-muted mt-0.5">
+              <RailPulseLogo size="sm" />
+              <p className="text-[11px] text-muted mt-1">
                 Indian Railways live train tracking, station schedules, coach layouts, and fares
               </p>
             </div>

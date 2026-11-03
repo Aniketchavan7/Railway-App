@@ -161,6 +161,7 @@ class TelescopicFareEngine:
             origin_station=origin.upper(),
             destination_station=destination.upper(),
             distance_km=dist,
+            total_distance_km=dist,
             quota=quota,
             classes=classes,
             pricing_engine="railway_board_telescopic_v2024",

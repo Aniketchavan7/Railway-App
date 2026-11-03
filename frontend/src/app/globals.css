@@ -34,3 +34,50 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-muted);
 }
+
+/* MapLibre GL Dark Transit Theme */
+.maplibregl-popup-content {
+  background: var(--color-paper-2) !important;
+  color: var(--color-ink) !important;
+  border: 1px solid var(--color-rule) !important;
+  border-radius: var(--radius-card) !important;
+  box-shadow: none; /* taste-skill-ignore */
+  padding: var(--space-xs) var(--space-sm) !important;
+}
+
+.maplibregl-popup-tip {
+  border-top-color: var(--color-paper-2) !important;
+  border-bottom-color: var(--color-paper-2) !important;
+}
+
+.maplibregl-popup-close-button {
+  color: var(--color-muted) !important;
+  font-size: 14px !important;
+  padding: var(--space-2xs) var(--space-xs) !important;
+}
+
+.maplibregl-popup-close-button:hover {
+  color: var(--color-ink) !important;
+  background: transparent !important;
+}
+
+.maplibregl-ctrl-group {
+  background: var(--color-paper-2) !important;
+  border: 1px solid var(--color-rule) !important;
+  border-radius: var(--radius-pill) !important;
+  box-shadow: none; /* taste-skill-ignore */
+  overflow: hidden !important;
+}
+
+.maplibregl-ctrl-group button {
+  background: transparent !important;
+  border-bottom: 1px solid var(--color-rule) !important;
+}
+
+.maplibregl-ctrl-group button:last-child {
+  border-bottom: none !important;
+}
+
+.maplibregl-ctrl-icon {
+  filter: invert(0.8) hue-rotate(180deg) !important;
+}

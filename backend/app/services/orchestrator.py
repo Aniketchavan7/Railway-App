@@ -57,12 +57,16 @@ KNOWN_TRAINS: Dict[str, str] = {
 }
 
 
-def clean_train_name(name: str, train_number: str) -> str:
-    clean_num = train_number.strip()
-    if clean_num in KNOWN_TRAINS:
+def clean_train_name(name: Optional[str] = None, train_number: Optional[str] = None) -> str:
+    clean_num = train_number.strip() if train_number else ""
+    if not clean_num and name and name.strip().isdigit():
+        clean_num = name.strip()
+
+    if clean_num and clean_num in KNOWN_TRAINS:
         return KNOWN_TRAINS[clean_num]
-    if not name or name.strip() == f"Express {clean_num}":
-        return f"Express {clean_num}"
+
+    if not name or (clean_num and name.strip() == f"Express {clean_num}"):
+        return KNOWN_TRAINS.get(clean_num, f"Express {clean_num}" if clean_num else "")
 
     clean = name.strip()
     replacements = {
@@ -216,7 +220,7 @@ class ProviderOrchestrator:
     async def search_trains(self, query: str) -> List[Dict[str, Any]]:
         cache_key = f"railpulse:search_trains:{query.lower()}"
         cached = await cache.get_json(cache_key)
-        if cached and str(cached.get("train_number")) == str(train_number):
+        if cached and isinstance(cached, list):
             return cached
 
         providers = registry.get_providers_for_capability("TRAIN_SEARCH")
@@ -386,13 +390,16 @@ class ProviderOrchestrator:
                 pass
 
         # Fallback to verified Railway Board Telescopic Distance Tariff formula
+        canonical_name = clean_train_name(train_number=train_number)
         fare_result = TelescopicFareEngine.calculate_all_classes(
             train_number=train_number,
-            train_name=f"Express {train_number}",
+            train_name=canonical_name or f"Express {train_number}",
             origin=origin,
             destination=dest,
             quota=quota,
         )
+        if hasattr(fare_result, "total_distance_km") and fare_result.total_distance_km is None:
+            fare_result.total_distance_km = fare_result.distance_km
         await cache.set_json(cache_key, fare_result.model_dump(mode="json"), ttl_seconds=86400)
         return fare_result
 

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
+import { RailPulseLogo } from "@/components/brand/RailPulseLogo";
 import {
   Train,
   Building2,
@@ -46,14 +47,9 @@ export function Navbar() {
         {/* Brand */}
         <Link
           href="/"
-          className="flex items-center gap-2.5 sm:gap-3 shrink-0 group focus-visible:outline-2 focus-visible:outline-accent active:opacity-85"
+          className="shrink-0 group focus-visible:outline-2 focus-visible:outline-accent active:opacity-85"
         >
-          <div className="w-8 h-8 rounded-pill bg-paper-3 border border-rule flex items-center justify-center font-bold text-accent transition-colors group-hover:border-accent">
-            <Train className="w-4 h-4 text-accent" />
-          </div>
-          <span className="font-display font-bold text-base tracking-tight text-ink">
-            RailPulse
-          </span>
+          <RailPulseLogo size="md" />
         </Link>
 
         {/* Global Quick Search (Desktop) */}

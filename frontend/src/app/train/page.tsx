@@ -21,17 +21,30 @@ import {
   Loader2,
   Wifi,
   WifiOff,
+  Map,
+  ListOrdered,
+  Radio,
+  Clock,
+  Gauge,
 } from "lucide-react";
 
 function TrainTrackingContent() {
   const searchParams = useSearchParams();
-  const trainNumber = searchParams.get("number") || searchParams.get("train") || "12101";
+  const trainNumber =
+    searchParams.get("number") || searchParams.get("train") || "12101";
 
   const [status, setStatus] = useState<RailwayStatus | null>(null);
   const [routeData, setRouteData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [wsStatus, setWsStatus] = useState<"connecting" | "connected" | "disconnected">("connecting");
+  const [wsStatus, setWsStatus] = useState<
+    "connecting" | "connected" | "disconnected"
+  >("connecting");
+  const [selectedStationCode, setSelectedStationCode] = useState<string | null>(
+    null
+  );
+  const [mobileTab, setMobileTab] = useState<"map" | "timeline" | "gps">("map");
+  const [showGpsReporter, setShowGpsReporter] = useState(false);
 
   const fetchStatus = async () => {
     try {
@@ -94,7 +107,8 @@ function TrainTrackingContent() {
           Status unavailable
         </h2>
         <p className="text-xs text-muted">
-          {error || `Unable to fetch status for train ${trainNumber}. Please verify the number.`}
+          {error ||
+            `Unable to fetch status for train ${trainNumber}. Please verify the number.`}
         </p>
         <div className="pt-2 flex justify-center gap-3">
           <button
@@ -116,34 +130,60 @@ function TrainTrackingContent() {
     );
   }
 
-  return (
-    <div className="space-y-6">
-      <LocationTypePill
-        locationType={status.location_type}
-        isSimulated={status.is_simulated}
-        sourceProvider={status.source_provider}
-      />
+  const originHalt = status.halts && status.halts.length > 0 ? status.halts[0] : null;
+  const destHalt =
+    status.halts && status.halts.length > 0
+      ? status.halts[status.halts.length - 1]
+      : null;
 
-      {/* Main Header Card */}
-      <div className="bg-paper-2 rounded-card border border-rule p-4 sm:p-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 sm:gap-2.5">
+  return (
+    <div className="space-y-4 sm:space-y-6">
+      {/* Tactical Train Command Console Header */}
+      <div className="bg-paper-2 rounded-card border border-rule p-4 sm:p-6 space-y-4">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
               <span className="text-xs font-outlier font-bold px-2 py-0.5 rounded-pill bg-paper-3 text-ink border border-rule">
                 #{status.train_number}
               </span>
+
               <h1 className="text-lg sm:text-2xl font-display font-bold text-ink tracking-tight">
                 {status.train_name}
               </h1>
+
+              <span
+                className={`text-xs px-2.5 py-0.5 rounded-pill font-outlier font-semibold ${
+                  status.delay_minutes > 0
+                    ? "bg-accent-soft text-accent border border-accent/40"
+                    : "bg-ok-soft text-ok border border-ok/40"
+                }`}
+              >
+                {status.delay_minutes > 0
+                  ? `+${status.delay_minutes}m late`
+                  : "On time"}
+              </span>
+
+              <LocationTypePill
+                locationType={status.location_type}
+                isSimulated={status.is_simulated}
+                sourceProvider={status.source_provider}
+              />
             </div>
+
             <p className="text-xs text-muted font-normal">
-              Journey date: <strong className="text-ink font-outlier">{status.journey_date}</strong> / Running status:{" "}
-              <strong className="text-ink font-medium">{status.running_status}</strong>
+              Journey date:{" "}
+              <strong className="text-ink font-outlier">
+                {status.journey_date}
+              </strong>{" "}
+              / Running status:{" "}
+              <strong className="text-ink font-medium">
+                {status.running_status}
+              </strong>
             </p>
           </div>
 
-          {/* Quick Actions & Live WS Indicator */}
-          <div className="flex items-center gap-2 self-start sm:self-auto">
+          {/* Action Tools & WebSocket Light */}
+          <div className="flex flex-wrap items-center gap-2">
             <div
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-pill text-xs font-outlier border ${
                 wsStatus === "connected"
@@ -166,6 +206,19 @@ function TrainTrackingContent() {
 
             <button
               type="button"
+              onClick={() => setShowGpsReporter((prev) => !prev)}
+              className={`px-3 py-1 rounded-pill text-xs font-medium border transition-colors flex items-center gap-1.5 cursor-pointer focus-visible:outline-2 focus-visible:outline-accent ${
+                showGpsReporter
+                  ? "bg-accent text-accent-ink border-accent font-semibold"
+                  : "bg-paper-3 hover:bg-paper text-ink border-rule"
+              }`}
+            >
+              <Radio className="w-3.5 h-3.5" />
+              <span>Share location</span>
+            </button>
+
+            <button
+              type="button"
               onClick={fetchStatus}
               disabled={loading}
               className="p-1.5 rounded-pill border border-rule bg-paper-3 hover:bg-paper active:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed text-muted hover:text-ink transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-accent"
@@ -176,11 +229,38 @@ function TrainTrackingContent() {
           </div>
         </div>
 
-        {/* Status Metrics Bar */}
-        <div className="mt-4 sm:mt-6 pt-4 sm:pt-5 border-t border-rule grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-4">
+        {/* Visual Route Corridor Bar */}
+        {originHalt && destHalt && (
+          <div className="py-2.5 px-3 sm:px-4 rounded-pill bg-paper-3 border border-rule flex items-center justify-between text-xs font-outlier">
+            <div className="flex items-center gap-1.5">
+              <span className="font-bold text-ink">{originHalt.station_code}</span>
+              <span className="text-[11px] text-muted hidden sm:inline">
+                ({originHalt.station_name})
+              </span>
+            </div>
+
+            <div className="flex-1 mx-3 sm:mx-6 flex items-center gap-1 opacity-70">
+              <span className="h-0.5 bg-rule-2 flex-1" />
+              <div className="w-2.5 h-2.5 rounded-full bg-accent ring-2 ring-accent/30 flex items-center justify-center shrink-0">
+                <span className="w-1 h-1 rounded-full bg-paper" />
+              </div>
+              <span className="h-0.5 bg-rule-2 flex-1" />
+            </div>
+
+            <div className="flex items-center gap-1.5 text-right">
+              <span className="text-[11px] text-muted hidden sm:inline">
+                ({destHalt.station_name})
+              </span>
+              <span className="font-bold text-ink">{destHalt.station_code}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Metric Cards Bar */}
+        <div className="pt-2 border-t border-rule/60 grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3 text-xs">
           {/* Current Delay */}
           <div className="p-3 rounded-pill bg-paper-3 border border-rule">
-            <span className="text-[11px] text-muted block font-medium">
+            <span className="text-[10px] text-muted block font-medium">
               Delay status
             </span>
             <div className="mt-1 flex items-baseline gap-1.5">
@@ -201,8 +281,8 @@ function TrainTrackingContent() {
 
           {/* Current Location */}
           <div className="p-3 rounded-pill bg-paper-3 border border-rule">
-            <span className="text-[11px] text-muted block font-medium">
-              Current location
+            <span className="text-[10px] text-muted block font-medium">
+              Current position
             </span>
             <div className="mt-1 flex items-center gap-1.5">
               <MapPin className="w-3.5 h-3.5 text-cool shrink-0" />
@@ -214,30 +294,32 @@ function TrainTrackingContent() {
 
           {/* Next Station */}
           <div className="p-3 rounded-pill bg-paper-3 border border-rule">
-            <span className="text-[11px] text-muted block font-medium">
+            <span className="text-[10px] text-muted block font-medium">
               Next station
             </span>
-            <div className="mt-1 text-xs font-semibold text-ink line-clamp-1">
-              {status.next_station || "Terminus"}
+            <div className="mt-1 text-xs font-semibold text-ink line-clamp-1 flex items-center gap-1">
+              <Clock className="w-3.5 h-3.5 text-accent shrink-0" />
+              <span>{status.next_station || "Terminus"}</span>
             </div>
           </div>
 
-          {/* Speedometer */}
+          {/* Speed */}
           <div className="p-3 rounded-pill bg-paper-3 border border-rule">
-            <span className="text-[11px] text-muted block font-medium">
+            <span className="text-[10px] text-muted block font-medium">
               Speed
             </span>
             <div className="mt-1 flex items-baseline gap-1">
+              <Gauge className="w-3.5 h-3.5 text-cool mr-0.5 shrink-0" />
               <span className="text-base font-outlier font-bold text-ink">
                 {status.speed_kmph ?? 0}
               </span>
-              <span className="text-xs text-muted">km/h</span>
+              <span className="text-xs text-muted font-outlier">km/h</span>
             </div>
           </div>
         </div>
 
-        {/* Freshness & Attribution Footer */}
-        <div className="mt-4 pt-3 flex flex-wrap items-center justify-between gap-3 text-xs border-t border-rule/50">
+        {/* Freshness & Navigation Links */}
+        <div className="pt-3 flex flex-wrap items-center justify-between gap-3 text-xs border-t border-rule/50">
           <FreshnessBadge
             freshness={status.freshness}
             observedAt={status.observed_at}
@@ -251,7 +333,7 @@ function TrainTrackingContent() {
               className="inline-flex items-center gap-1 text-xs font-medium text-accent hover:underline active:opacity-80 focus-visible:outline-2 focus-visible:outline-accent"
             >
               <LayoutGrid className="w-3.5 h-3.5" />
-              <span>Coach composition</span>
+              <span>Coach layout</span>
             </Link>
             <span className="text-rule-2">/</span>
             <Link
@@ -259,29 +341,103 @@ function TrainTrackingContent() {
               className="inline-flex items-center gap-1 text-xs font-medium text-accent hover:underline active:opacity-80 focus-visible:outline-2 focus-visible:outline-accent"
             >
               <Calculator className="w-3.5 h-3.5" />
-              <span>Calculate fare</span>
+              <span>Fare calculator</span>
             </Link>
           </div>
         </div>
       </div>
 
-      {/* Crowd-Sourced Passenger GPS Telemetry Relay */}
-      <CrowdTelemetryReporter
-        trainNumber={status.train_number}
-        trainName={status.train_name}
-        onTelemetryRelayed={fetchStatus}
-      />
+      {/* Onboard GPS Reporter Collapsible Drawer */}
+      {showGpsReporter && (
+        <div className="animate-in fade-in duration-200">
+          <CrowdTelemetryReporter
+            trainNumber={status.train_number}
+            trainName={status.train_name}
+            onTelemetryRelayed={fetchStatus}
+          />
+        </div>
+      )}
 
-      {/* Map & Timeline Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <div className="lg:col-span-7 space-y-4">
-          <TrainMap status={status} routeData={routeData} />
+      {/* Mobile Segmented View Switcher (<1024px) */}
+      <div className="flex items-center gap-1 bg-paper-2 p-1 rounded-pill border border-rule lg:hidden text-xs">
+        <button
+          type="button"
+          onClick={() => setMobileTab("map")}
+          className={`flex-1 py-1.5 px-3 rounded-pill font-medium transition-colors flex items-center justify-center gap-1.5 ${
+            mobileTab === "map"
+              ? "bg-accent text-accent-ink font-semibold"
+              : "text-muted hover:text-ink"
+          }`}
+        >
+          <Map className="w-3.5 h-3.5" />
+          <span>Map radar</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setMobileTab("timeline")}
+          className={`flex-1 py-1.5 px-3 rounded-pill font-medium transition-colors flex items-center justify-center gap-1.5 ${
+            mobileTab === "timeline"
+              ? "bg-accent text-accent-ink font-semibold"
+              : "text-muted hover:text-ink"
+          }`}
+        >
+          <ListOrdered className="w-3.5 h-3.5" />
+          <span>Halts ({status.halts?.length || 0})</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setMobileTab("gps")}
+          className={`flex-1 py-1.5 px-3 rounded-pill font-medium transition-colors flex items-center justify-center gap-1.5 ${
+            mobileTab === "gps"
+              ? "bg-accent text-accent-ink font-semibold"
+              : "text-muted hover:text-ink"
+          }`}
+        >
+          <Radio className="w-3.5 h-3.5" />
+          <span>GPS</span>
+        </button>
+      </div>
+
+      {/* Mobile GPS Tab Content */}
+      {mobileTab === "gps" && (
+        <div className="lg:hidden">
+          <CrowdTelemetryReporter
+            trainNumber={status.train_number}
+            trainName={status.train_name}
+            onTelemetryRelayed={fetchStatus}
+          />
+        </div>
+      )}
+
+      {/* Main Map & Timeline Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 items-start">
+        {/* Map View */}
+        <div
+          className={`lg:col-span-7 ${
+            mobileTab === "map" ? "block" : "hidden lg:block"
+          }`}
+        >
+          <TrainMap
+            status={status}
+            routeData={routeData}
+            selectedStationCode={selectedStationCode}
+            onSelectStation={(code) => setSelectedStationCode(code)}
+          />
         </div>
 
-        <div className="lg:col-span-5 space-y-4">
+        {/* Station Timeline Itinerary */}
+        <div
+          className={`lg:col-span-5 ${
+            mobileTab === "timeline" ? "block" : "hidden lg:block"
+          }`}
+        >
           <StationTimeline
             halts={status.halts}
             currentStation={status.current_station}
+            selectedStationCode={selectedStationCode}
+            onSelectStation={(code) => setSelectedStationCode(code)}
           />
         </div>
       </div>

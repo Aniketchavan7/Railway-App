@@ -20,13 +20,26 @@ import {
 
 export default function HomePage() {
   const router = useRouter();
+  const [searchMode, setSearchMode] = useState<"train" | "station" | "pnr">("train");
   const [trainQuery, setTrainQuery] = useState("");
+  const [stationQuery, setStationQuery] = useState("");
+  const [pnrQuery, setPnrQuery] = useState("");
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    const q = trainQuery.trim();
-    if (!q) return;
-    router.push(`/train?number=${q}`);
+    if (searchMode === "train") {
+      const q = trainQuery.trim();
+      if (!q) return;
+      router.push(`/train?number=${encodeURIComponent(q)}`);
+    } else if (searchMode === "station") {
+      const q = stationQuery.trim();
+      if (!q) return;
+      router.push(`/stations?code=${encodeURIComponent(q.toUpperCase())}`);
+    } else if (searchMode === "pnr") {
+      const clean = pnrQuery.replace(/\D/g, "");
+      if (clean.length !== 10) return;
+      router.push(`/pnr?pnr=${clean}`);
+    }
   };
 
   const featuredTrains = [
@@ -65,10 +78,19 @@ export default function HomePage() {
     },
   ];
 
-  const quickTrains = [
+  const popularTrains = [
     { num: "12101", label: "12101 Jnaneswari" },
     { num: "12951", label: "12951 Rajdhani" },
     { num: "22436", label: "22436 Vande Bharat" },
+    { num: "22225", label: "22225 Solapur VB" },
+  ];
+
+  const popularStations = [
+    { code: "CSMT", label: "Mumbai CSMT" },
+    { code: "PUNE", label: "Pune Jn" },
+    { code: "NDLS", label: "New Delhi" },
+    { code: "HWH", label: "Howrah Jn" },
+    { code: "SUR", label: "Solapur Jn" },
   ];
 
   return (
@@ -85,47 +107,192 @@ export default function HomePage() {
               Live location, station arrival schedules, coach layouts, and ticket fares.
             </p>
 
-            {/* Search Form */}
-            <form
-              onSubmit={handleSearch}
-              className="pt-2 flex flex-col sm:flex-row gap-2 max-w-lg"
-            >
-              <div className="relative flex-1">
-                <Search className="w-4 h-4 text-muted absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                <input
-                  type="text"
-                  value={trainQuery}
-                  onChange={(e) => setTrainQuery(e.target.value)}
-                  placeholder="Enter 5-digit train number (e.g. 12101) …"
-                  className="w-full bg-paper text-ink placeholder:text-muted rounded-pill pl-9 pr-4 py-2.5 text-xs outline-none border border-rule transition-colors focus:border-accent disabled:opacity-40"
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={!trainQuery.trim()}
-                className="bg-accent hover:opacity-90 active:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed text-accent-ink font-medium text-xs px-5 py-2.5 rounded-pill transition-opacity flex items-center justify-center gap-2 shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-accent"
-              >
-                <span>Track train</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            </form>
-
-            {/* Quick Shortcuts */}
-            <div className="flex flex-wrap items-center gap-2 text-xs pt-1">
-              <span className="text-muted text-[11px] font-medium">Popular trains:</span>
-              {quickTrains.map((item) => (
+            {/* Tactical Multi-Mode Hero Search Bar Console */}
+            <div className="pt-2 space-y-3">
+              {/* Mode Tabs */}
+              <div className="inline-flex items-center p-1 rounded-pill bg-paper-3 border border-rule gap-1 text-xs">
                 <button
-                  key={item.num}
                   type="button"
-                  onClick={() => {
-                    setTrainQuery(item.num);
-                    router.push(`/train?number=${item.num}`);
-                  }}
-                  className="px-2.5 py-0.5 rounded-pill bg-paper-3 hover:bg-paper active:opacity-80 text-muted hover:text-ink border border-rule transition-colors font-outlier text-[11px] cursor-pointer focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-40"
+                  onClick={() => setSearchMode("train")}
+                  className={`px-3 py-1 rounded-pill font-medium transition-colors cursor-pointer flex items-center gap-1.5 focus-visible:outline-2 focus-visible:outline-accent ${
+                    searchMode === "train"
+                      ? "bg-accent text-accent-ink font-semibold"
+                      : "text-muted hover:text-ink"
+                  }`}
                 >
-                  {item.label}
+                  <Train className="w-3.5 h-3.5" />
+                  <span>Train status</span>
                 </button>
-              ))}
+
+                <button
+                  type="button"
+                  onClick={() => setSearchMode("station")}
+                  className={`px-3 py-1 rounded-pill font-medium transition-colors cursor-pointer flex items-center gap-1.5 focus-visible:outline-2 focus-visible:outline-accent ${
+                    searchMode === "station"
+                      ? "bg-accent text-accent-ink font-semibold"
+                      : "text-muted hover:text-ink"
+                  }`}
+                >
+                  <Building2 className="w-3.5 h-3.5" />
+                  <span>Station board</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setSearchMode("pnr")}
+                  className={`px-3 py-1 rounded-pill font-medium transition-colors cursor-pointer flex items-center gap-1.5 focus-visible:outline-2 focus-visible:outline-accent ${
+                    searchMode === "pnr"
+                      ? "bg-accent text-accent-ink font-semibold"
+                      : "text-muted hover:text-ink"
+                  }`}
+                >
+                  <Ticket className="w-3.5 h-3.5" />
+                  <span>PNR enquiry</span>
+                </button>
+              </div>
+
+              {/* Mode Input Forms */}
+              {searchMode === "train" && (
+                <form
+                  onSubmit={handleSearch}
+                  className="flex flex-col sm:flex-row gap-2 max-w-xl"
+                >
+                  <div className="relative flex-1">
+                    <Search className="w-4 h-4 text-muted absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <input
+                      type="text"
+                      value={trainQuery}
+                      onChange={(e) => setTrainQuery(e.target.value)}
+                      placeholder="Enter 5-digit train number (e.g. 12101, 12951) …"
+                      className="w-full bg-paper text-ink placeholder:text-muted rounded-pill pl-9 pr-4 py-2.5 text-xs outline-none border border-rule transition-colors focus:border-accent disabled:opacity-40"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={!trainQuery.trim()}
+                    className="bg-accent hover:opacity-90 active:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed text-accent-ink font-medium text-xs px-5 py-2.5 rounded-pill transition-opacity flex items-center justify-center gap-2 shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-accent"
+                  >
+                    <span>Track train</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </form>
+              )}
+
+              {searchMode === "station" && (
+                <form
+                  onSubmit={handleSearch}
+                  className="flex flex-col sm:flex-row gap-2 max-w-xl"
+                >
+                  <div className="relative flex-1">
+                    <Building2 className="w-4 h-4 text-muted absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <input
+                      type="text"
+                      value={stationQuery}
+                      onChange={(e) => setStationQuery(e.target.value.toUpperCase())}
+                      placeholder="Enter station code (e.g. CSMT, PUNE, NDLS, HWH) …"
+                      className="w-full bg-paper text-ink placeholder:text-muted rounded-pill pl-9 pr-4 py-2.5 text-xs outline-none border border-rule transition-colors focus:border-accent disabled:opacity-40 font-outlier font-bold"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={!stationQuery.trim()}
+                    className="bg-accent hover:opacity-90 active:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed text-accent-ink font-medium text-xs px-5 py-2.5 rounded-pill transition-opacity flex items-center justify-center gap-2 shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-accent"
+                  >
+                    <span>View board</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </form>
+              )}
+
+              {searchMode === "pnr" && (
+                <form
+                  onSubmit={handleSearch}
+                  className="flex flex-col sm:flex-row gap-2 max-w-xl"
+                >
+                  <div className="relative flex-1">
+                    <Ticket className="w-4 h-4 text-muted absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <input
+                      type="text"
+                      maxLength={10}
+                      value={pnrQuery}
+                      onChange={(e) =>
+                        setPnrQuery(e.target.value.replace(/\D/g, ""))
+                      }
+                      placeholder="Enter 10-digit PNR number (e.g. 1234567890) …"
+                      className="w-full bg-paper text-ink placeholder:text-muted rounded-pill pl-9 pr-4 py-2.5 text-xs outline-none border border-rule transition-colors focus:border-accent disabled:opacity-40 font-outlier font-bold"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={pnrQuery.trim().length !== 10}
+                    className="bg-accent hover:opacity-90 active:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed text-accent-ink font-medium text-xs px-5 py-2.5 rounded-pill transition-opacity flex items-center justify-center gap-2 shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-accent"
+                  >
+                    <span>Check PNR</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </form>
+              )}
+
+              {/* Mode-Specific Quick Shortcuts */}
+              {searchMode === "train" && (
+                <div className="flex flex-wrap items-center gap-2 text-xs pt-1">
+                  <span className="text-muted text-[11px] font-medium">
+                    Popular trains:
+                  </span>
+                  {popularTrains.map((item) => (
+                    <button
+                      key={item.num}
+                      type="button"
+                      onClick={() => {
+                        setTrainQuery(item.num);
+                        router.push(`/train?number=${item.num}`);
+                      }}
+                      className="px-2.5 py-0.5 rounded-pill bg-paper-3 hover:bg-paper active:opacity-80 text-muted hover:text-ink border border-rule transition-colors font-outlier text-[11px] cursor-pointer focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-40"
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {searchMode === "station" && (
+                <div className="flex flex-wrap items-center gap-2 text-xs pt-1">
+                  <span className="text-muted text-[11px] font-medium">
+                    Major terminals:
+                  </span>
+                  {popularStations.map((item) => (
+                    <button
+                      key={item.code}
+                      type="button"
+                      onClick={() => {
+                        setStationQuery(item.code);
+                        router.push(`/stations?code=${item.code}`);
+                      }}
+                      className="px-2.5 py-0.5 rounded-pill bg-paper-3 hover:bg-paper active:opacity-80 text-muted hover:text-ink border border-rule transition-colors font-outlier text-[11px] cursor-pointer focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-40"
+                    >
+                      {item.label} ({item.code})
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {searchMode === "pnr" && (
+                <div className="flex flex-wrap items-center gap-2 text-xs pt-1">
+                  <span className="text-muted text-[11px] font-medium">
+                    Demo test:
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPnrQuery("1234567890");
+                      router.push(`/pnr?pnr=1234567890`);
+                    }}
+                    className="px-2.5 py-0.5 rounded-pill bg-paper-3 hover:bg-paper active:opacity-80 text-muted hover:text-ink border border-rule transition-colors font-outlier text-[11px] cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-accent"
+                  >
+                    Demo #1234567890
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Feature Highlights */}

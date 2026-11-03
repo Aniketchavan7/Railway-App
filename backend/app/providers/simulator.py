@@ -294,11 +294,12 @@ class OfflineSimulatorProvider(RailwayProvider):
         prev_halt = halts_data[curr_idx - 1] if curr_idx > 0 else curr_halt
         next_halt = halts_data[curr_idx + 1] if curr_idx < len(halts_data) - 1 else curr_halt
 
+        train_delay = 15 if str(train.get("number")) == "12101" else 5
         halts: List[StationHalt] = []
         for idx, h in enumerate(halts_data):
             arrived = idx <= curr_idx
             departed = idx < curr_idx
-            delay = 0 if idx == 0 else 5
+            delay = 0 if idx == 0 else train_delay
             halts.append(
                 StationHalt(
                     station_code=h["code"],
@@ -323,7 +324,7 @@ class OfflineSimulatorProvider(RailwayProvider):
             train_name=train["name"],
             journey_date=now.strftime("%Y-%m-%d"),
             running_status=f"Departed {curr_halt['name']} (Simulated Demo)",
-            delay_minutes=5,
+            delay_minutes=train_delay,
             current_station=f"{curr_halt['name']} ({curr_halt['code']})",
             previous_station=f"{prev_halt['name']} ({prev_halt['code']})",
             next_station=f"{next_halt['name']} ({next_halt['code']})",
