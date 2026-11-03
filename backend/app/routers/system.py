@@ -8,6 +8,7 @@ router = APIRouter(tags=["System & Health"])
 
 
 @router.get("/health", response_model=ResponseEnvelope)
+@router.get("/api/system/health", response_model=ResponseEnvelope)
 async def system_health():
     return ResponseEnvelope(
         data={
