@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     # Upstream Railway Providers
     RAILWAY_ENGINE_BASE_URL: str = "https://railway-engine.apkscope.workers.dev/v1"
     RAILWAY_ENGINE_API_KEY: str = ""
+    RAILWAY_API_KEY: Optional[str] = None
     RAILRADAR_BASE_URL: str = "https://api.railradar.in/v1"
     RAILRADAR_API_KEY: str = ""
 
