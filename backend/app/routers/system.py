@@ -9,6 +9,8 @@ router = APIRouter(tags=["System & Health"])
 
 @router.get("/health", response_model=ResponseEnvelope)
 @router.get("/api/system/health", response_model=ResponseEnvelope)
+@router.get("/api/v1/health", response_model=ResponseEnvelope)
+@router.get("/v1/health", response_model=ResponseEnvelope)
 async def system_health():
     return ResponseEnvelope(
         data={
@@ -22,6 +24,8 @@ async def system_health():
 
 
 @router.get("/providers/health", response_model=ResponseEnvelope)
+@router.get("/api/v1/providers/health", response_model=ResponseEnvelope)
+@router.get("/v1/providers/health", response_model=ResponseEnvelope)
 async def providers_health():
     statuses = {}
     for name, provider in registry.providers.items():
@@ -33,5 +37,7 @@ async def providers_health():
 
 
 @router.get("/providers/status", response_model=ResponseEnvelope)
+@router.get("/api/v1/providers/status", response_model=ResponseEnvelope)
+@router.get("/v1/providers/status", response_model=ResponseEnvelope)
 async def provider_registry_status():
     return ResponseEnvelope(data=registry.get_provider_status())

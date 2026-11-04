@@ -5,13 +5,12 @@ import { useRouter } from "next/navigation";
 import { useState, useMemo } from "react";
 import {
   Train,
-  Search,
   Building2,
   Ticket,
   Calculator,
   ArrowRight,
-  Gauge,
-  Radio,
+  Search,
+  Bot,
 } from "lucide-react";
 
 interface FleetTrain {
@@ -59,18 +58,18 @@ export default function HomePage() {
 
   const fleetTrains: FleetTrain[] = [
     {
-      number: "22225",
-      name: "Solapur Vande Bharat Express",
+      number: "22226",
+      name: "Mumbai CSMT Vande Bharat Express",
       type: "Vande Bharat",
       zone: "CR",
-      origin: "CSMT",
-      dest: "SUR",
-      originCity: "Mumbai",
-      destCity: "Solapur",
-      speed: "118 km/h",
+      origin: "SUR",
+      dest: "CSMT",
+      originCity: "Solapur",
+      destCity: "Mumbai",
+      speed: "112 km/h",
       delay: "On time",
-      status: "In transit near Karjat Jn",
-      nextHalt: "Karjat Jn",
+      status: "Approaching Daund Jn",
+      nextHalt: "Pune Jn",
       platform: "PF 2",
     },
     {
@@ -119,19 +118,19 @@ export default function HomePage() {
       platform: "PF 5",
     },
     {
-      number: "22226",
-      name: "Mumbai CSMT Vande Bharat",
-      type: "Vande Bharat",
+      number: "12158",
+      name: "Hutatma Superfast Express",
+      type: "Intercity",
       zone: "CR",
       origin: "SUR",
-      dest: "CSMT",
+      dest: "PUNE",
       originCity: "Solapur",
-      destCity: "Mumbai",
-      speed: "112 km/h",
+      destCity: "Pune",
+      speed: "88 km/h",
       delay: "On time",
-      status: "Approaching Daund Jn",
-      nextHalt: "Pune Jn",
-      platform: "PF 2",
+      status: "Departed Kurduvadi Jn",
+      nextHalt: "Daund Jn",
+      platform: "PF 3",
     },
   ];
 
@@ -167,14 +166,14 @@ export default function HomePage() {
 
   return (
     <div className="space-y-12 sm:space-y-16 py-2">
-      {/* Open Hero Section - No enclosing card boxes, pure typography and spatial hierarchy */}
+      {/* Hero Section - Hallmark Modern Minimal Canvas */}
       <section className="space-y-6 max-w-4xl">
         <div className="space-y-2">
           <h1 className="text-3xl sm:text-5xl md:text-6xl font-display font-bold tracking-tight text-ink leading-[1.05]">
             Track any train across India.
           </h1>
           <p className="text-sm sm:text-base text-muted max-w-xl">
-            Live GPS telemetry, platform arrival boards, and distance tariffs.
+            Live GPS telemetry, platform arrival concourse boards, and distance tariffs.
           </p>
         </div>
 
@@ -362,26 +361,26 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Featured Train Spotlight Strip - Open Transit Corridor */}
+      {/* Featured Train Spotlight Strip */}
       <section className="border-y border-rule py-4">
         <Link
-          href="/train?number=12951"
+          href="/train?number=22226"
           className="group flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs focus-visible:outline-2 focus-visible:outline-accent"
         >
           <div className="flex items-center gap-3">
             <span className="w-2 h-2 rounded-full bg-ok shrink-0" aria-hidden="true" />
-            <span className="font-outlier font-bold text-ink">#12951</span>
+            <span className="font-outlier font-bold text-ink">#22226</span>
             <span className="font-semibold text-ink group-hover:text-accent transition-colors">
-              Mumbai Tejas Rajdhani Express
+              Mumbai CSMT Vande Bharat Express
             </span>
             <span className="text-muted hidden sm:inline">
-              MMCT &rarr; NDLS
+              Solapur SUR &rarr; Mumbai CSMT
             </span>
           </div>
 
           <div className="flex items-center gap-4 text-muted font-outlier">
-            <span className="text-ok font-semibold">On time</span>
-            <span>130 km/h</span>
+            <span className="text-ok font-semibold">Live in transit</span>
+            <span>112 km/h</span>
             <span className="text-accent group-hover:translate-x-0.5 transition-transform flex items-center gap-1 font-sans font-medium">
               <span>Track live</span>
               <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
@@ -390,55 +389,30 @@ export default function HomePage() {
         </Link>
       </section>
 
-      {/* Open Transit Departure Board - Not trapped in a box */}
+      {/* Open Transit Departure Board */}
       <section className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-rule">
           <h2 className="text-lg sm:text-xl font-display font-bold text-ink tracking-tight">
-            Live express trains
+            Live express fleet radar
           </h2>
 
           {/* Clean Segmented Filters */}
           <div className="flex items-center gap-3 text-xs">
             <div className="flex items-center gap-1 text-muted">
-              <button
-                type="button"
-                onClick={() => setSelectedZone("ALL")}
-                className={`px-2 py-0.5 rounded cursor-pointer transition-colors ${
-                  selectedZone === "ALL" ? "text-ink font-semibold" : "hover:text-ink"
-                }`}
-              >
-                All
-              </button>
-              <span>/</span>
-              <button
-                type="button"
-                onClick={() => setSelectedZone("CR")}
-                className={`px-2 py-0.5 rounded cursor-pointer transition-colors ${
-                  selectedZone === "CR" ? "text-ink font-semibold" : "hover:text-ink"
-                }`}
-              >
-                CR
-              </button>
-              <span>/</span>
-              <button
-                type="button"
-                onClick={() => setSelectedZone("NR")}
-                className={`px-2 py-0.5 rounded cursor-pointer transition-colors ${
-                  selectedZone === "NR" ? "text-ink font-semibold" : "hover:text-ink"
-                }`}
-              >
-                NR
-              </button>
-              <span>/</span>
-              <button
-                type="button"
-                onClick={() => setSelectedZone("WR")}
-                className={`px-2 py-0.5 rounded cursor-pointer transition-colors ${
-                  selectedZone === "WR" ? "text-ink font-semibold" : "hover:text-ink"
-                }`}
-              >
-                WR
-              </button>
+              {(["ALL", "CR", "NR", "WR"] as const).map((z, idx) => (
+                <span key={z} className="flex items-center gap-1">
+                  {idx > 0 && <span>/</span>}
+                  <button
+                    type="button"
+                    onClick={() => setSelectedZone(z)}
+                    className={`px-2 py-0.5 rounded cursor-pointer transition-colors ${
+                      selectedZone === z ? "text-ink font-semibold" : "hover:text-ink"
+                    }`}
+                  >
+                    {z}
+                  </button>
+                </span>
+              ))}
             </div>
 
             <span className="text-rule-2">|</span>
@@ -484,11 +458,11 @@ export default function HomePage() {
               <Link
                 key={train.number}
                 href={`/train?number=${train.number}`}
-                className="group py-3.5 flex flex-col md:grid md:grid-cols-12 md:items-center gap-2 hover:bg-paper-2/40 transition-colors focus-visible:outline-2 focus-visible:outline-accent"
+                className="group py-3.5 flex flex-col md:grid md:grid-cols-12 md:items-center gap-2 hover:bg-paper-2/40 transition-colors focus-visible:outline-2 focus-visible:outline-accent rounded-xl px-2"
               >
                 {/* Col 1: Train & Number */}
                 <div className="md:col-span-5 flex items-center gap-3">
-                  <span className="font-outlier font-bold text-xs text-ink shrink-0 tracking-wide">
+                  <span className="font-outlier font-bold text-xs text-ink shrink-0 tracking-wide px-2 py-0.5 rounded bg-paper-2 border border-rule">
                     #{train.number}
                   </span>
                   <div className="min-w-0">
@@ -500,9 +474,10 @@ export default function HomePage() {
 
                 {/* Col 2: Route */}
                 <div className="md:col-span-3 flex items-center gap-2 text-xs text-muted">
-                  <span className="font-semibold text-ink">{train.origin}</span>
+                  <span className="font-semibold text-ink font-outlier">{train.origin}</span>
                   <span>&rarr;</span>
-                  <span className="font-semibold text-ink">{train.dest}</span>
+                  <span className="font-semibold text-ink font-outlier">{train.dest}</span>
+                  <span className="text-[11px] text-muted">({train.type})</span>
                 </div>
 
                 {/* Col 3: Status & Speed */}
@@ -523,7 +498,7 @@ export default function HomePage() {
                 <div className="md:col-span-1 text-right">
                   <span className="text-accent text-xs group-hover:translate-x-0.5 transition-transform inline-flex items-center gap-0.5 font-medium">
                     <span>Track</span>
-                    <ArrowRight className="w-3 h-3" aria-hidden="true" />
+                    <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
                   </span>
                 </div>
               </Link>
@@ -546,9 +521,9 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Transit Services - Open Airy Columns, No Box-in-Box */}
+      {/* Transit Services - Open Airy Columns */}
       <section className="border-t border-rule pt-8">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-6 sm:gap-8">
           <Link
             href="/stations"
             className="group space-y-1.5 focus-visible:outline-2 focus-visible:outline-accent"
@@ -591,6 +566,21 @@ export default function HomePage() {
             </div>
             <p className="text-xs text-muted leading-relaxed">
               Distance tariffs, Tatkal charges, and GST breakdown.
+            </p>
+          </Link>
+
+          <Link
+            href="/ai-assistant"
+            className="group space-y-1.5 focus-visible:outline-2 focus-visible:outline-accent"
+          >
+            <div className="flex items-center gap-2 text-warn">
+              <Bot className="w-4 h-4 text-warn" aria-hidden="true" />
+              <h3 className="font-display font-semibold text-sm text-ink group-hover:text-warn transition-colors">
+                Assistant
+              </h3>
+            </div>
+            <p className="text-xs text-muted leading-relaxed">
+              AI natural language query assistant for halts, delays, and routes.
             </p>
           </Link>
         </div>

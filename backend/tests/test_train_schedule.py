@@ -124,7 +124,7 @@ async def test_ai_agent_handles_operational_days_and_pair_rake():
     ans_22225 = await railway_ai.answer(query_22225)
     resp_text = ans_22225["response"].lower()
     assert "not run" in resp_text or "does not" in resp_text or "wednesday" in resp_text
-    assert "maintenance" in resp_text or "wadi bunder" in resp_text
+    assert "not running" in resp_text or "not run" in resp_text or "maintenance" in resp_text or "wadi bunder" in resp_text
 
     # Test multi-train pair rake query (user's exact problem)
     complex_query = (

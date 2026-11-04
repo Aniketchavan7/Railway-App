@@ -288,7 +288,7 @@ function TrainTrackingContent() {
 
         {/* Quick Express Switcher Bar */}
         <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-rule text-xs">
-          <span className="text-muted text-[11px] font-outlier uppercase tracking-wider">
+          <span className="text-muted text-[11px] font-outlier font-medium">
             Expresses:
           </span>
           {[
@@ -317,7 +317,7 @@ function TrainTrackingContent() {
         {(status.service_state === "NOT_RUNNING_TODAY" || status.runs_today === false) && (
           <div className="p-3.5 bg-paper-2 border border-rule border-l-2 border-l-bad text-xs space-y-2">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-outlier font-semibold text-bad uppercase tracking-wider text-[10px]">
+              <span className="font-outlier font-semibold text-bad text-xs">
                 Maintenance Day Advisory
               </span>
               <span className="text-muted">·</span>
@@ -366,7 +366,7 @@ function TrainTrackingContent() {
         {status.service_state === "NOT_STARTED" && (
           <div className="p-3.5 bg-paper-2 border border-rule border-l-2 border-l-accent text-xs space-y-2">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-outlier font-semibold text-accent uppercase tracking-wider text-[10px]">
+              <span className="font-outlier font-semibold text-accent text-xs">
                 Scheduled Origin Halt
               </span>
               <span className="text-muted">·</span>
@@ -393,7 +393,7 @@ function TrainTrackingContent() {
         {status.service_state === "COMPLETED" && (
           <div className="p-3.5 bg-paper-2 border border-rule border-l-2 border-l-ok text-xs space-y-2">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-outlier font-semibold text-ok uppercase tracking-wider text-[10px]">
+              <span className="font-outlier font-semibold text-ok text-xs">
                 Destination Reached
               </span>
               <span className="text-muted">·</span>
@@ -420,7 +420,7 @@ function TrainTrackingContent() {
         {disruptions.length > 0 && (
           <div className="p-3.5 bg-paper-2 border border-rule border-l-2 border-l-accent text-xs space-y-2">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-outlier font-semibold text-accent uppercase tracking-wider text-[10px]">
+              <span className="font-outlier font-semibold text-accent text-xs">
                 {disruptions[0].alert_type.replace(/_/g, " ")}
               </span>
               <span className="text-muted">·</span>
@@ -446,7 +446,7 @@ function TrainTrackingContent() {
         {/* Offline Satellite GPS Mode Notice */}
         {!isOnline && (
           <div className="p-3 bg-paper-2 border border-rule border-l-2 border-l-cool text-xs space-y-1">
-            <div className="font-semibold text-cool font-outlier uppercase tracking-wider text-[10px]">
+            <div className="font-semibold text-cool font-outlier text-xs">
               Offline Satellite GPS Tracking
             </div>
             <p className="text-muted leading-relaxed">
@@ -505,7 +505,7 @@ function TrainTrackingContent() {
         <div className="grid grid-cols-2 md:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-rule border-b border-rule pb-3 text-xs">
           {/* Current Delay */}
           <div className="py-2 md:px-4">
-            <span className="text-[10px] text-muted uppercase tracking-wider block font-outlier">
+            <span className="text-[11px] text-muted block font-outlier">
               Delay status
             </span>
             <div className="mt-1 flex items-baseline gap-1.5">
@@ -523,7 +523,7 @@ function TrainTrackingContent() {
 
           {/* Current Location */}
           <div className="py-2 md:px-4">
-            <span className="text-[10px] text-muted uppercase tracking-wider block font-outlier">
+            <span className="text-[11px] text-muted block font-outlier">
               Position
             </span>
             <div className="mt-1 text-sm sm:text-base font-semibold text-ink truncate">
@@ -533,7 +533,7 @@ function TrainTrackingContent() {
 
           {/* Next Halt */}
           <div className="py-2 md:px-4">
-            <span className="text-[10px] text-muted uppercase tracking-wider block font-outlier">
+            <span className="text-[11px] text-muted block font-outlier">
               Next halt
             </span>
             <div className="mt-1 text-sm sm:text-base font-semibold text-ink truncate">
@@ -543,7 +543,7 @@ function TrainTrackingContent() {
 
           {/* Speed */}
           <div className="py-2 md:px-4">
-            <span className="text-[10px] text-muted uppercase tracking-wider block font-outlier">
+            <span className="text-[11px] text-muted block font-outlier">
               Telemetry speed
             </span>
             <div className="mt-1 flex items-baseline gap-1">
