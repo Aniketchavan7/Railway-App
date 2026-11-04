@@ -197,14 +197,6 @@ export default function PNRPage() {
               <Train className="w-3.5 h-3.5" />
               <span>Track train #{pnrData.train_number}</span>
             </Link>
-            <span className="text-rule-2">/</span>
-            <Link
-              href={`/coach?train=${pnrData.train_number}`}
-              className="inline-flex items-center gap-1.5 text-accent hover:underline font-medium focus-visible:outline-2 focus-visible:outline-accent"
-            >
-              <LayoutGrid className="w-3.5 h-3.5" />
-              <span>Coach layout</span>
-            </Link>
           </div>
 
           {/* Passengers List */}

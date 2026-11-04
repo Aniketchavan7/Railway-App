@@ -53,11 +53,8 @@ export default function AdminPage() {
         <div>
           <h1 className="text-lg sm:text-2xl font-display font-bold text-ink tracking-tight flex items-center gap-2">
             <Activity className="w-5 h-5 text-accent" aria-hidden="true" />
-            <span>Service health and diagnostics</span>
+            <span>Service health</span>
           </h1>
-          <p className="text-xs text-muted mt-1">
-            Real-time connection states, circuit breakers, and latency metrics for railway feeds.
-          </p>
         </div>
 
         <button
@@ -70,46 +67,9 @@ export default function AdminPage() {
             className={`w-3.5 h-3.5 ${loading ? "motion-safe:animate-spin motion-reduce:animate-none text-accent" : ""}`}
             aria-hidden="true"
           />
-          <span>Refresh state</span>
+          <span>Refresh</span>
         </button>
       </div>
-
-      {/* Enterprise System Telemetry Strip (Linear / Vercel style - type over tiles) */}
-      <section className="bg-paper-2 rounded-card border border-rule overflow-hidden grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-rule">
-        <div className="p-4 sm:p-5">
-          <span className="text-[10px] font-outlier text-muted block">Core system status</span>
-          <div className="mt-1 flex items-baseline gap-1.5">
-            <span className="text-xl sm:text-2xl font-outlier font-bold text-ok">100%</span>
-          </div>
-          <span className="text-[11px] text-muted mt-0.5 block">Zero outages detected</span>
-        </div>
-
-        <div className="p-4 sm:p-5">
-          <span className="text-[10px] font-outlier text-muted block">Data providers</span>
-          <div className="mt-1 flex items-baseline gap-1.5">
-            <span className="text-xl sm:text-2xl font-outlier font-bold text-ink">{providerCount}</span>
-            <span className="text-xs text-muted font-outlier">nodes</span>
-          </div>
-          <span className="text-[11px] text-muted mt-0.5 block">Active failover cluster</span>
-        </div>
-
-        <div className="p-4 sm:p-5 pt-4 sm:pt-5">
-          <span className="text-[10px] font-outlier text-muted block">Circuit transition</span>
-          <div className="mt-1 flex items-baseline gap-1.5">
-            <span className="text-xl sm:text-2xl font-outlier font-bold text-accent">&lt; 18ms</span>
-          </div>
-          <span className="text-[11px] text-muted mt-0.5 block">Automated circuit protection</span>
-        </div>
-
-        <div className="p-4 sm:p-5 pt-4 sm:pt-5">
-          <span className="text-[10px] font-outlier text-muted block">Failover threshold</span>
-          <div className="mt-1 flex items-baseline gap-1.5">
-            <span className="text-xl sm:text-2xl font-outlier font-bold text-ink">5</span>
-            <span className="text-xs text-muted font-outlier">failures</span>
-          </div>
-          <span className="text-[11px] text-muted mt-0.5 block">30s cooldown before retry</span>
-        </div>
-      </section>
 
       {/* Providers Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">

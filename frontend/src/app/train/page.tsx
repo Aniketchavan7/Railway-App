@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
 import { createTrainWebSocket } from "@/lib/ws";
-import { CoachComposition, RailwayAlert, RailwayStatus, TelemetryPacket } from "@/lib/types";
+import { RailwayAlert, RailwayStatus, TelemetryPacket } from "@/lib/types";
 import { FreshnessBadge } from "@/components/tracking/FreshnessBadge";
 import { LocationTypePill } from "@/components/tracking/LocationTypePill";
 import { StationTimeline } from "@/components/tracking/StationTimeline";
@@ -13,14 +13,12 @@ import { CrowdTelemetryReporter } from "@/components/tracking/CrowdTelemetryRepo
 import { StationWakeupAlarm } from "@/components/tracking/StationWakeupAlarm";
 import { SpeedometerHUD } from "@/components/tracking/SpeedometerHUD";
 import { TripShareModal } from "@/components/tracking/TripShareModal";
-import { CoachRake } from "@/components/coach/CoachRake";
 import { TrainMap } from "@/components/map/TrainMap";
 import {
   Train,
   MapPin,
   RefreshCw,
   AlertTriangle,
-  LayoutGrid,
   Calculator,
   Loader2,
   Wifi,
@@ -53,8 +51,7 @@ function TrainTrackingContent() {
   const [mobileTab, setMobileTab] = useState<"map" | "timeline" | "gps">("map");
   const [showGpsReporter, setShowGpsReporter] = useState(false);
   const [disruptions, setDisruptions] = useState<RailwayAlert[]>([]);
-  const [coachComposition, setCoachComposition] = useState<CoachComposition | null>(null);
-  const [activePassengerTool, setActivePassengerTool] = useState<"none" | "alarm" | "speed" | "coach">("none");
+  const [activePassengerTool, setActivePassengerTool] = useState<"none" | "alarm" | "speed">("none");
   const [isOnline, setIsOnline] = useState<boolean>(true);
 
   useEffect(() => {
@@ -79,14 +76,12 @@ function TrainTrackingContent() {
       setStatus(data);
 
       try {
-        const [route, alerts, coaches] = await Promise.all([
+        const [route, alerts] = await Promise.all([
           api.getTrainRoute(trainNumber).catch(() => null),
           api.getTrainDisruptions(trainNumber).catch(() => []),
-          api.getCoachComposition(trainNumber).catch(() => null),
         ]);
         if (route) setRouteData(route);
         if (alerts) setDisruptions(alerts);
-        if (coaches) setCoachComposition(coaches);
       } catch {
         // Non-critical supplementary data error
       }
@@ -221,36 +216,6 @@ function TrainTrackingContent() {
                 sourceProvider={status.source_provider}
               />
             </div>
-
-            {/* Operational Specifications */}
-            <div className="flex flex-wrap items-center gap-3 text-xs text-muted">
-              <span className="border-r border-rule pr-3">
-                Service: <strong className="text-ink font-semibold">Superfast Express</strong>
-              </span>
-              <span className="border-r border-rule pr-3">
-                Traction: <strong className="text-ink font-semibold">25 kV AC</strong>
-              </span>
-              <span className="border-r border-rule pr-3">
-                Consist: <strong className="text-ink font-semibold">16 Coaches</strong>
-              </span>
-              <span className="border-r border-rule pr-3">
-                Max speed: <strong className="text-accent font-semibold font-outlier">130 km/h</strong>
-              </span>
-              <span>
-                Positioning: <strong className="text-ok font-semibold">GNSS Active</strong>
-              </span>
-            </div>
-
-            <p className="text-xs text-muted font-normal">
-              Journey date:{" "}
-              <strong className="text-ink font-outlier">
-                {status.journey_date}
-              </strong>{" "}
-              / Running status:{" "}
-              <strong className="text-ink font-medium">
-                {status.running_status}
-              </strong>
-            </p>
           </div>
 
           {/* Action Tools & WebSocket Light */}
@@ -318,23 +283,6 @@ function TrainTrackingContent() {
               <Bell className="w-3.5 h-3.5" aria-hidden="true" />
               <span>Wakeup Alarm</span>
             </button>
-
-            {coachComposition && (
-              <button
-                type="button"
-                onClick={() =>
-                  setActivePassengerTool((prev) => (prev === "coach" ? "none" : "coach"))
-                }
-                className={`px-3 py-1 rounded-pill text-xs font-medium border transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-accent ${
-                  activePassengerTool === "coach"
-                    ? "bg-cool-soft text-cool border-cool/40 font-semibold"
-                    : "bg-paper-3 hover:bg-paper text-ink border-rule"
-                }`}
-              >
-                <LayoutGrid className="w-3.5 h-3.5" aria-hidden="true" />
-                <span>Coach Guide</span>
-              </button>
-            )}
 
             <button
               type="button"
@@ -555,10 +503,6 @@ function TrainTrackingContent() {
           />
         )}
 
-        {activePassengerTool === "coach" && coachComposition && (
-          <CoachRake composition={coachComposition} />
-        )}
-
         {/* Visual Route Corridor Bar */}
         {originHalt && destHalt && (
           <div className="py-2.5 px-3 sm:px-4 rounded-pill bg-paper-3/50 border border-rule/60 flex items-center justify-between text-xs font-outlier">
@@ -586,12 +530,12 @@ function TrainTrackingContent() {
           </div>
         )}
 
-        {/* Typographic KPI Telemetry Strip - Type not tiles, no card-in-card */}
+        {/* Typographic KPI Telemetry Strip */}
         <div className="pt-3 border-t border-rule/70 grid grid-cols-2 md:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-rule text-xs">
           {/* Current Delay */}
           <div className="p-3 sm:px-4">
             <span className="text-[10px] text-muted block font-outlier">
-              Delay status
+              Delay
             </span>
             <div className="mt-1 flex items-baseline gap-1.5">
               <span
@@ -603,21 +547,17 @@ function TrainTrackingContent() {
                   ? `+${status.delay_minutes}m`
                   : "On time"}
               </span>
-              <span className="text-[10px] text-muted">
-                {status.delay_minutes > 0 ? "behind schedule" : "normal run"}
-              </span>
             </div>
           </div>
 
           {/* Current Location */}
           <div className="p-3 sm:px-4 pt-3 md:pt-3">
             <span className="text-[10px] text-muted block font-outlier">
-              Current position
+              Position
             </span>
             <div className="mt-1 text-sm sm:text-base font-semibold text-ink truncate">
               {status.current_station || "In transit"}
             </div>
-            <span className="text-[10px] text-muted block">live telemetry</span>
           </div>
 
           {/* Next Station */}
@@ -628,7 +568,6 @@ function TrainTrackingContent() {
             <div className="mt-1 text-sm sm:text-base font-semibold text-ink truncate">
               {status.next_station || "Terminus"}
             </div>
-            <span className="text-[10px] text-muted block">scheduled stop</span>
           </div>
 
           {/* Speed */}
@@ -642,7 +581,6 @@ function TrainTrackingContent() {
               </span>
               <span className="text-xs text-muted font-outlier">km/h</span>
             </div>
-            <span className="text-[10px] text-muted block">instantaneous</span>
           </div>
         </div>
 
@@ -656,14 +594,6 @@ function TrainTrackingContent() {
           />
 
           <div className="flex items-center gap-3">
-            <Link
-              href={`/coach/?train=${status.train_number}`}
-              className="inline-flex items-center gap-1 text-xs font-medium text-accent hover:underline active:opacity-80 focus-visible:outline-2 focus-visible:outline-accent"
-            >
-              <LayoutGrid className="w-3.5 h-3.5" />
-              <span>Coach layout</span>
-            </Link>
-            <span className="text-rule-2">/</span>
             <Link
               href={`/fare/?train=${status.train_number}`}
               className="inline-flex items-center gap-1 text-xs font-medium text-accent hover:underline active:opacity-80 focus-visible:outline-2 focus-visible:outline-accent"

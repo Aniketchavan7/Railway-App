@@ -34,7 +34,7 @@ export default function AIAssistantPage() {
           </div>
           <div className="flex items-center gap-2">
             <Ticket className="w-3.5 h-3.5 text-accent shrink-0" />
-            <span>Fares & coach composition</span>
+            <span>Fares & ticket tariffs</span>
           </div>
         </div>
       </div>

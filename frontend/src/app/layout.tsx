@@ -11,7 +11,7 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: "RailPulse: Live Indian Train Tracker and Station Schedules",
   description:
-    "Track Indian train locations in real time with live delay updates, station departure boards, coach layouts, and fare calculators.",
+    "Track Indian train locations in real time with live delay updates, station departure boards, and fare calculators.",
   manifest: "/manifest.json",
 };
 
@@ -39,9 +39,6 @@ export default function RootLayout({
           <div className="max-w-[var(--container)] mx-auto px-3 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
               <RailPulseLogo size="sm" />
-              <p className="text-[11px] text-muted mt-1">
-                Indian Railways live train tracking, station schedules, coach layouts, and fares
-              </p>
             </div>
             <div className="flex flex-wrap items-center gap-4 text-[11px] text-muted">
               <Link href="/stations" className="hover:text-ink transition-colors">
@@ -49,9 +46,6 @@ export default function RootLayout({
               </Link>
               <Link href="/pnr" className="hover:text-ink transition-colors">
                 PNR status
-              </Link>
-              <Link href="/coach" className="hover:text-ink transition-colors">
-                Coach layout
               </Link>
               <Link href="/fare" className="hover:text-ink transition-colors">
                 Fare calculator

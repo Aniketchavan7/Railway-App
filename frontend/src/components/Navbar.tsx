@@ -55,7 +55,6 @@ export function Navbar() {
     { href: "/", label: "Fleet radar", icon: Train },
     { href: "/stations", label: "Station boards", icon: Building2 },
     { href: "/pnr", label: "PNR enquiry", icon: Ticket },
-    { href: "/coach", label: "Coach layout", icon: LayoutGrid },
     { href: "/fare", label: "Fare calculator", icon: Calculator },
     { href: "/ai-assistant", label: "Assistant", icon: Bot },
     { href: "/admin", label: "Service status", icon: Activity },

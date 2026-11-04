@@ -11,10 +11,8 @@ import {
   LayoutGrid,
   Calculator,
   ArrowRight,
-  ShieldCheck,
-  Clock,
-  HelpCircle,
   Gauge,
+  Radio,
 } from "lucide-react";
 
 interface FleetTrain {
@@ -40,7 +38,6 @@ export default function HomePage() {
   const [stationQuery, setStationQuery] = useState("");
   const [pnrQuery, setPnrQuery] = useState("");
 
-  // Filters for Express Table
   const [selectedZone, setSelectedZone] = useState<"ALL" | "CR" | "NR" | "WR">("ALL");
   const [statusFilter, setStatusFilter] = useState<"ALL" | "ON_TIME" | "DELAYED">("ALL");
 
@@ -162,434 +159,306 @@ export default function HomePage() {
   ];
 
   const popularStations = [
-    { code: "CSMT", label: "Mumbai CSMT" },
-    { code: "PUNE", label: "Pune Jn" },
-    { code: "NDLS", label: "New Delhi" },
-    { code: "HWH", label: "Howrah Jn" },
-    { code: "SUR", label: "Solapur Jn" },
+    { code: "CSMT", label: "CSMT" },
+    { code: "PUNE", label: "PUNE" },
+    { code: "NDLS", label: "NDLS" },
+    { code: "HWH", label: "HWH" },
+    { code: "SUR", label: "SUR" },
   ];
 
   return (
-    <div className="space-y-8 sm:space-y-10">
-      {/* Hero Section */}
-      <section className="bg-paper-2 border border-rule rounded-card p-5 sm:p-8 relative overflow-hidden">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
-          <div className="lg:col-span-7 space-y-4">
-            <h1 className="text-2xl sm:text-4xl md:text-5xl font-display font-bold tracking-tight text-ink">
-              Track any train across India
-            </h1>
+    <div className="space-y-12 sm:space-y-16 py-2">
+      {/* Open Hero Section - No enclosing card boxes, pure typography and spatial hierarchy */}
+      <section className="space-y-6 max-w-4xl">
+        <h1 className="text-3xl sm:text-5xl md:text-6xl font-display font-bold tracking-tight text-ink leading-[1.05]">
+          Track any train across India.
+        </h1>
 
-            <p className="lead text-ink-2 text-xs sm:text-sm md:text-base">
-              Live location, station arrival schedules, coach layouts, and ticket fares.
-            </p>
+        {/* Clean Single-Tier Search Console */}
+        <div className="space-y-3 pt-2">
+          {/* Mode Switcher */}
+          <div className="flex items-center gap-4 text-xs border-b border-rule pb-2">
+            <button
+              type="button"
+              onClick={() => setSearchMode("train")}
+              className={`pb-1 font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
+                searchMode === "train"
+                  ? "text-accent border-b-2 border-accent font-semibold -mb-[9px]"
+                  : "text-muted hover:text-ink"
+              }`}
+            >
+              <Train className="w-3.5 h-3.5" aria-hidden="true" />
+              <span>Train</span>
+            </button>
 
-            {/* Multi-Mode Search Console */}
-            <div className="pt-2 space-y-3">
-              {/* Mode Tabs */}
-              <div className="inline-flex items-center p-1 rounded-pill bg-paper-3 border border-rule gap-1 text-xs">
-                <button
-                  type="button"
-                  onClick={() => setSearchMode("train")}
-                  className={`px-3 py-1 rounded-pill font-medium transition-colors cursor-pointer flex items-center gap-1.5 focus-visible:outline-2 focus-visible:outline-accent ${
-                    searchMode === "train"
-                      ? "bg-accent text-accent-ink font-semibold"
-                      : "text-muted hover:text-ink"
-                  }`}
-                >
-                  <Train className="w-3.5 h-3.5" aria-hidden="true" />
-                  <span>Train status</span>
-                </button>
+            <button
+              type="button"
+              onClick={() => setSearchMode("station")}
+              className={`pb-1 font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
+                searchMode === "station"
+                  ? "text-accent border-b-2 border-accent font-semibold -mb-[9px]"
+                  : "text-muted hover:text-ink"
+              }`}
+            >
+              <Building2 className="w-3.5 h-3.5" aria-hidden="true" />
+              <span>Station</span>
+            </button>
 
-                <button
-                  type="button"
-                  onClick={() => setSearchMode("station")}
-                  className={`px-3 py-1 rounded-pill font-medium transition-colors cursor-pointer flex items-center gap-1.5 focus-visible:outline-2 focus-visible:outline-accent ${
-                    searchMode === "station"
-                      ? "bg-accent text-accent-ink font-semibold"
-                      : "text-muted hover:text-ink"
-                  }`}
-                >
-                  <Building2 className="w-3.5 h-3.5" aria-hidden="true" />
-                  <span>Station board</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setSearchMode("pnr")}
-                  className={`px-3 py-1 rounded-pill font-medium transition-colors cursor-pointer flex items-center gap-1.5 focus-visible:outline-2 focus-visible:outline-accent ${
-                    searchMode === "pnr"
-                      ? "bg-accent text-accent-ink font-semibold"
-                      : "text-muted hover:text-ink"
-                  }`}
-                >
-                  <Ticket className="w-3.5 h-3.5" aria-hidden="true" />
-                  <span>PNR enquiry</span>
-                </button>
-              </div>
-
-              {/* Mode Input Forms */}
-              {searchMode === "train" && (
-                <form
-                  onSubmit={handleSearch}
-                  className="flex flex-col sm:flex-row gap-2 max-w-xl"
-                >
-                  <div className="relative flex-1">
-                    <Search
-                      className="w-4 h-4 text-muted absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
-                      aria-hidden="true"
-                    />
-                    <input
-                      type="text"
-                      value={trainQuery}
-                      onChange={(e) => setTrainQuery(e.target.value)}
-                      placeholder="Enter 5-digit train number (e.g. 22225, 12951) …"
-                      className="w-full bg-paper text-ink placeholder:text-muted rounded-pill pl-9 pr-4 py-2.5 text-xs outline-none border border-rule transition-colors focus:border-accent disabled:opacity-40"
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={!trainQuery.trim()}
-                    className="bg-accent hover:opacity-90 active:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed text-accent-ink font-medium text-xs px-5 py-2.5 rounded-pill transition-opacity flex items-center justify-center gap-2 shrink-0 cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-accent"
-                  >
-                    <span>Track train</span>
-                    <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
-                  </button>
-                </form>
-              )}
-
-              {searchMode === "station" && (
-                <form
-                  onSubmit={handleSearch}
-                  className="flex flex-col sm:flex-row gap-2 max-w-xl"
-                >
-                  <div className="relative flex-1">
-                    <Building2
-                      className="w-4 h-4 text-muted absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
-                      aria-hidden="true"
-                    />
-                    <input
-                      type="text"
-                      value={stationQuery}
-                      onChange={(e) => setStationQuery(e.target.value.toUpperCase())}
-                      placeholder="Enter station code (e.g. CSMT, PUNE, NDLS, HWH) …"
-                      className="w-full bg-paper text-ink placeholder:text-muted rounded-pill pl-9 pr-4 py-2.5 text-xs outline-none border border-rule transition-colors focus:border-accent disabled:opacity-40 font-outlier font-bold"
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={!stationQuery.trim()}
-                    className="bg-accent hover:opacity-90 active:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed text-accent-ink font-medium text-xs px-5 py-2.5 rounded-pill transition-opacity flex items-center justify-center gap-2 shrink-0 cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-accent"
-                  >
-                    <span>View board</span>
-                    <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
-                  </button>
-                </form>
-              )}
-
-              {searchMode === "pnr" && (
-                <form
-                  onSubmit={handleSearch}
-                  className="flex flex-col sm:flex-row gap-2 max-w-xl"
-                >
-                  <div className="relative flex-1">
-                    <Ticket
-                      className="w-4 h-4 text-muted absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
-                      aria-hidden="true"
-                    />
-                    <input
-                      type="text"
-                      maxLength={10}
-                      value={pnrQuery}
-                      onChange={(e) =>
-                        setPnrQuery(e.target.value.replace(/\D/g, ""))
-                      }
-                      placeholder="Enter 10-digit PNR number (e.g. 1234567890) …"
-                      className="w-full bg-paper text-ink placeholder:text-muted rounded-pill pl-9 pr-4 py-2.5 text-xs outline-none border border-rule transition-colors focus:border-accent disabled:opacity-40 font-outlier font-bold"
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={pnrQuery.trim().length !== 10}
-                    className="bg-accent hover:opacity-90 active:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed text-accent-ink font-medium text-xs px-5 py-2.5 rounded-pill transition-opacity flex items-center justify-center gap-2 shrink-0 cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-accent"
-                  >
-                    <span>Check PNR</span>
-                    <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
-                  </button>
-                </form>
-              )}
-
-              {/* Mode-Specific Quick Shortcuts */}
-              {searchMode === "train" && (
-                <div className="flex flex-wrap items-center gap-2 text-xs pt-1">
-                  <span className="text-muted text-[11px] font-medium font-outlier">
-                    Popular:
-                  </span>
-                  {popularTrains.map((item) => (
-                    <button
-                      key={item.num}
-                      type="button"
-                      onClick={() => {
-                        setTrainQuery(item.num);
-                        router.push(`/train?number=${item.num}`);
-                      }}
-                      className="px-2.5 py-0.5 rounded-pill bg-paper-3 hover:bg-paper active:opacity-80 text-muted hover:text-ink border border-rule transition-colors font-outlier text-[11px] cursor-pointer focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-40"
-                    >
-                      {item.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {searchMode === "station" && (
-                <div className="flex flex-wrap items-center gap-2 text-xs pt-1">
-                  <span className="text-muted text-[11px] font-medium font-outlier">
-                    Major terminals:
-                  </span>
-                  {popularStations.map((item) => (
-                    <button
-                      key={item.code}
-                      type="button"
-                      onClick={() => {
-                        setStationQuery(item.code);
-                        router.push(`/stations?code=${item.code}`);
-                      }}
-                      className="px-2.5 py-0.5 rounded-pill bg-paper-3 hover:bg-paper active:opacity-80 text-muted hover:text-ink border border-rule transition-colors font-outlier text-[11px] cursor-pointer focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-40"
-                    >
-                      {item.label} ({item.code})
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {searchMode === "pnr" && (
-                <div className="flex flex-wrap items-center gap-2 text-xs pt-1">
-                  <span className="text-muted text-[11px] font-medium font-outlier">
-                    Demo test:
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPnrQuery("1234567890");
-                      router.push(`/pnr?pnr=1234567890`);
-                    }}
-                    className="px-2.5 py-0.5 rounded-pill bg-paper-3 hover:bg-paper active:opacity-80 text-muted hover:text-ink border border-rule transition-colors font-outlier text-[11px] cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-accent"
-                  >
-                    Demo #1234567890
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Feature Highlights */}
-            <div className="pt-2 flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2.5 sm:gap-6 text-xs text-muted border-t border-rule/60">
-              <div className="flex items-center gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5 text-ok" aria-hidden="true" />
-                <span>Live location and delay updates</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-cool" aria-hidden="true" />
-                <span>Platform and arrival times</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <HelpCircle className="w-3.5 h-3.5 text-accent" aria-hidden="true" />
-                <span>Route halts and fares</span>
-              </div>
-            </div>
+            <button
+              type="button"
+              onClick={() => setSearchMode("pnr")}
+              className={`pb-1 font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
+                searchMode === "pnr"
+                  ? "text-accent border-b-2 border-accent font-semibold -mb-[9px]"
+                  : "text-muted hover:text-ink"
+              }`}
+            >
+              <Ticket className="w-3.5 h-3.5" aria-hidden="true" />
+              <span>PNR</span>
+            </button>
           </div>
 
-          {/* Hero Live Telemetry Radar Cockpit */}
-          <Link
-            href="/train?number=22225"
-            data-slot="hero-railway"
-            className="group lg:col-span-5 h-[260px] sm:h-[320px] rounded-pill overflow-hidden relative border border-rule bg-paper-3 flex flex-col justify-between p-5 text-ink transition-colors hover:border-accent focus-visible:outline-2 focus-visible:outline-accent"
-          >
-            {/* Background Atmosphere Image with Vignette */}
-            <div className="absolute inset-0 z-0 pointer-events-none">
-              <img
-                src="https://upload.wikimedia.org/wikipedia/commons/6/6e/Night_Train.jpg"
-                alt="Night express in transit"
-                width={1936}
-                height={1288}
-                className="w-full h-full object-cover opacity-35"
-              />
-              <div className="absolute inset-0 bg-paper-2/80" />
-            </div>
-
-            {/* Top Row: Live Radar Beacon */}
-            <div className="relative z-10 flex items-center justify-between">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-pill bg-paper border border-rule text-[11px] font-outlier">
-                <span className="w-2 h-2 rounded-full bg-ok" />
-                <span className="font-semibold text-ink">Live radar</span>
-                <span className="text-muted">#22225</span>
-              </span>
-              <span className="text-[11px] font-outlier text-muted bg-paper px-2 py-0.5 rounded-pill border border-rule">
-                Vande Bharat
-              </span>
-            </div>
-
-            {/* Bottom Cockpit Telemetry Block */}
-            <div className="relative z-10 space-y-2">
-              <div className="flex items-end justify-between">
-                <div>
-                  <h3 className="text-base sm:text-lg font-display font-bold text-ink leading-tight group-hover:text-accent transition-colors">
-                    Solapur Vande Bharat
-                  </h3>
-                  <p className="text-[11px] text-muted font-outlier mt-0.5">
-                    CSMT (Mumbai) to SUR (Solapur)
-                  </p>
-                </div>
-                <div className="text-right">
-                  <div className="flex items-baseline justify-end gap-1 font-outlier">
-                    <span className="text-xl sm:text-2xl font-bold text-ink tracking-tight">118</span>
-                    <span className="text-[10px] text-muted">km/h</span>
-                  </div>
-                  <span className="text-[10px] font-semibold text-ok block -mt-0.5">On time</span>
-                </div>
+          {/* Search Inputs */}
+          {searchMode === "train" && (
+            <form onSubmit={handleSearch} className="flex gap-2 max-w-2xl">
+              <div className="relative flex-1">
+                <Search
+                  className="w-4 h-4 text-muted absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none"
+                  aria-hidden="true"
+                />
+                <input
+                  type="text"
+                  value={trainQuery}
+                  onChange={(e) => setTrainQuery(e.target.value)}
+                  placeholder="Enter 5-digit train number (e.g. 22225, 12951) …"
+                  className="w-full bg-paper-2 focus:bg-paper text-ink placeholder:text-muted rounded-pill pl-10 pr-4 py-3 text-sm outline-none border border-rule transition-colors focus:border-accent disabled:opacity-40"
+                />
               </div>
+              <button
+                type="submit"
+                disabled={!trainQuery.trim()}
+                className="bg-accent hover:opacity-90 active:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed text-accent-ink font-medium text-xs px-6 py-3 rounded-pill transition-opacity flex items-center justify-center gap-2 shrink-0 cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-accent"
+              >
+                <span>Track</span>
+                <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
+              </button>
+            </form>
+          )}
 
-              {/* Action Banner */}
-              <div className="pt-2 border-t border-rule/50 flex items-center justify-between text-xs">
-                <span className="text-[11px] text-muted truncate">
-                  Approaching Karjat Jn (Platform 2)
-                </span>
-                <span className="text-accent font-medium flex items-center gap-1 shrink-0 font-outlier text-[11px]">
-                  <span>Track live</span>
-                  <ArrowRight className="w-3 h-3 motion-safe:group-hover:translate-x-1 motion-safe:transition-transform" aria-hidden="true" />
-                </span>
+          {searchMode === "station" && (
+            <form onSubmit={handleSearch} className="flex gap-2 max-w-2xl">
+              <div className="relative flex-1">
+                <Building2
+                  className="w-4 h-4 text-muted absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none"
+                  aria-hidden="true"
+                />
+                <input
+                  type="text"
+                  value={stationQuery}
+                  onChange={(e) => setStationQuery(e.target.value.toUpperCase())}
+                  placeholder="Station code (e.g. CSMT, PUNE, NDLS, HWH) …"
+                  className="w-full bg-paper-2 focus:bg-paper text-ink placeholder:text-muted rounded-pill pl-10 pr-4 py-3 text-sm outline-none border border-rule transition-colors focus:border-accent disabled:opacity-40 font-outlier font-bold"
+                />
               </div>
+              <button
+                type="submit"
+                disabled={!stationQuery.trim()}
+                className="bg-accent hover:opacity-90 active:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed text-accent-ink font-medium text-xs px-6 py-3 rounded-pill transition-opacity flex items-center justify-center gap-2 shrink-0 cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-accent"
+              >
+                <span>View</span>
+                <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
+              </button>
+            </form>
+          )}
+
+          {searchMode === "pnr" && (
+            <form onSubmit={handleSearch} className="flex gap-2 max-w-2xl">
+              <div className="relative flex-1">
+                <Ticket
+                  className="w-4 h-4 text-muted absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none"
+                  aria-hidden="true"
+                />
+                <input
+                  type="text"
+                  maxLength={10}
+                  value={pnrQuery}
+                  onChange={(e) => setPnrQuery(e.target.value.replace(/\D/g, ""))}
+                  placeholder="Enter 10-digit PNR number …"
+                  className="w-full bg-paper-2 focus:bg-paper text-ink placeholder:text-muted rounded-pill pl-10 pr-4 py-3 text-sm outline-none border border-rule transition-colors focus:border-accent disabled:opacity-40 font-outlier font-bold"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={pnrQuery.trim().length !== 10}
+                className="bg-accent hover:opacity-90 active:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed text-accent-ink font-medium text-xs px-6 py-3 rounded-pill transition-opacity flex items-center justify-center gap-2 shrink-0 cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-accent"
+              >
+                <span>Check</span>
+                <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
+              </button>
+            </form>
+          )}
+
+          {/* Quick Shortcuts */}
+          {searchMode === "train" && (
+            <div className="flex flex-wrap items-center gap-2 text-xs pt-1">
+              {popularTrains.map((item) => (
+                <button
+                  key={item.num}
+                  type="button"
+                  onClick={() => {
+                    setTrainQuery(item.num);
+                    router.push(`/train?number=${item.num}`);
+                  }}
+                  className="px-2.5 py-1 rounded-pill bg-paper-2 hover:bg-paper-3 text-muted hover:text-ink transition-colors font-outlier text-[11px] cursor-pointer focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-40"
+                >
+                  {item.label}
+                </button>
+              ))}
             </div>
-          </Link>
+          )}
+
+          {searchMode === "station" && (
+            <div className="flex flex-wrap items-center gap-2 text-xs pt-1">
+              {popularStations.map((item) => (
+                <button
+                  key={item.code}
+                  type="button"
+                  onClick={() => {
+                    setStationQuery(item.code);
+                    router.push(`/stations?code=${item.code}`);
+                  }}
+                  className="px-2.5 py-1 rounded-pill bg-paper-2 hover:bg-paper-3 text-muted hover:text-ink transition-colors font-outlier text-[11px] cursor-pointer focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-40"
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {searchMode === "pnr" && (
+            <div className="flex flex-wrap items-center gap-2 text-xs pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setPnrQuery("1234567890");
+                  router.push(`/pnr?pnr=1234567890`);
+                }}
+                className="px-2.5 py-1 rounded-pill bg-paper-2 hover:bg-paper-3 text-muted hover:text-ink transition-colors font-outlier text-[11px] cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-accent"
+              >
+                Demo #1234567890
+              </button>
+            </div>
+          )}
         </div>
       </section>
 
-      {/* Network Metrics Strip */}
-      <section className="bg-paper-2 rounded-card border border-rule overflow-hidden grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-rule">
-        <div className="p-4 sm:p-5">
-          <span className="text-[11px] text-muted block">Express trains monitored</span>
-          <div className="mt-1 flex items-baseline gap-1.5">
-            <span className="text-xl sm:text-2xl font-outlier font-bold text-ink">42</span>
-            <span className="text-xs text-muted font-outlier">active rakes</span>
+      {/* Featured Train Spotlight Strip - Open Transit Corridor */}
+      <section className="border-y border-rule py-4">
+        <Link
+          href="/train?number=22225"
+          className="group flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs focus-visible:outline-2 focus-visible:outline-accent"
+        >
+          <div className="flex items-center gap-3">
+            <span className="w-2 h-2 rounded-full bg-ok shrink-0" aria-hidden="true" />
+            <span className="font-outlier font-bold text-ink">#22225</span>
+            <span className="font-semibold text-ink group-hover:text-accent transition-colors">
+              Solapur Vande Bharat Express
+            </span>
+            <span className="text-muted hidden sm:inline">
+              CSMT &rarr; SUR
+            </span>
           </div>
-          <span className="text-[11px] text-muted mt-0.5 block">Live GNSS telemetry</span>
-        </div>
 
-        <div className="p-4 sm:p-5">
-          <span className="text-[11px] text-muted block">Network punctuality</span>
-          <div className="mt-1 flex items-baseline gap-1.5">
-            <span className="text-xl sm:text-2xl font-outlier font-bold text-ok">98.4%</span>
+          <div className="flex items-center gap-4 text-muted font-outlier">
+            <span className="text-ok font-semibold">On time</span>
+            <span>118 km/h</span>
+            <span className="text-accent group-hover:translate-x-0.5 transition-transform flex items-center gap-1 font-sans font-medium">
+              <span>Track live</span>
+              <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
+            </span>
           </div>
-          <span className="text-[11px] text-muted mt-0.5 block">On-time corridor index</span>
-        </div>
-
-        <div className="p-4 sm:p-5 pt-4 sm:pt-5">
-          <span className="text-[11px] text-muted block">Railway divisions</span>
-          <div className="mt-1 flex items-baseline gap-1.5">
-            <span className="text-xl sm:text-2xl font-outlier font-bold text-ink">14</span>
-            <span className="text-xs text-muted font-outlier">zones</span>
-          </div>
-          <span className="text-[11px] text-muted mt-0.5 block">CR, NR, WR, ER, SR</span>
-        </div>
-
-        <div className="p-4 sm:p-5 pt-4 sm:pt-5">
-          <span className="text-[11px] text-muted block">Update cadence</span>
-          <div className="mt-1 flex items-baseline gap-1.5">
-            <span className="text-xl sm:text-2xl font-outlier font-bold text-accent">&lt; 3s</span>
-            <span className="text-xs text-muted font-outlier">latency</span>
-          </div>
-          <span className="text-[11px] text-muted mt-0.5 block">WebSocket real-time push</span>
-        </div>
+        </Link>
       </section>
 
-      {/* Featured Live Trains */}
-      <section className="space-y-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-1">
-          <div className="flex items-center gap-2">
-            <Train className="w-4 h-4 text-accent" aria-hidden="true" />
-            <h2 className="text-sm sm:text-base font-display font-bold text-ink tracking-tight">
-              Featured express trains
-            </h2>
-            <span className="text-xs text-muted font-outlier">({filteredFleet.length} active)</span>
-          </div>
+      {/* Open Transit Departure Board - Not trapped in a box */}
+      <section className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-rule">
+          <h2 className="text-lg sm:text-xl font-display font-bold text-ink tracking-tight">
+            Live express trains
+          </h2>
 
-          {/* Interactive Filters Toolbar */}
-          <div className="flex items-center gap-2 overflow-x-auto text-xs">
-            <div className="flex items-center gap-1 p-0.5 rounded-pill bg-paper-2 border border-rule text-[11px]">
+          {/* Clean Segmented Filters */}
+          <div className="flex items-center gap-3 text-xs">
+            <div className="flex items-center gap-1 text-muted">
               <button
                 type="button"
                 onClick={() => setSelectedZone("ALL")}
-                className={`px-2.5 py-0.5 rounded-pill font-medium transition-colors cursor-pointer ${
-                  selectedZone === "ALL"
-                    ? "bg-paper-3 text-ink font-semibold"
-                    : "text-muted hover:text-ink"
-                }`}
-              >
-                All Zones
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedZone("CR")}
-                className={`px-2.5 py-0.5 rounded-pill font-medium transition-colors cursor-pointer ${
-                  selectedZone === "CR"
-                    ? "bg-paper-3 text-ink font-semibold"
-                    : "text-muted hover:text-ink"
-                }`}
-              >
-                Central (CR)
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedZone("NR")}
-                className={`px-2.5 py-0.5 rounded-pill font-medium transition-colors cursor-pointer ${
-                  selectedZone === "NR"
-                    ? "bg-paper-3 text-ink font-semibold"
-                    : "text-muted hover:text-ink"
-                }`}
-              >
-                Northern (NR)
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedZone("WR")}
-                className={`px-2.5 py-0.5 rounded-pill font-medium transition-colors cursor-pointer ${
-                  selectedZone === "WR"
-                    ? "bg-paper-3 text-ink font-semibold"
-                    : "text-muted hover:text-ink"
-                }`}
-              >
-                Western (WR)
-              </button>
-            </div>
-
-            <div className="flex items-center gap-1 p-0.5 rounded-pill bg-paper-2 border border-rule text-[11px]">
-              <button
-                type="button"
-                onClick={() => setStatusFilter("ALL")}
-                className={`px-2.5 py-0.5 rounded-pill font-medium transition-colors cursor-pointer ${
-                  statusFilter === "ALL"
-                    ? "bg-paper-3 text-ink font-semibold"
-                    : "text-muted hover:text-ink"
+                className={`px-2 py-0.5 rounded cursor-pointer transition-colors ${
+                  selectedZone === "ALL" ? "text-ink font-semibold" : "hover:text-ink"
                 }`}
               >
                 All
               </button>
+              <span>/</span>
+              <button
+                type="button"
+                onClick={() => setSelectedZone("CR")}
+                className={`px-2 py-0.5 rounded cursor-pointer transition-colors ${
+                  selectedZone === "CR" ? "text-ink font-semibold" : "hover:text-ink"
+                }`}
+              >
+                CR
+              </button>
+              <span>/</span>
+              <button
+                type="button"
+                onClick={() => setSelectedZone("NR")}
+                className={`px-2 py-0.5 rounded cursor-pointer transition-colors ${
+                  selectedZone === "NR" ? "text-ink font-semibold" : "hover:text-ink"
+                }`}
+              >
+                NR
+              </button>
+              <span>/</span>
+              <button
+                type="button"
+                onClick={() => setSelectedZone("WR")}
+                className={`px-2 py-0.5 rounded cursor-pointer transition-colors ${
+                  selectedZone === "WR" ? "text-ink font-semibold" : "hover:text-ink"
+                }`}
+              >
+                WR
+              </button>
+            </div>
+
+            <span className="text-rule-2">|</span>
+
+            <div className="flex items-center gap-1 text-muted">
+              <button
+                type="button"
+                onClick={() => setStatusFilter("ALL")}
+                className={`px-2 py-0.5 rounded cursor-pointer transition-colors ${
+                  statusFilter === "ALL" ? "text-ink font-semibold" : "hover:text-ink"
+                }`}
+              >
+                All
+              </button>
+              <span>/</span>
               <button
                 type="button"
                 onClick={() => setStatusFilter("ON_TIME")}
-                className={`px-2.5 py-0.5 rounded-pill font-medium transition-colors cursor-pointer ${
-                  statusFilter === "ON_TIME"
-                    ? "bg-paper-3 text-ok font-semibold"
-                    : "text-muted hover:text-ink"
+                className={`px-2 py-0.5 rounded cursor-pointer transition-colors ${
+                  statusFilter === "ON_TIME" ? "text-ok font-semibold" : "hover:text-ink"
                 }`}
               >
                 On time
               </button>
+              <span>/</span>
               <button
                 type="button"
                 onClick={() => setStatusFilter("DELAYED")}
-                className={`px-2.5 py-0.5 rounded-pill font-medium transition-colors cursor-pointer ${
-                  statusFilter === "DELAYED"
-                    ? "bg-paper-3 text-accent font-semibold"
-                    : "text-muted hover:text-ink"
+                className={`px-2 py-0.5 rounded cursor-pointer transition-colors ${
+                  statusFilter === "DELAYED" ? "text-accent font-semibold" : "hover:text-ink"
                 }`}
               >
                 Delayed
@@ -598,209 +467,136 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Cohesive Transit Board Panel */}
-        <div className="bg-paper-2 rounded-card border border-rule overflow-hidden">
-          {/* Table Header (Desktop/Tablet) */}
-          <div className="hidden md:grid md:grid-cols-12 px-5 py-2.5 bg-paper-3 border-b border-rule text-[11px] font-medium text-muted">
-            <span className="col-span-4">TRAIN & SERVICE</span>
-            <span className="col-span-3">ROUTE CORRIDOR</span>
-            <span className="col-span-3">STATUS & SPEED</span>
-            <span className="col-span-2 text-right">ACTION</span>
-          </div>
-
-          <div className="divide-y divide-rule">
-            {filteredFleet.length > 0 ? (
-              filteredFleet.map((train) => (
-                <Link
-                  key={train.number}
-                  href={`/train?number=${train.number}`}
-                  className="group p-4 sm:px-5 sm:py-3.5 flex flex-col md:grid md:grid-cols-12 md:items-center gap-3 hover:bg-paper-3/60 active:bg-paper-3 transition-colors focus-visible:outline-2 focus-visible:outline-accent"
-                >
-                  {/* Col 1: Train & Number */}
-                  <div className="md:col-span-4 flex items-start sm:items-center gap-3">
-                    <span className="font-outlier font-bold text-xs text-ink shrink-0 tracking-wide bg-paper-3 px-2 py-1 rounded border border-rule">
-                      #{train.number}
-                    </span>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-display font-semibold text-ink text-sm transition-colors group-hover:text-accent truncate">
-                          {train.name}
-                        </h3>
-                        <span className="hidden sm:inline-block text-[10px] font-outlier text-muted bg-paper px-1.5 py-0.2 rounded border border-rule/50 shrink-0">
-                          {train.zone}
-                        </span>
-                      </div>
-                      <span className="text-[11px] text-muted md:hidden">
-                        {train.originCity} to {train.destCity} &bull; {train.nextHalt} ({train.platform})
-                      </span>
-                    </div>
+        {/* Departure Table Rows - Open, Elegant Hairlines */}
+        <div className="divide-y divide-rule">
+          {filteredFleet.length > 0 ? (
+            filteredFleet.map((train) => (
+              <Link
+                key={train.number}
+                href={`/train?number=${train.number}`}
+                className="group py-3.5 flex flex-col md:grid md:grid-cols-12 md:items-center gap-2 hover:bg-paper-2/40 transition-colors focus-visible:outline-2 focus-visible:outline-accent"
+              >
+                {/* Col 1: Train & Number */}
+                <div className="md:col-span-5 flex items-center gap-3">
+                  <span className="font-outlier font-bold text-xs text-ink shrink-0 tracking-wide">
+                    #{train.number}
+                  </span>
+                  <div className="min-w-0">
+                    <h3 className="font-display font-medium text-ink text-sm transition-colors group-hover:text-accent truncate">
+                      {train.name}
+                    </h3>
                   </div>
+                </div>
 
-                  {/* Col 2: Route Corridor */}
-                  <div className="hidden md:flex md:col-span-3 items-center gap-2 text-xs">
-                    <div className="text-left shrink-0">
-                      <span className="font-bold text-ink">{train.origin}</span>
-                      <span className="text-[10px] text-muted block -mt-0.5">{train.originCity}</span>
-                    </div>
-                    <div className="flex-1 mx-2 flex items-center gap-1 opacity-50">
-                      <span className="h-px bg-rule-2 flex-1" />
-                      <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
-                      <span className="h-px bg-rule-2 flex-1" />
-                    </div>
-                    <div className="text-right shrink-0">
-                      <span className="font-bold text-ink">{train.dest}</span>
-                      <span className="text-[10px] text-muted block -mt-0.5">{train.destCity}</span>
-                    </div>
-                  </div>
+                {/* Col 2: Route */}
+                <div className="md:col-span-3 flex items-center gap-2 text-xs text-muted">
+                  <span className="font-semibold text-ink">{train.origin}</span>
+                  <span>&rarr;</span>
+                  <span className="font-semibold text-ink">{train.dest}</span>
+                </div>
 
-                  {/* Col 3: Status & Speed */}
-                  <div className="md:col-span-3 flex items-center justify-between md:justify-start md:gap-4 text-xs">
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <span
-                        className={`w-2 h-2 rounded-full shrink-0 ${
-                          train.delay === "On time" ? "bg-ok" : "bg-accent"
-                        }`}
-                      />
-                      <span
-                        className={`font-outlier font-semibold shrink-0 ${
-                          train.delay === "On time" ? "text-ok" : "text-accent"
-                        }`}
-                      >
-                        {train.delay}
-                      </span>
-                      <span className="text-muted truncate hidden sm:inline">
-                        &bull; {train.nextHalt} ({train.platform})
-                      </span>
-                    </div>
-                    <span className="font-outlier text-[11px] text-muted md:ml-auto shrink-0 flex items-center gap-1">
-                      <Gauge className="w-3 h-3 text-muted" aria-hidden="true" />
-                      {train.speed}
-                    </span>
-                  </div>
+                {/* Col 3: Status & Speed */}
+                <div className="md:col-span-3 flex items-center gap-3 text-xs">
+                  <span
+                    className={`font-outlier font-medium ${
+                      train.delay === "On time" ? "text-ok" : "text-accent"
+                    }`}
+                  >
+                    {train.delay}
+                  </span>
+                  <span className="text-muted font-outlier">
+                    {train.speed}
+                  </span>
+                </div>
 
-                  {/* Col 4: Action Link */}
-                  <div className="md:col-span-2 flex items-center justify-between md:justify-end text-xs pt-2 md:pt-0 border-t md:border-t-0 border-rule/50">
-                    <span className="text-[11px] text-muted sm:hidden">
-                      {train.status}
-                    </span>
-                    <span className="text-accent group-hover:text-accent-ink group-hover:bg-accent px-2.5 py-1 rounded-pill transition-colors font-medium flex items-center gap-1">
-                      <span>Inspect</span>
-                      <ArrowRight className="w-3 h-3 motion-safe:group-hover:translate-x-0.5 motion-safe:transition-transform" aria-hidden="true" />
-                    </span>
-                  </div>
-                </Link>
-              ))
-            ) : (
-              <div className="p-8 text-center space-y-2">
-                <p className="text-xs text-ink font-semibold">No express trains match the selected filter</p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedZone("ALL");
-                    setStatusFilter("ALL");
-                  }}
-                  className="text-xs text-accent hover:underline cursor-pointer"
-                >
-                  Reset all filters
-                </button>
-              </div>
-            )}
-          </div>
+                {/* Col 4: Action */}
+                <div className="md:col-span-1 text-right">
+                  <span className="text-accent text-xs group-hover:translate-x-0.5 transition-transform inline-flex items-center gap-0.5 font-medium">
+                    <span>Track</span>
+                    <ArrowRight className="w-3 h-3" aria-hidden="true" />
+                  </span>
+                </div>
+              </Link>
+            ))
+          ) : (
+            <div className="py-8 text-center space-y-2">
+              <p className="text-xs text-muted">No trains match filter</p>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedZone("ALL");
+                  setStatusFilter("ALL");
+                }}
+                className="text-xs text-accent hover:underline cursor-pointer"
+              >
+                Reset filters
+              </button>
+            </div>
+          )}
         </div>
       </section>
 
-      {/* Transit Services Directory */}
-      <section className="space-y-3">
-        <div className="flex items-center justify-between pb-1">
-          <h2 className="text-sm sm:text-base font-display font-bold text-ink tracking-tight">
-            Transit services
-          </h2>
-          <span className="text-xs text-muted font-outlier">System directory</span>
-        </div>
-
-        <div className="bg-paper-2 rounded-card border border-rule overflow-hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-rule">
+      {/* Transit Services - Open Airy Columns, No Box-in-Box */}
+      <section className="border-t border-rule pt-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
           <Link
             href="/stations"
-            className="p-5 hover:bg-paper-3/60 active:bg-paper-3 transition-colors group flex flex-col justify-between focus-visible:outline-2 focus-visible:outline-accent"
+            className="group space-y-1.5 focus-visible:outline-2 focus-visible:outline-accent"
           >
-            <div>
-              <div className="flex items-center justify-between mb-3 text-cool">
-                <Building2 className="w-4 h-4 text-cool" aria-hidden="true" />
-              </div>
-              <h3 className="font-display font-semibold text-sm text-ink mb-1 group-hover:text-cool transition-colors">
-                Station live boards
+            <div className="flex items-center gap-2 text-cool">
+              <Building2 className="w-4 h-4 text-cool" aria-hidden="true" />
+              <h3 className="font-display font-semibold text-sm text-ink group-hover:text-cool transition-colors">
+                Stations
               </h3>
-              <p className="text-xs text-muted leading-relaxed">
-                Arrival and departure schedules at major junction stations.
-              </p>
             </div>
-            <div className="mt-4 pt-3 border-t border-rule/50 flex items-center justify-between text-xs text-muted group-hover:text-ink">
-              <span className="font-medium">View stations</span>
-              <ArrowRight className="w-3.5 h-3.5 text-cool motion-safe:group-hover:translate-x-0.5 motion-safe:transition-transform" aria-hidden="true" />
-            </div>
+            <p className="text-xs text-muted leading-relaxed">
+              Live arrival and departure boards across terminals.
+            </p>
           </Link>
 
           <Link
             href="/pnr"
-            className="p-5 hover:bg-paper-3/60 active:bg-paper-3 transition-colors group flex flex-col justify-between focus-visible:outline-2 focus-visible:outline-accent"
+            className="group space-y-1.5 focus-visible:outline-2 focus-visible:outline-accent"
           >
-            <div>
-              <div className="flex items-center justify-between mb-3 text-ok">
-                <Ticket className="w-4 h-4 text-ok" aria-hidden="true" />
-              </div>
-              <h3 className="font-display font-semibold text-sm text-ink mb-1 group-hover:text-ok transition-colors">
-                PNR status enquiry
+            <div className="flex items-center gap-2 text-ok">
+              <Ticket className="w-4 h-4 text-ok" aria-hidden="true" />
+              <h3 className="font-display font-semibold text-sm text-ink group-hover:text-ok transition-colors">
+                PNR status
               </h3>
-              <p className="text-xs text-muted leading-relaxed">
-                Current booking status, coach allotment, and chart preparation.
-              </p>
             </div>
-            <div className="mt-4 pt-3 border-t border-rule/50 flex items-center justify-between text-xs text-muted group-hover:text-ink">
-              <span className="font-medium">Check PNR</span>
-              <ArrowRight className="w-3.5 h-3.5 text-ok motion-safe:group-hover:translate-x-0.5 motion-safe:transition-transform" aria-hidden="true" />
-            </div>
+            <p className="text-xs text-muted leading-relaxed">
+              Ticket booking verification and coach berth position.
+            </p>
           </Link>
 
           <Link
             href="/coach"
-            className="p-5 hover:bg-paper-3/60 active:bg-paper-3 transition-colors group flex flex-col justify-between focus-visible:outline-2 focus-visible:outline-accent"
+            className="group space-y-1.5 focus-visible:outline-2 focus-visible:outline-accent"
           >
-            <div>
-              <div className="flex items-center justify-between mb-3 text-accent">
-                <LayoutGrid className="w-4 h-4 text-accent" aria-hidden="true" />
-              </div>
-              <h3 className="font-display font-semibold text-sm text-ink mb-1 group-hover:text-accent transition-colors">
-                Coach composition
+            <div className="flex items-center gap-2 text-accent">
+              <LayoutGrid className="w-4 h-4 text-accent" aria-hidden="true" />
+              <h3 className="font-display font-semibold text-sm text-ink group-hover:text-accent transition-colors">
+                Coach guide
               </h3>
-              <p className="text-xs text-muted leading-relaxed">
-                Coach arrangement and seat classes from locomotive to rear guard.
-              </p>
             </div>
-            <div className="mt-4 pt-3 border-t border-rule/50 flex items-center justify-between text-xs text-muted group-hover:text-ink">
-              <span className="font-medium">Inspect rakes</span>
-              <ArrowRight className="w-3.5 h-3.5 text-accent motion-safe:group-hover:translate-x-0.5 motion-safe:transition-transform" aria-hidden="true" />
-            </div>
+            <p className="text-xs text-muted leading-relaxed">
+              Rake composition and platform pole alignment.
+            </p>
           </Link>
 
           <Link
             href="/fare"
-            className="p-5 hover:bg-paper-3/60 active:bg-paper-3 transition-colors group flex flex-col justify-between focus-visible:outline-2 focus-visible:outline-accent"
+            className="group space-y-1.5 focus-visible:outline-2 focus-visible:outline-accent"
           >
-            <div>
-              <div className="flex items-center justify-between mb-3 text-ink">
-                <Calculator className="w-4 h-4 text-ink" aria-hidden="true" />
-              </div>
-              <h3 className="font-display font-semibold text-sm text-ink mb-1 group-hover:text-accent transition-colors">
-                Fare calculator
+            <div className="flex items-center gap-2 text-ink">
+              <Calculator className="w-4 h-4 text-ink" aria-hidden="true" />
+              <h3 className="font-display font-semibold text-sm text-ink group-hover:text-accent transition-colors">
+                Fare engine
               </h3>
-              <p className="text-xs text-muted leading-relaxed">
-                Base fares, reservation fees, Tatkal charges, and GST by distance.
-              </p>
             </div>
-            <div className="mt-4 pt-3 border-t border-rule/50 flex items-center justify-between text-xs text-muted group-hover:text-ink">
-              <span className="font-medium">Calculate fares</span>
-              <ArrowRight className="w-3.5 h-3.5 text-ink motion-safe:group-hover:translate-x-0.5 motion-safe:transition-transform" aria-hidden="true" />
-            </div>
+            <p className="text-xs text-muted leading-relaxed">
+              Distance tariffs, Tatkal charges, and GST breakdown.
+            </p>
           </Link>
         </div>
       </section>

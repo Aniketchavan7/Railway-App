@@ -14,7 +14,7 @@ export function ChatDrawer() {
     {
       role: "assistant",
       content:
-        "Welcome to RailPulse Assistant. Ask me anything about live train locations, delays, station arrival schedules, coach compositions, or distance ticket tariffs.",
+        "Welcome to RailPulse Assistant. Ask me anything about live train locations, delays, station arrival schedules, route diversions, or distance ticket tariffs.",
     },
   ]);
   const [input, setInput] = useState("");
@@ -26,7 +26,7 @@ export function ChatDrawer() {
   const sampleQuestions = [
     "Where is train 12101 currently? How late is it?",
     "Calculate fare for 12101 from CSMT to PUNE across all classes",
-    "Show coach layout for 12951 Mumbai Rajdhani",
+    "Does train 22225 run today on Wednesday?",
     "What are the halts and schedule for train 22225 Vande Bharat?",
   ];
 

@@ -56,15 +56,6 @@ const SEARCH_ITEMS: SearchItem[] = [
     icon: Ticket,
   },
   {
-    id: "mod-coach",
-    category: "modules",
-    title: "Coach Consist Architect",
-    subtitle: "Rolling stock rake sequence and platform positioning",
-    badge: "Rolling Stock",
-    href: "/coach",
-    icon: LayoutGrid,
-  },
-  {
     id: "mod-fare",
     category: "modules",
     title: "Telescopic Tariff Calculator",

@@ -514,11 +514,11 @@ export function TrainMap({
       </div>
 
       {/* CARTO Vector Badge (Top-Left) */}
-      <div className="absolute top-2.5 left-2.5 bg-paper-2/90 backdrop-blur-sm border border-rule px-2.5 py-1 rounded-pill text-[10px] font-outlier text-muted flex items-center gap-1.5 z-10">
-        <Sparkles className="w-3 h-3 text-accent shrink-0" />
+      <div className="absolute top-2.5 left-2.5 bg-paper-2 border border-rule px-2.5 py-1 rounded-pill text-[11px] text-muted flex items-center gap-1.5 z-10">
+        <Sparkles className="w-3 h-3 text-accent shrink-0" aria-hidden="true" />
         <span className="font-semibold text-ink">CARTO</span>
-        <span>•</span>
-        <span className="uppercase text-[9px] text-accent font-bold">
+        <span className="text-rule-2">/</span>
+        <span className="text-[11px] text-accent font-medium">
           {mapTheme === "raster" ? "Raster" : "Vector GL"}
         </span>
       </div>
