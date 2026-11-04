@@ -65,20 +65,13 @@ export function Navbar() {
     <>
       <header className="sticky top-0 z-30 bg-paper-2 border-b border-rule">
         <div className="max-w-[var(--container)] mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3 sm:gap-4">
-          {/* Brand & Workspace Identity */}
-          <div className="flex items-center gap-3 shrink-0">
-            <Link
-              href="/"
-              className="shrink-0 group focus-visible:outline-2 focus-visible:outline-accent active:opacity-85"
-            >
-              <RailPulseLogo size="md" />
-            </Link>
-            <div className="hidden lg:flex items-center gap-1.5 pl-3 border-l border-rule text-[11px] font-outlier text-muted">
-              <span className="font-semibold text-ink">OPERATIONS</span>
-              <span className="text-rule-2">•</span>
-              <span>CR-HQ</span>
-            </div>
-          </div>
+          {/* Brand */}
+          <Link
+            href="/"
+            className="shrink-0 group focus-visible:outline-2 focus-visible:outline-accent active:opacity-85"
+          >
+            <RailPulseLogo size="md" />
+          </Link>
 
           {/* SaaS Command Palette Omnibar Trigger */}
           <button
@@ -108,12 +101,10 @@ export function Navbar() {
             <Search className="w-4 h-4" aria-hidden="true" />
           </button>
 
-          {/* Live IST Telemetry Beacon & Punctuality */}
-          <div className="hidden xl:flex items-center gap-2 px-3 py-1 bg-paper-3 rounded-pill border border-rule text-[11px] font-outlier text-muted shrink-0">
-            <span className="w-2 h-2 rounded-full bg-ok" />
-            <span className="font-semibold text-ink">{istTime || "LIVE IST"}</span>
-            <span className="text-rule-2">/</span>
-            <span className="text-ok font-semibold">98.4% ON-TIME</span>
+          {/* Live IST Telemetry Beacon */}
+          <div className="hidden xl:flex items-center gap-2 px-3 py-1 bg-paper-3 rounded-pill border border-rule text-xs text-muted shrink-0">
+            <span className="w-2 h-2 rounded-full bg-ok" aria-hidden="true" />
+            <span className="font-medium text-ink font-outlier">{istTime || "LIVE IST"}</span>
           </div>
 
           {/* Navigation Links */}

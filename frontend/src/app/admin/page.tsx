@@ -48,17 +48,12 @@ export default function AdminPage() {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/* SaaS Diagnostics Console Header */}
+      {/* Diagnostics Console Header */}
       <div className="bg-paper-2 rounded-card border border-rule p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] font-outlier font-semibold text-accent tracking-wide">
-              SYSTEM DIAGNOSTICS & TELEMETRY
-            </span>
-          </div>
-          <h1 className="text-lg sm:text-2xl font-display font-bold text-ink tracking-tight flex items-center gap-2 mt-1">
+          <h1 className="text-lg sm:text-2xl font-display font-bold text-ink tracking-tight flex items-center gap-2">
             <Activity className="w-5 h-5 text-accent" aria-hidden="true" />
-            <span>Infrastructure Health & Circuit Breakers</span>
+            <span>Service health and diagnostics</span>
           </h1>
           <p className="text-xs text-muted mt-1">
             Real-time connection states, circuit breakers, and latency metrics for railway feeds.

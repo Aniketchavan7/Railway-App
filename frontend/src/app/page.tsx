@@ -15,10 +15,6 @@ import {
   Clock,
   HelpCircle,
   Gauge,
-  Radio,
-  SlidersHorizontal,
-  Activity,
-  Bot,
 } from "lucide-react";
 
 interface FleetTrain {
@@ -26,7 +22,6 @@ interface FleetTrain {
   name: string;
   type: string;
   zone: "CR" | "NR" | "WR" | "ER";
-  zoneName: string;
   origin: string;
   dest: string;
   originCity: string;
@@ -45,7 +40,7 @@ export default function HomePage() {
   const [stationQuery, setStationQuery] = useState("");
   const [pnrQuery, setPnrQuery] = useState("");
 
-  // Fleet Filter State
+  // Filters for Express Table
   const [selectedZone, setSelectedZone] = useState<"ALL" | "CR" | "NR" | "WR">("ALL");
   const [statusFilter, setStatusFilter] = useState<"ALL" | "ON_TIME" | "DELAYED">("ALL");
 
@@ -70,9 +65,8 @@ export default function HomePage() {
     {
       number: "22225",
       name: "Solapur Vande Bharat Express",
-      type: "Semi-High Speed",
+      type: "Vande Bharat",
       zone: "CR",
-      zoneName: "Central Railway",
       origin: "CSMT",
       dest: "SUR",
       originCity: "Mumbai",
@@ -86,9 +80,8 @@ export default function HomePage() {
     {
       number: "12951",
       name: "Mumbai Tejas Rajdhani Express",
-      type: "Premier Superfast",
+      type: "Rajdhani",
       zone: "WR",
-      zoneName: "Western Railway",
       origin: "MMCT",
       dest: "NDLS",
       originCity: "Mumbai",
@@ -102,9 +95,8 @@ export default function HomePage() {
     {
       number: "12101",
       name: "Jnaneswari Super Deluxe Express",
-      type: "Superfast Express",
+      type: "Superfast",
       zone: "CR",
-      zoneName: "Central Railway",
       origin: "LTT",
       dest: "HWH",
       originCity: "Mumbai",
@@ -118,9 +110,8 @@ export default function HomePage() {
     {
       number: "22436",
       name: "Vande Bharat Express",
-      type: "Semi-High Speed",
+      type: "Vande Bharat",
       zone: "NR",
-      zoneName: "Northern Railway",
       origin: "NDLS",
       dest: "BSB",
       originCity: "New Delhi",
@@ -134,9 +125,8 @@ export default function HomePage() {
     {
       number: "22226",
       name: "Mumbai CSMT Vande Bharat",
-      type: "Semi-High Speed",
+      type: "Vande Bharat",
       zone: "CR",
-      zoneName: "Central Railway",
       origin: "SUR",
       dest: "CSMT",
       originCity: "Solapur",
@@ -180,43 +170,20 @@ export default function HomePage() {
   ];
 
   return (
-    <div className="space-y-6 sm:space-y-8">
-      {/* Enterprise Operations Banner / Context Strip */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-2.5 rounded-pill bg-paper-2 border border-rule text-xs">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <span className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-paper-3 border border-rule text-[11px] font-outlier font-semibold text-ink shrink-0">
-            <Radio className="w-3 h-3 text-ok" aria-hidden="true" />
-            <span>DISPATCH OPS</span>
-          </span>
-          <span className="text-muted truncate text-[11px] font-outlier">
-            Central Railway HQ &bull; Monitoring 42 scheduled express rakes across 14 divisions
-          </span>
-        </div>
-        <div className="flex items-center gap-3 shrink-0 text-[11px] font-outlier text-muted">
-          <span>GNSS LOCK: 100%</span>
-          <span className="text-rule-2">&bull;</span>
-          <span className="text-ok font-semibold">FEED NORMAL</span>
-        </div>
-      </div>
-
-      {/* Hero Operations Search Cockpit */}
+    <div className="space-y-8 sm:space-y-10">
+      {/* Hero Section */}
       <section className="bg-paper-2 border border-rule rounded-card p-5 sm:p-8 relative overflow-hidden">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
           <div className="lg:col-span-7 space-y-4">
-            <div>
-              <span className="text-[11px] font-outlier text-accent font-semibold tracking-wide">
-                ENTERPRISE TRANSIT INTELLIGENCE
-              </span>
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold tracking-tight text-ink mt-1">
-                National Rail Operations Console
-              </h1>
-            </div>
+            <h1 className="text-2xl sm:text-4xl md:text-5xl font-display font-bold tracking-tight text-ink">
+              Track any train across India
+            </h1>
 
             <p className="lead text-ink-2 text-xs sm:text-sm md:text-base">
-              Live GNSS telemetry, platform allocations, rake compositions, and distance tariffs.
+              Live location, station arrival schedules, coach layouts, and ticket fares.
             </p>
 
-            {/* Tactical Multi-Mode Hero Search Bar Console */}
+            {/* Multi-Mode Search Console */}
             <div className="pt-2 space-y-3">
               {/* Mode Tabs */}
               <div className="inline-flex items-center p-1 rounded-pill bg-paper-3 border border-rule gap-1 text-xs">
@@ -230,7 +197,7 @@ export default function HomePage() {
                   }`}
                 >
                   <Train className="w-3.5 h-3.5" aria-hidden="true" />
-                  <span>Fleet tracking</span>
+                  <span>Train status</span>
                 </button>
 
                 <button
@@ -243,7 +210,7 @@ export default function HomePage() {
                   }`}
                 >
                   <Building2 className="w-3.5 h-3.5" aria-hidden="true" />
-                  <span>Terminal boards</span>
+                  <span>Station board</span>
                 </button>
 
                 <button
@@ -256,7 +223,7 @@ export default function HomePage() {
                   }`}
                 >
                   <Ticket className="w-3.5 h-3.5" aria-hidden="true" />
-                  <span>Passenger PNR</span>
+                  <span>PNR enquiry</span>
                 </button>
               </div>
 
@@ -284,7 +251,7 @@ export default function HomePage() {
                     disabled={!trainQuery.trim()}
                     className="bg-accent hover:opacity-90 active:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed text-accent-ink font-medium text-xs px-5 py-2.5 rounded-pill transition-opacity flex items-center justify-center gap-2 shrink-0 cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-accent"
                   >
-                    <span>Track rake</span>
+                    <span>Track train</span>
                     <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
                   </button>
                 </form>
@@ -313,7 +280,7 @@ export default function HomePage() {
                     disabled={!stationQuery.trim()}
                     className="bg-accent hover:opacity-90 active:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed text-accent-ink font-medium text-xs px-5 py-2.5 rounded-pill transition-opacity flex items-center justify-center gap-2 shrink-0 cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-accent"
                   >
-                    <span>View terminal</span>
+                    <span>View board</span>
                     <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
                   </button>
                 </form>
@@ -345,7 +312,7 @@ export default function HomePage() {
                     disabled={pnrQuery.trim().length !== 10}
                     className="bg-accent hover:opacity-90 active:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed text-accent-ink font-medium text-xs px-5 py-2.5 rounded-pill transition-opacity flex items-center justify-center gap-2 shrink-0 cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-accent"
                   >
-                    <span>Verify PNR</span>
+                    <span>Check PNR</span>
                     <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
                   </button>
                 </form>
@@ -355,7 +322,7 @@ export default function HomePage() {
               {searchMode === "train" && (
                 <div className="flex flex-wrap items-center gap-2 text-xs pt-1">
                   <span className="text-muted text-[11px] font-medium font-outlier">
-                    Express fleet:
+                    Popular:
                   </span>
                   {popularTrains.map((item) => (
                     <button
@@ -417,15 +384,15 @@ export default function HomePage() {
             <div className="pt-2 flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2.5 sm:gap-6 text-xs text-muted border-t border-rule/60">
               <div className="flex items-center gap-1.5">
                 <ShieldCheck className="w-3.5 h-3.5 text-ok" aria-hidden="true" />
-                <span>Real-time GNSS telemetry</span>
+                <span>Live location and delay updates</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5 text-cool" aria-hidden="true" />
-                <span>Station platform allocation</span>
+                <span>Platform and arrival times</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <HelpCircle className="w-3.5 h-3.5 text-accent" aria-hidden="true" />
-                <span>Telescopic distance tariff</span>
+                <span>Route halts and fares</span>
               </div>
             </div>
           </div>
@@ -452,11 +419,11 @@ export default function HomePage() {
             <div className="relative z-10 flex items-center justify-between">
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-pill bg-paper border border-rule text-[11px] font-outlier">
                 <span className="w-2 h-2 rounded-full bg-ok" />
-                <span className="font-semibold text-ink">LIVE RADAR</span>
+                <span className="font-semibold text-ink">Live radar</span>
                 <span className="text-muted">#22225</span>
               </span>
               <span className="text-[11px] font-outlier text-muted bg-paper px-2 py-0.5 rounded-pill border border-rule">
-                Vande Bharat EMU
+                Vande Bharat
               </span>
             </div>
 
@@ -468,7 +435,7 @@ export default function HomePage() {
                     Solapur Vande Bharat
                   </h3>
                   <p className="text-[11px] text-muted font-outlier mt-0.5">
-                    CSMT (Mumbai) &rarr; SUR (Solapur)
+                    CSMT (Mumbai) to SUR (Solapur)
                   </p>
                 </div>
                 <div className="text-right">
@@ -483,7 +450,7 @@ export default function HomePage() {
               {/* Action Banner */}
               <div className="pt-2 border-t border-rule/50 flex items-center justify-between text-xs">
                 <span className="text-[11px] text-muted truncate">
-                  Approaching Karjat Jn &bull; PF 2
+                  Approaching Karjat Jn (Platform 2)
                 </span>
                 <span className="text-accent font-medium flex items-center gap-1 shrink-0 font-outlier text-[11px]">
                   <span>Track live</span>
@@ -495,27 +462,27 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* National Rail Telemetry Metrics Strip (Linear / Vercel high-density numbers) */}
+      {/* Network Metrics Strip */}
       <section className="bg-paper-2 rounded-card border border-rule overflow-hidden grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-rule">
         <div className="p-4 sm:p-5">
-          <span className="text-[10px] font-outlier text-muted block">Active telemetry</span>
+          <span className="text-[11px] text-muted block">Express trains monitored</span>
           <div className="mt-1 flex items-baseline gap-1.5">
             <span className="text-xl sm:text-2xl font-outlier font-bold text-ink">42</span>
-            <span className="text-xs text-muted font-outlier">express rakes</span>
+            <span className="text-xs text-muted font-outlier">active rakes</span>
           </div>
-          <span className="text-[11px] text-muted mt-0.5 block">GNSS satellite lock</span>
+          <span className="text-[11px] text-muted mt-0.5 block">Live GNSS telemetry</span>
         </div>
 
         <div className="p-4 sm:p-5">
-          <span className="text-[10px] font-outlier text-muted block">Network punctuality</span>
+          <span className="text-[11px] text-muted block">Network punctuality</span>
           <div className="mt-1 flex items-baseline gap-1.5">
             <span className="text-xl sm:text-2xl font-outlier font-bold text-ok">98.4%</span>
           </div>
-          <span className="text-[11px] text-muted mt-0.5 block">+0.6% 24h corridor index</span>
+          <span className="text-[11px] text-muted mt-0.5 block">On-time corridor index</span>
         </div>
 
         <div className="p-4 sm:p-5 pt-4 sm:pt-5">
-          <span className="text-[10px] font-outlier text-muted block">Monitored divisions</span>
+          <span className="text-[11px] text-muted block">Railway divisions</span>
           <div className="mt-1 flex items-baseline gap-1.5">
             <span className="text-xl sm:text-2xl font-outlier font-bold text-ink">14</span>
             <span className="text-xs text-muted font-outlier">zones</span>
@@ -524,39 +491,24 @@ export default function HomePage() {
         </div>
 
         <div className="p-4 sm:p-5 pt-4 sm:pt-5">
-          <span className="text-[10px] font-outlier text-muted block">Telemetry latency</span>
+          <span className="text-[11px] text-muted block">Update cadence</span>
           <div className="mt-1 flex items-baseline gap-1.5">
             <span className="text-xl sm:text-2xl font-outlier font-bold text-accent">&lt; 3s</span>
-            <span className="text-xs text-muted font-outlier">cadence</span>
+            <span className="text-xs text-muted font-outlier">latency</span>
           </div>
           <span className="text-[11px] text-muted mt-0.5 block">WebSocket real-time push</span>
         </div>
       </section>
 
-      {/* Operational Dispatch Advisory Bulletin */}
-      <div className="px-4 py-3 rounded-card bg-paper-2 border border-rule flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="px-2 py-0.5 rounded bg-paper-3 border border-rule text-[10px] font-outlier font-semibold text-ok shrink-0">
-            BULLETIN #2026-CR-04
-          </span>
-          <p className="text-muted text-xs truncate">
-            Normal line speeds (110–130 km/h) active on Mumbai–Pune and Delhi–Kanpur corridors. Automatic block signalling operational.
-          </p>
-        </div>
-        <span className="text-[11px] text-muted font-outlier shrink-0">
-          Updated 4m ago
-        </span>
-      </div>
-
-      {/* Featured Live Trains - Interactive Enterprise Fleet Ledger Panel */}
+      {/* Featured Live Trains */}
       <section className="space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-1">
           <div className="flex items-center gap-2">
             <Train className="w-4 h-4 text-accent" aria-hidden="true" />
             <h2 className="text-sm sm:text-base font-display font-bold text-ink tracking-tight">
-              Active Express Fleet Ledger
+              Featured express trains
             </h2>
-            <span className="text-xs text-muted font-outlier">({filteredFleet.length} in transit)</span>
+            <span className="text-xs text-muted font-outlier">({filteredFleet.length} active)</span>
           </div>
 
           {/* Interactive Filters Toolbar */}
@@ -629,7 +581,7 @@ export default function HomePage() {
                     : "text-muted hover:text-ink"
                 }`}
               >
-                On Time
+                On time
               </button>
               <button
                 type="button"
@@ -646,14 +598,14 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Cohesive Transit Board Panel - No nested card-in-a-card */}
+        {/* Cohesive Transit Board Panel */}
         <div className="bg-paper-2 rounded-card border border-rule overflow-hidden">
           {/* Table Header (Desktop/Tablet) */}
           <div className="hidden md:grid md:grid-cols-12 px-5 py-2.5 bg-paper-3 border-b border-rule text-[11px] font-medium text-muted">
-            <span className="col-span-4">TRAIN & SERVICE CLASS</span>
+            <span className="col-span-4">TRAIN & SERVICE</span>
             <span className="col-span-3">ROUTE CORRIDOR</span>
-            <span className="col-span-3">POSITION & SPEED</span>
-            <span className="col-span-2 text-right">DISPATCH</span>
+            <span className="col-span-3">STATUS & SPEED</span>
+            <span className="col-span-2 text-right">ACTION</span>
           </div>
 
           <div className="divide-y divide-rule">
@@ -732,7 +684,7 @@ export default function HomePage() {
                       {train.status}
                     </span>
                     <span className="text-accent group-hover:text-accent-ink group-hover:bg-accent px-2.5 py-1 rounded-pill transition-colors font-medium flex items-center gap-1">
-                      <span>Dispatch</span>
+                      <span>Inspect</span>
                       <ArrowRight className="w-3 h-3 motion-safe:group-hover:translate-x-0.5 motion-safe:transition-transform" aria-hidden="true" />
                     </span>
                   </div>
@@ -740,7 +692,7 @@ export default function HomePage() {
               ))
             ) : (
               <div className="p-8 text-center space-y-2">
-                <p className="text-xs text-ink font-semibold">No express rakes match the selected filter criteria</p>
+                <p className="text-xs text-ink font-semibold">No express trains match the selected filter</p>
                 <button
                   type="button"
                   onClick={() => {
@@ -749,7 +701,7 @@ export default function HomePage() {
                   }}
                   className="text-xs text-accent hover:underline cursor-pointer"
                 >
-                  Reset all fleet filters
+                  Reset all filters
                 </button>
               </div>
             )}
@@ -757,13 +709,13 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Platform Services Directory - Unified 4-Column Panel */}
+      {/* Transit Services Directory */}
       <section className="space-y-3">
         <div className="flex items-center justify-between pb-1">
           <h2 className="text-sm sm:text-base font-display font-bold text-ink tracking-tight">
-            Enterprise Operations Modules
+            Transit services
           </h2>
-          <span className="text-xs text-muted font-outlier">System workspaces</span>
+          <span className="text-xs text-muted font-outlier">System directory</span>
         </div>
 
         <div className="bg-paper-2 rounded-card border border-rule overflow-hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-rule">
@@ -774,17 +726,16 @@ export default function HomePage() {
             <div>
               <div className="flex items-center justify-between mb-3 text-cool">
                 <Building2 className="w-4 h-4 text-cool" aria-hidden="true" />
-                <span className="text-[10px] font-outlier text-muted">01 / Terminal</span>
               </div>
               <h3 className="font-display font-semibold text-sm text-ink mb-1 group-hover:text-cool transition-colors">
-                Station concourse boards
+                Station live boards
               </h3>
               <p className="text-xs text-muted leading-relaxed">
-                Platform allocations, turnaround schedules, and live arrival boards.
+                Arrival and departure schedules at major junction stations.
               </p>
             </div>
             <div className="mt-4 pt-3 border-t border-rule/50 flex items-center justify-between text-xs text-muted group-hover:text-ink">
-              <span className="font-medium">Open terminal board</span>
+              <span className="font-medium">View stations</span>
               <ArrowRight className="w-3.5 h-3.5 text-cool motion-safe:group-hover:translate-x-0.5 motion-safe:transition-transform" aria-hidden="true" />
             </div>
           </Link>
@@ -796,17 +747,16 @@ export default function HomePage() {
             <div>
               <div className="flex items-center justify-between mb-3 text-ok">
                 <Ticket className="w-4 h-4 text-ok" aria-hidden="true" />
-                <span className="text-[10px] font-outlier text-muted">02 / Passenger</span>
               </div>
               <h3 className="font-display font-semibold text-sm text-ink mb-1 group-hover:text-ok transition-colors">
-                PNR passenger verification
+                PNR status enquiry
               </h3>
               <p className="text-xs text-muted leading-relaxed">
                 Current booking status, coach allotment, and chart preparation.
               </p>
             </div>
             <div className="mt-4 pt-3 border-t border-rule/50 flex items-center justify-between text-xs text-muted group-hover:text-ink">
-              <span className="font-medium">Verify itinerary</span>
+              <span className="font-medium">Check PNR</span>
               <ArrowRight className="w-3.5 h-3.5 text-ok motion-safe:group-hover:translate-x-0.5 motion-safe:transition-transform" aria-hidden="true" />
             </div>
           </Link>
@@ -818,17 +768,16 @@ export default function HomePage() {
             <div>
               <div className="flex items-center justify-between mb-3 text-accent">
                 <LayoutGrid className="w-4 h-4 text-accent" aria-hidden="true" />
-                <span className="text-[10px] font-outlier text-muted">03 / Consist</span>
               </div>
               <h3 className="font-display font-semibold text-sm text-ink mb-1 group-hover:text-accent transition-colors">
-                Coach consist architect
+                Coach composition
               </h3>
               <p className="text-xs text-muted leading-relaxed">
-                Rolling stock sequence, locomotive position, and platform pole alignment.
+                Coach arrangement and seat classes from locomotive to rear guard.
               </p>
             </div>
             <div className="mt-4 pt-3 border-t border-rule/50 flex items-center justify-between text-xs text-muted group-hover:text-ink">
-              <span className="font-medium">Inspect consist</span>
+              <span className="font-medium">Inspect rakes</span>
               <ArrowRight className="w-3.5 h-3.5 text-accent motion-safe:group-hover:translate-x-0.5 motion-safe:transition-transform" aria-hidden="true" />
             </div>
           </Link>
@@ -840,17 +789,16 @@ export default function HomePage() {
             <div>
               <div className="flex items-center justify-between mb-3 text-ink">
                 <Calculator className="w-4 h-4 text-ink" aria-hidden="true" />
-                <span className="text-[10px] font-outlier text-muted">04 / Tariff</span>
               </div>
               <h3 className="font-display font-semibold text-sm text-ink mb-1 group-hover:text-accent transition-colors">
-                Telescopic tariff engine
+                Fare calculator
               </h3>
               <p className="text-xs text-muted leading-relaxed">
-                Distance rate slabs, Tatkal charges, superfast fees, and GST breakdown.
+                Base fares, reservation fees, Tatkal charges, and GST by distance.
               </p>
             </div>
             <div className="mt-4 pt-3 border-t border-rule/50 flex items-center justify-between text-xs text-muted group-hover:text-ink">
-              <span className="font-medium">Calculate tariff</span>
+              <span className="font-medium">Calculate fares</span>
               <ArrowRight className="w-3.5 h-3.5 text-ink motion-safe:group-hover:translate-x-0.5 motion-safe:transition-transform" aria-hidden="true" />
             </div>
           </Link>

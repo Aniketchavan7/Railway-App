@@ -11,7 +11,41 @@ import {
   MapPin,
   Maximize2,
   Train,
+  Sparkles,
 } from "lucide-react";
+
+const CARTO_API_KEY =
+  process.env.NEXT_PUBLIC_CARTO_API_KEY || "cb1_51qv_1_2cc697bb718340cc0fe3fa22";
+
+export const CARTO_STYLES = {
+  voyager: `https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json?key=${CARTO_API_KEY}`,
+  dark: `https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json?key=${CARTO_API_KEY}`,
+  raster: {
+    version: 8 as const,
+    sources: {
+      carto_raster_voyager: {
+        type: "raster" as const,
+        tiles: [
+          `https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png?key=${CARTO_API_KEY}`,
+        ],
+        tileSize: 256,
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions" target="_blank">CARTO</a>',
+      },
+    },
+    layers: [
+      {
+        id: "carto-raster-base",
+        type: "raster" as const,
+        source: "carto_raster_voyager",
+        minzoom: 0,
+        maxzoom: 19,
+      },
+    ],
+  },
+};
+
+export type MapTheme = "voyager" | "dark" | "raster";
 
 interface TrainMapProps {
   status: RailwayStatus;
@@ -32,77 +66,24 @@ export function TrainMap({
   const mapInstance = useRef<maplibregl.Map | null>(null);
   const trainMarkerRef = useRef<maplibregl.Marker | null>(null);
   const stationPopupRef = useRef<maplibregl.Popup | null>(null);
-  const [mapStyleMode, setMapStyleMode] = useState<"dark" | "osm">("dark");
+  const [mapTheme, setMapTheme] = useState<MapTheme>("voyager");
   const [isMapLoaded, setIsMapLoaded] = useState(false);
 
-  // Initialize Map
-  useEffect(() => {
-    if (!mapContainer.current) return;
+  // Helper to add train route & station halts layers to MapLibre
+  const addRouteAndHaltLayers = (map: maplibregl.Map) => {
+    // 1. Calculate Coordinates
+    let coordinates: [number, number][] = [];
+    if (routeData?.coordinates && Array.isArray(routeData.coordinates)) {
+      coordinates = routeData.coordinates;
+    } else if (status.halts && status.halts.length > 1) {
+      coordinates = status.halts
+        .filter((h) => h.latitude && h.longitude)
+        .map((h) => [h.longitude!, h.latitude!]);
+    }
 
-    const defaultCenter: [number, number] = [
-      status.longitude ?? 77.209,
-      status.latitude ?? 22.5,
-    ];
-
-    const map = new maplibregl.Map({
-      container: mapContainer.current,
-      style: {
-        version: 8,
-        sources: {
-          carto_dark: {
-            type: "raster",
-            tiles: [
-              "https://a.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png",
-              "https://b.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png",
-              "https://c.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png",
-              "https://d.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png",
-            ],
-            tileSize: 256,
-            attribution:
-              '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions" target="_blank">CARTO</a>',
-          },
-          osm_raster: {
-            type: "raster",
-            tiles: [
-              "https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",
-              "https://b.tile.openstreetmap.org/{z}/{x}/{y}.png",
-            ],
-            tileSize: 256,
-            attribution:
-              '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors',
-          },
-        },
-        layers: [
-          {
-            id: "base-tiles",
-            type: "raster",
-            source: mapStyleMode === "dark" ? "carto_dark" : "osm_raster",
-            minzoom: 0,
-            maxzoom: 19,
-          },
-        ],
-      },
-      center: defaultCenter,
-      zoom: status.latitude && status.longitude ? 8 : 5,
-    });
-
-    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
-
-    map.on("load", () => {
-      setIsMapLoaded(true);
-
-      // Route coordinates
-      let coordinates: [number, number][] = [];
-      if (routeData?.coordinates && Array.isArray(routeData.coordinates)) {
-        coordinates = routeData.coordinates;
-      } else if (status.halts && status.halts.length > 1) {
-        coordinates = status.halts
-          .filter((h) => h.latitude && h.longitude)
-          .map((h) => [h.longitude!, h.latitude!]);
-      }
-
-      // 1. Add Route Corridor Source & Layers
-      if (coordinates.length > 1) {
+    // 2. Add Route Corridor Source & Layers
+    if (coordinates.length > 1) {
+      if (!map.getSource("route-line")) {
         map.addSource("route-line", {
           type: "geojson",
           data: {
@@ -114,8 +95,9 @@ export function TrainMap({
             },
           },
         });
+      }
 
-        // Outer glow corridor
+      if (!map.getLayer("route-glow-layer")) {
         map.addLayer({
           id: "route-glow-layer",
           type: "line",
@@ -127,11 +109,12 @@ export function TrainMap({
           paint: {
             "line-color": "#e5a93b",
             "line-width": 8,
-            "line-opacity": 0.2,
+            "line-opacity": 0.25,
           },
         });
+      }
 
-        // Core rail line
+      if (!map.getLayer("route-line-layer")) {
         map.addLayer({
           id: "route-line-layer",
           type: "line",
@@ -146,55 +129,53 @@ export function TrainMap({
             "line-opacity": 0.95,
           },
         });
-
-        // Fit map bounds
-        const bounds = new maplibregl.LngLatBounds();
-        coordinates.forEach((coord) => bounds.extend(coord));
-        map.fitBounds(bounds, { padding: 48 });
       }
+    }
 
-      // 2. Add Station Halts GeoJSON Source & Layers
-      const haltsWithCoords = (status.halts || []).filter(
-        (h) => h.latitude && h.longitude
-      );
+    // 3. Add Station Halts GeoJSON Source & Layers
+    const haltsWithCoords = (status.halts || []).filter(
+      (h) => h.latitude && h.longitude
+    );
 
-      if (haltsWithCoords.length > 0) {
-        const haltsGeoJson = {
-          type: "FeatureCollection" as const,
-          features: haltsWithCoords.map((h) => {
-            const isCurrent = Boolean(
-              (!h.has_departed && h.has_arrived) ||
-                (status.current_station &&
-                  (status.current_station.includes(h.station_code) ||
-                    status.current_station.includes(h.station_name)))
-            );
+    if (haltsWithCoords.length > 0) {
+      const haltsGeoJson = {
+        type: "FeatureCollection" as const,
+        features: haltsWithCoords.map((h) => {
+          const isCurrent = Boolean(
+            (!h.has_departed && h.has_arrived) ||
+              (status.current_station &&
+                (status.current_station.includes(h.station_code) ||
+                  status.current_station.includes(h.station_name)))
+          );
 
-            return {
-              type: "Feature" as const,
-              geometry: {
-                type: "Point" as const,
-                coordinates: [h.longitude!, h.latitude!] as [number, number],
-              },
-              properties: {
-                code: h.station_code,
-                name: h.station_name,
-                arr: h.arrival_time || h.actual_arrival || "--",
-                dep: h.departure_time || h.actual_departure || "--",
-                platform: h.platform || "1",
-                delay: h.delay_minutes || 0,
-                hasDeparted: h.has_departed ? 1 : 0,
-                isCurrent: isCurrent ? 1 : 0,
-              },
-            };
-          }),
-        };
+          return {
+            type: "Feature" as const,
+            geometry: {
+              type: "Point" as const,
+              coordinates: [h.longitude!, h.latitude!] as [number, number],
+            },
+            properties: {
+              code: h.station_code,
+              name: h.station_name,
+              arr: h.arrival_time || h.actual_arrival || "--",
+              dep: h.departure_time || h.actual_departure || "--",
+              platform: h.platform || "1",
+              delay: h.delay_minutes || 0,
+              hasDeparted: h.has_departed ? 1 : 0,
+              isCurrent: isCurrent ? 1 : 0,
+            },
+          };
+        }),
+      };
 
+      if (!map.getSource("halts-source")) {
         map.addSource("halts-source", {
           type: "geojson",
           data: haltsGeoJson,
         });
+      }
 
-        // Halts Circle Nodes Layer
+      if (!map.getLayer("halts-nodes-layer")) {
         map.addLayer({
           id: "halts-nodes-layer",
           type: "circle",
@@ -223,8 +204,9 @@ export function TrainMap({
             "circle-stroke-width": 1.5,
           },
         });
+      }
 
-        // Halts Text Labels Layer (Visible at zoom >= 7)
+      if (!map.getLayer("halts-labels-layer")) {
         map.addLayer({
           id: "halts-labels-layer",
           type: "symbol",
@@ -245,52 +227,94 @@ export function TrainMap({
             ],
           },
         });
+      }
+    }
+  };
 
-        // Station click handler
-        map.on("click", "halts-nodes-layer", (e) => {
-          if (!e.features || !e.features[0]) return;
-          const feat = e.features[0];
-          const props = feat.properties as any;
-          const coords = (feat.geometry as any).coordinates.slice();
+  // Initialize Map with CARTO Basemap
+  useEffect(() => {
+    if (!mapContainer.current) return;
 
-          const delayText =
-            props.delay > 0 ? `+${props.delay}m late` : "On time";
-          const delayColor = props.delay > 0 ? "#e5a93b" : "#4ade80";
+    const defaultCenter: [number, number] = [
+      status.longitude ?? 77.209,
+      status.latitude ?? 22.5,
+    ];
 
-          new maplibregl.Popup({ offset: 12 })
-            .setLngLat(coords)
-            .setHTML(`
-              <div style="font-family: inherit; font-size: 11px; line-height: 1.4;">
-                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-                  <strong style="font-size: 12px; color: #f4f4f6;">${props.name}</strong>
-                  <span style="font-size: 10px; padding: 1px 4px; border-radius: 9999px; background: #26272e; color: #a2a3ad; border: 1px solid #363740;">${props.code}</span>
-                </div>
-                <div style="margin-top: 6px; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; color: #a2a3ad; font-size: 10px;">
-                  <div>Arr: <strong style="color: #f4f4f6;">${props.arr}</strong></div>
-                  <div>Dep: <strong style="color: #f4f4f6;">${props.dep}</strong></div>
-                </div>
-                <div style="margin-top: 6px; padding-top: 4px; border-top: 1px solid #2e2f38; display: flex; align-items: center; justify-content: space-between;">
-                  <span style="font-size: 10px; color: #a2a3ad;">Platform ${props.platform}</span>
-                  <span style="font-size: 10px; font-weight: 600; color: ${delayColor};">${delayText}</span>
-                </div>
-              </div>
-            `)
-            .addTo(map);
+    const map = new maplibregl.Map({
+      container: mapContainer.current,
+      style: CARTO_STYLES.voyager,
+      center: defaultCenter,
+      zoom: status.latitude && status.longitude ? 8 : 5,
+    });
 
-          if (onSelectStation) {
-            onSelectStation(props.code);
-          }
-        });
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
 
-        map.on("mouseenter", "halts-nodes-layer", () => {
-          map.getCanvas().style.cursor = "pointer";
-        });
-        map.on("mouseleave", "halts-nodes-layer", () => {
-          map.getCanvas().style.cursor = "";
-        });
+    map.on("load", () => {
+      setIsMapLoaded(true);
+
+      // Add route geometry and station halts
+      addRouteAndHaltLayers(map);
+
+      // Fit map bounds if route is available
+      let coordinates: [number, number][] = [];
+      if (routeData?.coordinates && Array.isArray(routeData.coordinates)) {
+        coordinates = routeData.coordinates;
+      } else if (status.halts && status.halts.length > 1) {
+        coordinates = status.halts
+          .filter((h) => h.latitude && h.longitude)
+          .map((h) => [h.longitude!, h.latitude!]);
       }
 
-      // 3. Add Custom Train Marker
+      if (coordinates.length > 1) {
+        const bounds = new maplibregl.LngLatBounds();
+        coordinates.forEach((coord) => bounds.extend(coord));
+        map.fitBounds(bounds, { padding: 48 });
+      }
+
+      // Station click handler
+      map.on("click", "halts-nodes-layer", (e) => {
+        if (!e.features || !e.features[0]) return;
+        const feat = e.features[0];
+        const props = feat.properties as any;
+        const coords = (feat.geometry as any).coordinates.slice();
+
+        const delayText =
+          props.delay > 0 ? `+${props.delay}m late` : "On time";
+        const delayColor = props.delay > 0 ? "#e5a93b" : "#4ade80";
+
+        new maplibregl.Popup({ offset: 12 })
+          .setLngLat(coords)
+          .setHTML(`
+            <div style="font-family: inherit; font-size: 11px; line-height: 1.4;">
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                <strong style="font-size: 12px; color: #f4f4f6;">${props.name}</strong>
+                <span style="font-size: 10px; padding: 1px 4px; border-radius: 9999px; background: #26272e; color: #a2a3ad; border: 1px solid #363740;">${props.code}</span>
+              </div>
+              <div style="margin-top: 6px; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; color: #a2a3ad; font-size: 10px;">
+                <div>Arr: <strong style="color: #f4f4f6;">${props.arr}</strong></div>
+                <div>Dep: <strong style="color: #f4f4f6;">${props.dep}</strong></div>
+              </div>
+              <div style="margin-top: 6px; padding-top: 4px; border-top: 1px solid #2e2f38; display: flex; align-items: center; justify-content: space-between;">
+                <span style="font-size: 10px; color: #a2a3ad;">Platform ${props.platform}</span>
+                <span style="font-size: 10px; font-weight: 600; color: ${delayColor};">${delayText}</span>
+              </div>
+            </div>
+          `)
+          .addTo(map);
+
+        if (onSelectStation) {
+          onSelectStation(props.code);
+        }
+      });
+
+      map.on("mouseenter", "halts-nodes-layer", () => {
+        map.getCanvas().style.cursor = "pointer";
+      });
+      map.on("mouseleave", "halts-nodes-layer", () => {
+        map.getCanvas().style.cursor = "";
+      });
+
+      // Add Custom Train Marker
       if (status.latitude && status.longitude) {
         const el = document.createElement("div");
         el.className = "relative flex items-center justify-center cursor-pointer group";
@@ -426,27 +450,21 @@ export function TrainMap({
     }
   };
 
-  // Toggle Map Style Layer
+  // Toggle Map Style Layer across CARTO Voyager, Dark Matter, and Raster
   const toggleMapStyle = () => {
     if (!mapInstance.current || !isMapLoaded) return;
-    const nextMode = mapStyleMode === "dark" ? "osm" : "dark";
-    setMapStyleMode(nextMode);
+    const modes: MapTheme[] = ["voyager", "dark", "raster"];
+    const nextIdx = (modes.indexOf(mapTheme) + 1) % modes.length;
+    const nextMode = modes[nextIdx];
+    setMapTheme(nextMode);
 
     const map = mapInstance.current;
-    if (map.getLayer("base-tiles")) {
-      map.removeLayer("base-tiles");
-    }
+    map.setStyle(CARTO_STYLES[nextMode] as any);
 
-    map.addLayer(
-      {
-        id: "base-tiles",
-        type: "raster",
-        source: nextMode === "dark" ? "carto_dark" : "osm_raster",
-        minzoom: 0,
-        maxzoom: 19,
-      },
-      "route-glow-layer"
-    );
+    // Re-apply route & halts once the new style loads
+    map.once("style.load", () => {
+      addRouteAndHaltLayers(map);
+    });
   };
 
   return (
@@ -482,17 +500,31 @@ export function TrainMap({
           type="button"
           onClick={toggleMapStyle}
           className="p-1.5 sm:px-2.5 sm:py-1 rounded-pill bg-paper-2 hover:bg-paper-3 active:opacity-80 text-ink border border-rule text-xs font-medium transition-colors flex items-center gap-1.5 shadow-none cursor-pointer focus-visible:outline-2 focus-visible:outline-accent"
-          title="Switch map theme"
+          title="Switch CARTO Basemap theme (Vector Voyager, Dark Matter, Raster)"
         >
           <Layers className="w-3.5 h-3.5 text-cool shrink-0" />
-          <span className="hidden sm:inline font-outlier text-[11px]">
-            {mapStyleMode === "dark" ? "Dark" : "OSM"}
+          <span className="hidden sm:inline font-outlier text-[11px] font-semibold">
+            {mapTheme === "voyager"
+              ? "CARTO Voyager"
+              : mapTheme === "dark"
+              ? "CARTO Dark"
+              : "CARTO Raster"}
           </span>
         </button>
       </div>
 
+      {/* CARTO Vector Badge (Top-Left) */}
+      <div className="absolute top-2.5 left-2.5 bg-paper-2/90 backdrop-blur-sm border border-rule px-2.5 py-1 rounded-pill text-[10px] font-outlier text-muted flex items-center gap-1.5 z-10">
+        <Sparkles className="w-3 h-3 text-accent shrink-0" />
+        <span className="font-semibold text-ink">CARTO</span>
+        <span>•</span>
+        <span className="uppercase text-[9px] text-accent font-bold">
+          {mapTheme === "raster" ? "Raster" : "Vector GL"}
+        </span>
+      </div>
+
       {/* Floating Tactical HUD Bar (Bottom) */}
-      <div className="absolute bottom-2.5 left-2.5 right-2.5 sm:right-auto bg-paper-2 border border-rule px-3 sm:px-4 py-2 rounded-pill flex flex-wrap items-center gap-2 sm:gap-3 text-xs z-10">
+      <div className="absolute bottom-2.5 left-2.5 right-2.5 sm:right-auto bg-paper-2/95 backdrop-blur-sm border border-rule px-3 sm:px-4 py-2 rounded-pill flex flex-wrap items-center gap-2 sm:gap-3 text-xs z-10 shadow-lg">
         <div className="flex items-center gap-1.5 font-outlier font-bold text-ink">
           <Train className="w-3.5 h-3.5 text-accent" />
           <span>#{status.train_number}</span>
@@ -524,7 +556,7 @@ export function TrainMap({
 
       {/* Station Coordinates Warning Notice (Fallback only) */}
       {!status.latitude && (
-        <div className="absolute top-2.5 left-2.5 right-12 sm:right-auto bg-paper-2 text-ink px-3 py-1.5 rounded-pill border border-rule text-xs flex items-center gap-2 z-10">
+        <div className="absolute top-10 left-2.5 right-12 sm:right-auto bg-paper-2 text-ink px-3 py-1.5 rounded-pill border border-rule text-xs flex items-center gap-2 z-10">
           <Info className="w-3.5 h-3.5 text-accent shrink-0" />
           <span className="text-[11px]">Station halting trajectory active</span>
         </div>

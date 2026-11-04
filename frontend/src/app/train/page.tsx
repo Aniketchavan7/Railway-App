@@ -222,22 +222,22 @@ function TrainTrackingContent() {
               />
             </div>
 
-            {/* Enterprise Dispatch Operational Metadata Row */}
-            <div className="flex flex-wrap items-center gap-3 text-xs text-muted font-outlier">
+            {/* Operational Specifications */}
+            <div className="flex flex-wrap items-center gap-3 text-xs text-muted">
               <span className="border-r border-rule pr-3">
                 Service: <strong className="text-ink font-semibold">Superfast Express</strong>
               </span>
               <span className="border-r border-rule pr-3">
-                Traction: <strong className="text-ink font-semibold">25 kV AC (WAP-7 / EMU)</strong>
+                Traction: <strong className="text-ink font-semibold">25 kV AC</strong>
               </span>
               <span className="border-r border-rule pr-3">
                 Consist: <strong className="text-ink font-semibold">16 Coaches</strong>
               </span>
               <span className="border-r border-rule pr-3">
-                MPS: <strong className="text-accent font-semibold">130 km/h</strong>
+                Max speed: <strong className="text-accent font-semibold font-outlier">130 km/h</strong>
               </span>
               <span>
-                Telemetry: <strong className="text-ok font-semibold">GNSS Lock Active</strong>
+                Positioning: <strong className="text-ok font-semibold">GNSS Active</strong>
               </span>
             </div>
 
