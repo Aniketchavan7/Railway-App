@@ -1,8 +1,23 @@
 from fastapi import APIRouter, HTTPException, Query
 from app.schemas.status import ResponseEnvelope
 from app.services.orchestrator import orchestrator
+from app.services.train_schedule_service import TrainOperationsMetadata
 
 router = APIRouter(tags=["Search & Stations"])
+
+
+@router.get("/trains/between", response_model=ResponseEnvelope)
+async def get_trains_between_stations(
+    from_station: str = Query(..., description="Origin station code (e.g. CSMT)"),
+    to_station: str = Query(..., description="Destination station code (e.g. PUNE)"),
+):
+    trains = TrainOperationsMetadata.get_trains_between_stations(from_station, to_station)
+    return ResponseEnvelope(data={
+        "from_station": from_station.upper(),
+        "to_station": to_station.upper(),
+        "count": len(trains),
+        "trains": trains,
+    })
 
 
 @router.get("/trains/search", response_model=ResponseEnvelope)

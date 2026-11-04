@@ -663,3 +663,116 @@ class TrainOperationsMetadata:
             "pairing_train": profile.get("pairing_train"),
             "rake_share_description": profile.get("rake_share_description"),
         }
+
+    @classmethod
+    def get_trains_between_stations(
+        cls, from_station: str, to_station: str
+    ) -> List[Dict[str, Any]]:
+        """Find authentic express trains connecting two station codes."""
+        f = from_station.upper().strip()
+        t = to_station.upper().strip()
+        if not f or not t or f == t:
+            return []
+
+        # Known route corridors with station sequences
+        CORRIDORS = [
+            # Mumbai - Pune corridor
+            ["CSMT", "DR", "TNA", "KYN", "LNL", "PUNE"],
+            # Mumbai - Solapur corridor
+            ["CSMT", "DR", "TNA", "KYN", "LNL", "PUNE", "DD", "KWV", "SUR"],
+            # Solapur - Pune corridor
+            ["SUR", "KWV", "DD", "PUNE"],
+            # Solapur - Mumbai corridor
+            ["SUR", "KWV", "DD", "PUNE", "LNL", "KYN", "TNA", "DR", "CSMT"],
+            # Pune - Mumbai corridor
+            ["PUNE", "LNL", "KYN", "TNA", "DR", "CSMT"],
+            # Mumbai - Delhi corridor
+            ["MMCT", "BVI", "VAPI", "ST", "BH", "BRC", "RTM", "KOTA", "MTJ", "NZM", "NDLS"],
+            ["NDLS", "NZM", "MTJ", "KOTA", "RTM", "BRC", "BH", "ST", "VAPI", "BVI", "MMCT"],
+            # Delhi - Varanasi corridor
+            ["NDLS", "GZB", "ALJN", "TDL", "CNB", "FTP", "PRYJ", "MZP", "DDU", "BSB"],
+            ["BSB", "DDU", "MZP", "PRYJ", "FTP", "CNB", "TDL", "ALJN", "GZB", "NDLS"],
+            # Mumbai - Howrah corridor
+            ["CSMT", "DR", "KYN", "IGP", "NK", "MMR", "JL", "BSL", "MKU", "SEG", "AK", "BD", "DMN", "WR", "NGP", "G", "DGG", "RJN", "DURG", "R", "BYT", "BSP", "CPH", "RIG", "JSG", "ROU", "CKP", "TATA", "GTS", "JGM", "KGP", "SRC", "HWH", "SHM"],
+            ["LTT", "TNA", "KYN", "IGP", "NK", "MMR", "BSL", "AK", "BD", "WR", "NGP", "G", "DURG", "R", "BSP", "JSG", "ROU", "CKP", "TATA", "KGP", "SHM", "HWH"],
+            # Mumbai - Ahmedabad corridor
+            ["MMCT", "BVI", "VAPI", "BL", "ST", "BH", "BRC", "ANND", "ND", "MAN", "ADI", "GNC"],
+            ["GNC", "ADI", "MAN", "ND", "ANND", "BRC", "BH", "ST", "BL", "VAPI", "BVI", "MMCT"],
+            # Mumbai - Madgaon corridor
+            ["CSMT", "DR", "TNA", "PNVL", "ROHA", "MNI", "KHED", "CHI", "SGR", "RN", "VBW", "KKW", "SNDD", "KUDL", "SWV", "THVM", "KRMI", "MAO"],
+            ["MAO", "KRMI", "THVM", "SWV", "KUDL", "SNDD", "KKW", "VBW", "RN", "SGR", "CHI", "KHED", "MNI", "ROHA", "PNVL", "TNA", "DR", "CSMT"],
+            # Bangalore - Delhi corridor
+            ["SBC", "YPR", "HUP", "DMM", "ATP", "GTL", "RC", "YG", "WADI", "KLBG", "SUR", "DD", "MMR", "BSL", "KNW", "ET", "BPL", "BINA", "VGLJ", "GWL", "MRA", "DHO", "AGC", "MTJ", "FDB", "NZM", "NDLS"],
+            ["NDLS", "NZM", "FDB", "MTJ", "AGC", "DHO", "MRA", "GWL", "VGLJ", "BINA", "BPL", "ET", "KNW", "BSL", "MMR", "DD", "SUR", "KLBG", "WADI", "YG", "RC", "GTL", "ATP", "DMM", "HUP", "YPR", "SBC"],
+        ]
+
+        def stations_in_order(c_list: List[str], s1: str, s2: str) -> bool:
+            try:
+                i1 = c_list.index(s1)
+                i2 = c_list.index(s2)
+                return i1 < i2
+            except ValueError:
+                return False
+
+        matching_trains = []
+        now_dt = datetime.now(IST)
+
+        for train_num, p in cls.TRAIN_PROFILES.items():
+            is_match = False
+            origin = p.get("origin", "")
+            dest = p.get("destination", "")
+
+            # Direct match
+            if origin == f and dest == t:
+                is_match = True
+            # Station corridor match
+            elif (origin == f or dest == t or any(f in c and t in c for c in CORRIDORS)):
+                for corridor in CORRIDORS:
+                    if stations_in_order(corridor, f, t):
+                        # Verify train moves in matching direction
+                        if origin in corridor and dest in corridor:
+                            if stations_in_order(corridor, origin, dest):
+                                is_match = True
+                                break
+                        elif origin == f or dest == t:
+                            is_match = True
+                            break
+
+            if is_match:
+                status_info = cls.check_operational_status(train_num, now_dt)
+                name = p.get("name", "")
+                train_type = "Express"
+                if "Vande Bharat" in name:
+                    train_type = "Vande Bharat"
+                elif "Rajdhani" in name:
+                    train_type = "Rajdhani"
+                elif "Shatabdi" in name:
+                    train_type = "Shatabdi"
+                elif "Duronto" in name:
+                    train_type = "Duronto"
+                elif "Superfast" in name or "Mail" in name:
+                    train_type = "Superfast"
+
+                matching_trains.append({
+                    "train_number": p["number"],
+                    "train_name": p["name"],
+                    "train_type": train_type,
+                    "from_station": f,
+                    "to_station": t,
+                    "origin": p["origin"],
+                    "origin_name": p["origin_name"],
+                    "destination": p["destination"],
+                    "destination_name": p["destination_name"],
+                    "dep_time": p.get("dep_time", "00:00"),
+                    "arr_time": p.get("arr_time", "00:00"),
+                    "days_of_run": p.get("days_of_run", []),
+                    "mps_speed": p.get("mps_speed", 110),
+                    "pairing_train": p.get("pairing_train"),
+                    "service_state": status_info.get("service_state", "RUNNING"),
+                    "running_status": status_info.get("running_status", ""),
+                    "runs_today": status_info.get("runs_today", True),
+                })
+
+        # Sort by departure time
+        matching_trains.sort(key=lambda x: x.get("dep_time", "00:00"))
+        return matching_trains

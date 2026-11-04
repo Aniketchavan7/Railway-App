@@ -9,9 +9,13 @@ import {
   Ticket,
   Calculator,
   ArrowRight,
-  Search,
-  Bot,
+  Gauge,
+  Radio,
+  Sparkles,
 } from "lucide-react";
+import { ActionSearchBar } from "@/components/ui/action-search-bar";
+import { BentoMetrics } from "@/components/ui/bento-metrics";
+import { RouteFinder } from "@/components/ui/route-finder";
 
 interface FleetTrain {
   number: string;
@@ -31,30 +35,8 @@ interface FleetTrain {
 
 export default function HomePage() {
   const router = useRouter();
-  const [searchMode, setSearchMode] = useState<"train" | "station" | "pnr">("train");
-  const [trainQuery, setTrainQuery] = useState("");
-  const [stationQuery, setStationQuery] = useState("");
-  const [pnrQuery, setPnrQuery] = useState("");
-
   const [selectedZone, setSelectedZone] = useState<"ALL" | "CR" | "NR" | "WR">("ALL");
   const [statusFilter, setStatusFilter] = useState<"ALL" | "ON_TIME" | "DELAYED">("ALL");
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchMode === "train") {
-      const q = trainQuery.trim();
-      if (!q) return;
-      router.push(`/train?number=${encodeURIComponent(q)}`);
-    } else if (searchMode === "station") {
-      const q = stationQuery.trim();
-      if (!q) return;
-      router.push(`/stations?code=${encodeURIComponent(q.toUpperCase())}`);
-    } else if (searchMode === "pnr") {
-      const clean = pnrQuery.replace(/\D/g, "");
-      if (clean.length !== 10) return;
-      router.push(`/pnr?pnr=${clean}`);
-    }
-  };
 
   const fleetTrains: FleetTrain[] = [
     {
@@ -66,11 +48,41 @@ export default function HomePage() {
       dest: "CSMT",
       originCity: "Solapur",
       destCity: "Mumbai",
-      speed: "112 km/h",
+      speed: "118 km/h",
       delay: "On time",
-      status: "Approaching Daund Jn",
-      nextHalt: "Pune Jn",
+      status: "Approaching Karjat Jn",
+      nextHalt: "Karjat Jn",
       platform: "PF 2",
+    },
+    {
+      number: "12124",
+      name: "Deccan Queen Superfast Express",
+      type: "Superfast",
+      zone: "CR",
+      origin: "PUNE",
+      dest: "CSMT",
+      originCity: "Pune",
+      destCity: "Mumbai",
+      speed: "105 km/h",
+      delay: "On time",
+      status: "In transit near Matunga",
+      nextHalt: "Mumbai CSMT",
+      platform: "PF 5",
+    },
+    {
+      number: "12126",
+      name: "Pragati Express",
+      type: "Superfast",
+      zone: "CR",
+      origin: "PUNE",
+      dest: "CSMT",
+      originCity: "Pune",
+      destCity: "Mumbai",
+      speed: "98 km/h",
+      delay: "On time",
+      status: "In transit near Sion",
+      nextHalt: "Dadar Central",
+      platform: "PF 7",
     },
     {
       number: "12951",
@@ -81,26 +93,11 @@ export default function HomePage() {
       dest: "NDLS",
       originCity: "Mumbai",
       destCity: "New Delhi",
-      speed: "110 km/h",
+      speed: "130 km/h",
       delay: "On time",
-      status: "Departed Mumbai Central",
-      nextHalt: "Surat",
+      status: "Scheduled departure 17:00 IST",
+      nextHalt: "Borivali",
       platform: "PF 1",
-    },
-    {
-      number: "12101",
-      name: "Jnaneswari Super Deluxe Express",
-      type: "Superfast",
-      zone: "CR",
-      origin: "LTT",
-      dest: "HWH",
-      originCity: "Mumbai",
-      destCity: "Howrah",
-      speed: "75 km/h",
-      delay: "15m late",
-      status: "In transit near Igatpuri",
-      nextHalt: "Nashik Road",
-      platform: "PF 3",
     },
     {
       number: "22436",
@@ -113,24 +110,54 @@ export default function HomePage() {
       destCity: "Varanasi",
       speed: "130 km/h",
       delay: "On time",
-      status: "Approaching Kanpur Central",
-      nextHalt: "Kanpur Central",
-      platform: "PF 5",
+      status: "In transit near Khaga",
+      nextHalt: "Prayagraj Jn",
+      platform: "PF 16",
     },
     {
-      number: "12158",
-      name: "Hutatma Superfast Express",
-      type: "Intercity",
-      zone: "CR",
-      origin: "SUR",
-      dest: "PUNE",
-      originCity: "Solapur",
-      destCity: "Pune",
-      speed: "88 km/h",
+      number: "12009",
+      name: "Mumbai Ahmedabad Shatabdi Express",
+      type: "Shatabdi",
+      zone: "WR",
+      origin: "MMCT",
+      dest: "ADI",
+      originCity: "Mumbai",
+      destCity: "Ahmedabad",
+      speed: "120 km/h",
       delay: "On time",
-      status: "Departed Kurduvadi Jn",
-      nextHalt: "Daund Jn",
-      platform: "PF 3",
+      status: "In transit near Adas Road",
+      nextHalt: "Vadodara Jn",
+      platform: "PF 1",
+    },
+    {
+      number: "12115",
+      name: "Siddheshwar Superfast Express",
+      type: "Superfast",
+      zone: "CR",
+      origin: "CSMT",
+      dest: "SUR",
+      originCity: "Mumbai",
+      destCity: "Solapur",
+      speed: "110 km/h",
+      delay: "On time",
+      status: "Scheduled overnight departure 22:40 IST",
+      nextHalt: "Dadar Central",
+      platform: "PF 16",
+    },
+    {
+      number: "22225",
+      name: "Solapur Vande Bharat Express",
+      type: "Vande Bharat",
+      zone: "CR",
+      origin: "CSMT",
+      dest: "SUR",
+      originCity: "Mumbai",
+      destCity: "Solapur",
+      speed: "0 km/h",
+      delay: "On time",
+      status: "Wadi Bunder Maintenance (No Wed Run)",
+      nextHalt: "Depot",
+      platform: "Depot",
     },
   ];
 
@@ -149,216 +176,44 @@ export default function HomePage() {
     });
   }, [fleetTrains, selectedZone, statusFilter]);
 
-  const popularTrains = [
-    { num: "22225", label: "22225 Solapur VB" },
-    { num: "12951", label: "12951 Rajdhani" },
-    { num: "12101", label: "12101 Jnaneswari" },
-    { num: "22436", label: "22436 Vande Bharat" },
-  ];
-
-  const popularStations = [
-    { code: "CSMT", label: "CSMT" },
-    { code: "PUNE", label: "PUNE" },
-    { code: "NDLS", label: "NDLS" },
-    { code: "HWH", label: "HWH" },
-    { code: "SUR", label: "SUR" },
-  ];
-
   return (
     <div className="space-y-12 sm:space-y-16 py-2">
-      {/* Hero Section - Hallmark Modern Minimal Canvas */}
-      <section className="space-y-6 max-w-4xl">
-        <div className="space-y-2">
+      {/* 21st.dev Style Hero Section */}
+      <section className="space-y-6 max-w-4xl mx-auto text-center">
+        <div className="space-y-3">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-pill bg-paper-2 border border-rule text-xs text-muted font-outlier">
+            <span className="w-2 h-2 rounded-full bg-ok animate-pulse" />
+            <span>High-Precision Indian Railway SaaS</span>
+          </div>
+
           <h1 className="text-3xl sm:text-5xl md:text-6xl font-display font-bold tracking-tight text-ink leading-[1.05]">
             Track any train across India.
           </h1>
-          <p className="text-sm sm:text-base text-muted max-w-xl">
+          <p className="text-sm sm:text-base text-muted max-w-xl mx-auto">
             Live GPS telemetry, platform arrival concourse boards, and distance tariffs.
           </p>
         </div>
 
-        {/* Clean Single-Tier Search Console */}
-        <div className="space-y-3 pt-1">
-          {/* Mode Switcher */}
-          <div className="inline-flex items-center gap-1 p-1 rounded-pill bg-paper-2 border border-rule text-xs">
-            <button
-              type="button"
-              onClick={() => setSearchMode("train")}
-              className={`px-3 py-1.5 rounded-pill font-medium transition-colors cursor-pointer flex items-center gap-1.5 focus-visible:outline-2 focus-visible:outline-accent ${
-                searchMode === "train"
-                  ? "bg-accent text-accent-ink font-semibold"
-                  : "text-muted hover:text-ink"
-              }`}
-            >
-              <Train className="w-3.5 h-3.5" aria-hidden="true" />
-              <span>Train</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setSearchMode("station")}
-              className={`px-3 py-1.5 rounded-pill font-medium transition-colors cursor-pointer flex items-center gap-1.5 focus-visible:outline-2 focus-visible:outline-accent ${
-                searchMode === "station"
-                  ? "bg-accent text-accent-ink font-semibold"
-                  : "text-muted hover:text-ink"
-              }`}
-            >
-              <Building2 className="w-3.5 h-3.5" aria-hidden="true" />
-              <span>Station</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setSearchMode("pnr")}
-              className={`px-3 py-1.5 rounded-pill font-medium transition-colors cursor-pointer flex items-center gap-1.5 focus-visible:outline-2 focus-visible:outline-accent ${
-                searchMode === "pnr"
-                  ? "bg-accent text-accent-ink font-semibold"
-                  : "text-muted hover:text-ink"
-              }`}
-            >
-              <Ticket className="w-3.5 h-3.5" aria-hidden="true" />
-              <span>PNR</span>
-            </button>
-          </div>
-
-          {/* Unified Omnibar Search Shell */}
-          {searchMode === "train" && (
-            <form
-              onSubmit={handleSearch}
-              className="relative flex items-center w-full max-w-2xl bg-paper-2 border border-rule hover:border-rule-2 focus-within:border-accent focus-within:bg-paper focus-within:ring-1 focus-within:ring-accent rounded-pill p-1.5 pl-4 sm:pl-5 transition-colors"
-            >
-              <Search
-                className="w-4 h-4 text-muted shrink-0 mr-3 pointer-events-none"
-                aria-hidden="true"
-              />
-              <input
-                type="text"
-                value={trainQuery}
-                onChange={(e) => setTrainQuery(e.target.value)}
-                placeholder="Enter train number or name (e.g. 22225, 12951) …"
-                className="bg-transparent text-sm text-ink placeholder:text-muted outline-none flex-1 min-w-0 font-outlier font-semibold disabled:opacity-40"
-              />
-              <button
-                type="submit"
-                disabled={!trainQuery.trim()}
-                className="bg-accent hover:opacity-90 active:opacity-85 disabled:opacity-40 disabled:cursor-not-allowed text-accent-ink font-medium text-xs px-5 py-2.5 rounded-pill transition-opacity flex items-center justify-center gap-1.5 shrink-0 cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-accent"
-              >
-                <span>Track</span>
-                <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
-              </button>
-            </form>
-          )}
-
-          {searchMode === "station" && (
-            <form
-              onSubmit={handleSearch}
-              className="relative flex items-center w-full max-w-2xl bg-paper-2 border border-rule hover:border-rule-2 focus-within:border-accent focus-within:bg-paper focus-within:ring-1 focus-within:ring-accent rounded-pill p-1.5 pl-4 sm:pl-5 transition-colors"
-            >
-              <Building2
-                className="w-4 h-4 text-muted shrink-0 mr-3 pointer-events-none"
-                aria-hidden="true"
-              />
-              <input
-                type="text"
-                value={stationQuery}
-                onChange={(e) => setStationQuery(e.target.value.toUpperCase())}
-                placeholder="Station code (e.g. CSMT, PUNE, NDLS, HWH) …"
-                className="bg-transparent text-sm text-ink placeholder:text-muted outline-none flex-1 min-w-0 font-outlier font-semibold disabled:opacity-40"
-              />
-              <button
-                type="submit"
-                disabled={!stationQuery.trim()}
-                className="bg-accent hover:opacity-90 active:opacity-85 disabled:opacity-40 disabled:cursor-not-allowed text-accent-ink font-medium text-xs px-5 py-2.5 rounded-pill transition-opacity flex items-center justify-center gap-1.5 shrink-0 cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-accent"
-              >
-                <span>View</span>
-                <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
-              </button>
-            </form>
-          )}
-
-          {searchMode === "pnr" && (
-            <form
-              onSubmit={handleSearch}
-              className="relative flex items-center w-full max-w-2xl bg-paper-2 border border-rule hover:border-rule-2 focus-within:border-accent focus-within:bg-paper focus-within:ring-1 focus-within:ring-accent rounded-pill p-1.5 pl-4 sm:pl-5 transition-colors"
-            >
-              <Ticket
-                className="w-4 h-4 text-muted shrink-0 mr-3 pointer-events-none"
-                aria-hidden="true"
-              />
-              <input
-                type="text"
-                maxLength={10}
-                value={pnrQuery}
-                onChange={(e) => setPnrQuery(e.target.value.replace(/\D/g, ""))}
-                placeholder="Enter 10-digit PNR number …"
-                className="bg-transparent text-sm text-ink placeholder:text-muted outline-none flex-1 min-w-0 font-outlier font-semibold disabled:opacity-40"
-              />
-              <button
-                type="submit"
-                disabled={pnrQuery.trim().length !== 10}
-                className="bg-accent hover:opacity-90 active:opacity-85 disabled:opacity-40 disabled:cursor-not-allowed text-accent-ink font-medium text-xs px-5 py-2.5 rounded-pill transition-opacity flex items-center justify-center gap-1.5 shrink-0 cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-accent"
-              >
-                <span>Check</span>
-                <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
-              </button>
-            </form>
-          )}
-
-          {/* Quick Shortcuts */}
-          {searchMode === "train" && (
-            <div className="flex flex-wrap items-center gap-2 text-xs pt-1">
-              <span className="text-muted text-[11px] font-medium font-outlier">Quick:</span>
-              {popularTrains.map((item) => (
-                <button
-                  key={item.num}
-                  type="button"
-                  onClick={() => {
-                    setTrainQuery(item.num);
-                    router.push(`/train?number=${item.num}`);
-                  }}
-                  className="px-2.5 py-1 rounded-pill bg-paper-2 hover:bg-paper-3 text-muted hover:text-ink border border-rule transition-colors font-outlier text-[11px] cursor-pointer focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-40"
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {searchMode === "station" && (
-            <div className="flex flex-wrap items-center gap-2 text-xs pt-1">
-              <span className="text-muted text-[11px] font-medium font-outlier">Quick:</span>
-              {popularStations.map((item) => (
-                <button
-                  key={item.code}
-                  type="button"
-                  onClick={() => {
-                    setStationQuery(item.code);
-                    router.push(`/stations?code=${item.code}`);
-                  }}
-                  className="px-2.5 py-1 rounded-pill bg-paper-2 hover:bg-paper-3 text-muted hover:text-ink border border-rule transition-colors font-outlier text-[11px] cursor-pointer focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-40"
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {searchMode === "pnr" && (
-            <div className="flex flex-wrap items-center gap-2 text-xs pt-1">
-              <span className="text-muted text-[11px] font-medium font-outlier">Quick:</span>
-              <button
-                type="button"
-                onClick={() => {
-                  setPnrQuery("1234567890");
-                  router.push(`/pnr?pnr=1234567890`);
-                }}
-                className="px-2.5 py-1 rounded-pill bg-paper-2 hover:bg-paper-3 text-muted hover:text-ink border border-rule transition-colors font-outlier text-[11px] cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-accent"
-              >
-                Demo #1234567890
-              </button>
-            </div>
-          )}
+        {/* 21st.dev Interactive Action Search Bar */}
+        <div className="pt-2">
+          <ActionSearchBar />
         </div>
+      </section>
+
+      {/* Station-to-Station Route Finder Section */}
+      <section className="space-y-4">
+        <RouteFinder />
+      </section>
+
+      {/* 21st.dev Bento Grid Metrics */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between pb-2 border-b border-rule">
+          <h2 className="text-lg sm:text-xl font-display font-bold text-ink tracking-tight">
+            Network telemetry & intelligence
+          </h2>
+          <span className="text-xs font-outlier text-muted">Real-Time Core Engine</span>
+        </div>
+        <BentoMetrics />
       </section>
 
       {/* Featured Train Spotlight Strip */}
@@ -368,7 +223,7 @@ export default function HomePage() {
           className="group flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs focus-visible:outline-2 focus-visible:outline-accent"
         >
           <div className="flex items-center gap-3">
-            <span className="w-2 h-2 rounded-full bg-ok shrink-0" aria-hidden="true" />
+            <span className="w-2 h-2 rounded-full bg-ok shrink-0 animate-ping" aria-hidden="true" />
             <span className="font-outlier font-bold text-ink">#22226</span>
             <span className="font-semibold text-ink group-hover:text-accent transition-colors">
               Mumbai CSMT Vande Bharat Express
@@ -379,10 +234,10 @@ export default function HomePage() {
           </div>
 
           <div className="flex items-center gap-4 text-muted font-outlier">
-            <span className="text-ok font-semibold">Live in transit</span>
-            <span>112 km/h</span>
+            <span className="text-ok font-semibold">Live in transit • Near Karjat</span>
+            <span>118 km/h</span>
             <span className="text-accent group-hover:translate-x-0.5 transition-transform flex items-center gap-1 font-sans font-medium">
-              <span>Track live</span>
+              <span>Track live radar</span>
               <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
             </span>
           </div>
@@ -451,14 +306,14 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Departure Table Rows - Open, Elegant Hairlines */}
-        <div className="divide-y divide-rule">
+        {/* Departure Table Rows */}
+        <div className="divide-y divide-rule border-b border-rule pb-2">
           {filteredFleet.length > 0 ? (
             filteredFleet.map((train) => (
               <Link
                 key={train.number}
                 href={`/train?number=${train.number}`}
-                className="group py-3.5 flex flex-col md:grid md:grid-cols-12 md:items-center gap-2 hover:bg-paper-2/40 transition-colors focus-visible:outline-2 focus-visible:outline-accent rounded-xl px-2"
+                className="group py-3.5 flex flex-col md:grid md:grid-cols-12 md:items-center gap-2 hover:bg-paper-2/50 transition-colors focus-visible:outline-2 focus-visible:outline-accent rounded-xl px-2"
               >
                 {/* Col 1: Train & Number */}
                 <div className="md:col-span-5 flex items-center gap-3">
@@ -498,7 +353,7 @@ export default function HomePage() {
                 <div className="md:col-span-1 text-right">
                   <span className="text-accent text-xs group-hover:translate-x-0.5 transition-transform inline-flex items-center gap-0.5 font-medium">
                     <span>Track</span>
-                    <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
+                    <ArrowRight className="w-3 h-3" aria-hidden="true" />
                   </span>
                 </div>
               </Link>
@@ -521,9 +376,9 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Transit Services - Open Airy Columns */}
+      {/* Transit Services Links */}
       <section className="border-t border-rule pt-8">
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-6 sm:gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8">
           <Link
             href="/stations"
             className="group space-y-1.5 focus-visible:outline-2 focus-visible:outline-accent"
@@ -566,21 +421,6 @@ export default function HomePage() {
             </div>
             <p className="text-xs text-muted leading-relaxed">
               Distance tariffs, Tatkal charges, and GST breakdown.
-            </p>
-          </Link>
-
-          <Link
-            href="/ai-assistant"
-            className="group space-y-1.5 focus-visible:outline-2 focus-visible:outline-accent"
-          >
-            <div className="flex items-center gap-2 text-warn">
-              <Bot className="w-4 h-4 text-warn" aria-hidden="true" />
-              <h3 className="font-display font-semibold text-sm text-ink group-hover:text-warn transition-colors">
-                Assistant
-              </h3>
-            </div>
-            <p className="text-xs text-muted leading-relaxed">
-              AI natural language query assistant for halts, delays, and routes.
             </p>
           </Link>
         </div>

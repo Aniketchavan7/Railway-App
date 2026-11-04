@@ -87,3 +87,11 @@ async def test_all_11_railway_endpoints():
         res = await ac.get("/v1/train/12115/crowd")
         assert res.status_code == 200
         assert res.json()["data"]["active_reporters"] >= 1
+
+        # 13. Station-to-Station Route Finder
+        res = await ac.get("/v1/trains/between?from_station=CSMT&to_station=PUNE")
+        assert res.status_code == 200
+        data_between = res.json()["data"]
+        assert data_between["count"] >= 5
+        assert any(t["train_number"] == "12123" for t in data_between["trains"])
+        assert any(t["train_number"] == "22225" for t in data_between["trains"])
