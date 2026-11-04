@@ -54,6 +54,22 @@ KNOWN_TRAINS: Dict[str, str] = {
     "12262": "Mumbai CSMT Howrah Duronto Express",
     "12301": "Howrah Rajdhani Express",
     "12302": "Howrah Rajdhani Express",
+    "11027": "Dadar Solapur Express",
+    "11028": "Solapur Dadar Express",
+    "12809": "Mumbai Howrah Mail",
+    "12810": "Howrah Mumbai Mail",
+    "11301": "Udyan Express",
+    "11302": "Udyan Express",
+    "12627": "Karnataka Express",
+    "12628": "Karnataka Express",
+    "12953": "August Kranti Tejas Rajdhani Express",
+    "12954": "August Kranti Tejas Rajdhani Express",
+    "20901": "Gandhinagar Capital Vande Bharat",
+    "20902": "Gandhinagar Mumbai Vande Bharat",
+    "12621": "Tamil Nadu Express",
+    "12622": "Tamil Nadu Express",
+    "20607": "Chennai Mysuru Vande Bharat Express",
+    "20608": "Mysuru Chennai Vande Bharat Express",
 }
 
 

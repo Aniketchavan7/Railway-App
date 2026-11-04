@@ -198,6 +198,16 @@ REFERENCE_STATIONS = [
     {"code": "ST", "name": "Surat", "state": "Gujarat", "zone": "WR", "lat": 21.2049, "lng": 72.8411},
     {"code": "BRC", "name": "Vadodara Junction", "state": "Gujarat", "zone": "WR", "lat": 22.3107, "lng": 73.1812},
     {"code": "KOTA", "name": "Kota Junction", "state": "Rajasthan", "zone": "WCR", "lat": 25.2185, "lng": 75.8648},
+    {"code": "GNC", "name": "Gandhinagar Capital", "state": "Gujarat", "zone": "WR", "lat": 23.2323, "lng": 72.6397},
+    {"code": "ADI", "name": "Ahmedabad Junction", "state": "Gujarat", "zone": "WR", "lat": 23.0258, "lng": 72.6010},
+    {"code": "SBC", "name": "KSR Bengaluru", "state": "Karnataka", "zone": "SWR", "lat": 12.9781, "lng": 77.5694},
+    {"code": "MAS", "name": "MGR Chennai Central", "state": "Tamil Nadu", "zone": "SR", "lat": 13.0827, "lng": 80.2707},
+    {"code": "MYS", "name": "Mysuru Junction", "state": "Karnataka", "zone": "SWR", "lat": 12.3160, "lng": 76.6496},
+    {"code": "DADN", "name": "Dr. Ambedkar Nagar", "state": "Madhya Pradesh", "zone": "WR", "lat": 22.5539, "lng": 75.7607},
+    {"code": "SVDK", "name": "SMVD Katra", "state": "Jammu & Kashmir", "zone": "NR", "lat": 32.9918, "lng": 74.9318},
+    {"code": "NZM", "name": "Hazrat Nizamuddin", "state": "Delhi", "zone": "NR", "lat": 28.5888, "lng": 77.2534},
+    {"code": "SHM", "name": "Shalimar", "state": "West Bengal", "zone": "SER", "lat": 22.5552, "lng": 88.3188},
+    {"code": "MAO", "name": "Madgaon Junction", "state": "Goa", "zone": "KR", "lat": 15.2750, "lng": 73.9783},
 ]
 
 
@@ -240,6 +250,35 @@ class OfflineSimulatorProvider(RailwayProvider):
         clean_num = str(train_number).strip()
         if clean_num in REFERENCE_TRAINS:
             return REFERENCE_TRAINS[clean_num]
+
+        profile = TrainOperationsMetadata.get_profile(clean_num)
+        if profile:
+            orig_code = profile.get("origin", "CSMT")
+            dest_code = profile.get("destination", "PUNE")
+            orig_name = profile.get("origin_name", orig_code)
+            dest_name = profile.get("destination_name", dest_code)
+            dep = profile.get("dep_time", "06:00")
+            arr = profile.get("arr_time", "12:00")
+
+            orig_stn = next((s for s in REFERENCE_STATIONS if s["code"] == orig_code), None)
+            dest_stn = next((s for s in REFERENCE_STATIONS if s["code"] == dest_code), None)
+
+            orig_lat = orig_stn["lat"] if orig_stn else 18.9402
+            orig_lng = orig_stn["lng"] if orig_stn else 72.8358
+            dest_lat = dest_stn["lat"] if dest_stn else 18.5289
+            dest_lng = dest_stn["lng"] if dest_stn else 73.8744
+
+            halts = [
+                {"code": orig_code, "name": orig_name, "sch_arr": None, "sch_dep": dep, "dist": 0, "lat": orig_lat, "lng": orig_lng, "platform": "1"},
+                {"code": dest_code, "name": dest_name, "sch_arr": arr, "sch_dep": None, "dist": 500, "lat": dest_lat, "lng": dest_lng, "platform": "1"},
+            ]
+            return {
+                "number": clean_num,
+                "name": profile.get("name", f"Express {clean_num}"),
+                "origin": orig_code,
+                "destination": dest_code,
+                "halts": halts,
+            }
 
         # Dynamic Corridor Synthesis for unindexed trains
         corridors = [
