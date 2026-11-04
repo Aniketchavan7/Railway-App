@@ -47,21 +47,23 @@ export default function AdminPage() {
   const providerCount = Object.keys(providerStatus).length || 3;
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-8 py-2">
       {/* Diagnostics Console Header */}
-      <div className="bg-paper-2 rounded-card border border-rule p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
-        <div>
-          <h1 className="text-lg sm:text-2xl font-display font-bold text-ink tracking-tight flex items-center gap-2">
-            <Activity className="w-5 h-5 text-accent" aria-hidden="true" />
-            <span>Service health</span>
+      <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-3 pb-4 border-b border-rule">
+        <div className="space-y-1">
+          <h1 className="text-3xl sm:text-5xl font-display font-bold tracking-tight text-ink leading-tight">
+            Service health
           </h1>
+          <p className="text-xs sm:text-sm text-muted">
+            Upstream provider telemetry, circuit breaker states, and error budgets.
+          </p>
         </div>
 
         <button
           type="button"
           onClick={fetchHealth}
           disabled={loading}
-          className="self-start sm:self-auto flex items-center gap-1.5 px-4 py-2 bg-paper-3 hover:bg-paper active:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed text-ink border border-rule rounded-pill text-xs font-medium transition-colors cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-accent"
+          className="self-start sm:self-auto flex items-center gap-1.5 px-4 py-2 bg-paper-2 hover:bg-paper-3 active:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed text-ink border border-rule rounded-pill text-xs font-medium transition-colors cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-accent"
         >
           <RefreshCw
             className={`w-3.5 h-3.5 ${loading ? "motion-safe:animate-spin motion-reduce:animate-none text-accent" : ""}`}
@@ -72,7 +74,7 @@ export default function AdminPage() {
       </div>
 
       {/* Providers Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {Object.entries(providerStatus).map(([name, data]) => {
           const health = healthStatus[name] || {};
           return (

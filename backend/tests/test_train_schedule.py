@@ -64,6 +64,48 @@ async def test_12157_not_started_midday_and_runs_evening():
 
 
 @pytest.mark.asyncio
+async def test_22226_runs_on_wednesday_and_not_on_thursday():
+    # 2026-11-04 is Wednesday (22226 operates SUR -> CSMT in morning)
+    wed_dt = datetime(2026, 11, 4, 10, 0, 0, tzinfo=IST)
+    res_wed = TrainOperationsMetadata.check_operational_status("22226", query_dt=wed_dt)
+    assert res_wed["runs_today"] is True
+    assert "WED" in res_wed["days_of_run"]
+    assert res_wed["service_state"] == "RUNNING"
+    assert res_wed["pairing_train"] == "22225"
+
+    # 2026-11-05 is Thursday (22226 does NOT operate)
+    thu_dt = datetime(2026, 11, 5, 10, 0, 0, tzinfo=IST)
+    res_thu = TrainOperationsMetadata.check_operational_status("22226", query_dt=thu_dt)
+    assert res_thu["runs_today"] is False
+    assert res_thu["service_state"] == "NOT_RUNNING_TODAY"
+    assert "THU" not in res_thu["days_of_run"]
+
+
+@pytest.mark.asyncio
+async def test_12101_and_12102_days_of_run():
+    # 12101 runs Mon, Tue, Fri, Sat (does NOT run on Wednesday)
+    wed_dt = datetime(2026, 11, 4, 10, 0, 0, tzinfo=IST)
+    res_12101_wed = TrainOperationsMetadata.check_operational_status("12101", query_dt=wed_dt)
+    assert res_12101_wed["runs_today"] is False
+    assert res_12101_wed["service_state"] == "NOT_RUNNING_TODAY"
+
+    # 12102 runs Mon, Wed, Thu, Sun (DOES run on Wednesday)
+    res_12102_wed = TrainOperationsMetadata.check_operational_status("12102", query_dt=wed_dt)
+    assert res_12102_wed["runs_today"] is True
+
+
+@pytest.mark.asyncio
+async def test_all_32_known_trains_indexed():
+    from app.services.orchestrator import KNOWN_TRAINS
+    assert len(KNOWN_TRAINS) >= 32
+    for t_num, t_name in KNOWN_TRAINS.items():
+        profile = TrainOperationsMetadata.get_profile(t_num)
+        assert profile is not None, f"Train {t_num} ({t_name}) missing from TrainOperationsMetadata"
+        assert profile["number"] == t_num
+        assert len(profile["days_of_run"]) > 0
+
+
+@pytest.mark.asyncio
 async def test_simulator_respects_maintenance_days():
     sim = OfflineSimulatorProvider()
     status_22225 = await sim.get_live_status("22225")

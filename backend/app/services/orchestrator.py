@@ -169,8 +169,6 @@ class ProviderOrchestrator:
                     # Broadcast to WebSocket channel
                     await cache.publish_event(f"train_telemetry:{clean_num}", res.model_dump(mode="json"))
                     return res
-                else:
-                    registry.record_failure(p.provider_name)
             except Exception as e:
                 registry.record_failure(p.provider_name)
                 logger.warning("Provider %s error on get_live_status(%s): %s", p.provider_name, clean_num, e)
@@ -191,7 +189,6 @@ class ProviderOrchestrator:
                     registry.record_success(p.provider_name)
                     await cache.set_json(cache_key, res, ttl_seconds=12 * 3600)
                     return res
-                registry.record_failure(p.provider_name)
             except Exception as e:
                 registry.record_failure(p.provider_name)
                 logger.warning("Provider %s error on get_schedule: %s", p.provider_name, e)
@@ -211,7 +208,6 @@ class ProviderOrchestrator:
                     registry.record_success(p.provider_name)
                     await cache.set_json(cache_key, res, ttl_seconds=12 * 3600)
                     return res
-                registry.record_failure(p.provider_name)
             except Exception as e:
                 registry.record_failure(p.provider_name)
                 logger.warning("Provider %s error on get_route: %s", p.provider_name, e)
@@ -302,7 +298,6 @@ class ProviderOrchestrator:
                     registry.record_success(p.provider_name)
                     await cache.set_json(cache_key, res.model_dump(mode="json"), ttl_seconds=60)
                     return res
-                registry.record_failure(p.provider_name)
             except Exception as e:
                 registry.record_failure(p.provider_name)
                 logger.warning("Provider %s error on get_station_board: %s", p.provider_name, e)
@@ -345,7 +340,6 @@ class ProviderOrchestrator:
                     enriched = self._enrich_coach_platform_metadata(res)
                     await cache.set_json(cache_key, enriched.model_dump(mode="json"), ttl_seconds=12 * 3600)
                     return enriched
-                registry.record_failure(p.provider_name)
             except Exception as e:
                 registry.record_failure(p.provider_name)
                 logger.warning("Provider %s error on get_coach_composition: %s", p.provider_name, e)
@@ -379,7 +373,6 @@ class ProviderOrchestrator:
                 if res:
                     registry.record_success(p.provider_name)
                     return res
-                registry.record_failure(p.provider_name)
             except Exception as e:
                 registry.record_failure(p.provider_name)
                 logger.warning("Provider %s error on get_pnr_status: %s", p.provider_name, e)

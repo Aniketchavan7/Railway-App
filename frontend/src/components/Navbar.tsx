@@ -103,7 +103,7 @@ export function Navbar() {
           {/* Live IST Telemetry Beacon */}
           <div className="hidden xl:flex items-center gap-2 px-3 py-1 bg-paper-3 rounded-pill border border-rule text-xs text-muted shrink-0">
             <span className="w-2 h-2 rounded-full bg-ok" aria-hidden="true" />
-            <span className="font-medium text-ink font-outlier">{istTime || "LIVE IST"}</span>
+            <span className="font-medium text-ink font-outlier">{istTime || "Live IST"}</span>
           </div>
 
           {/* Navigation Links */}

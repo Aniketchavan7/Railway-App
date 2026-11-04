@@ -13,6 +13,9 @@ export const metadata: Metadata = {
   description:
     "Track Indian train locations in real time with live delay updates, station departure boards, and fare calculators.",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/icon.svg",
+  },
 };
 
 export default function RootLayout({

@@ -168,9 +168,9 @@ function TrainTrackingContent() {
   const currentKm = currentHalt?.distance_km ?? 0;
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-6 sm:space-y-8 py-2">
       {/* Tactical Train Command Console Header */}
-      <div className="bg-paper-2 rounded-card border border-rule p-4 sm:p-6 space-y-4">
+      <section className="space-y-4">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div className="space-y-2">
             <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
@@ -598,12 +598,12 @@ function TrainTrackingContent() {
               href={`/fare/?train=${status.train_number}`}
               className="inline-flex items-center gap-1 text-xs font-medium text-accent hover:underline active:opacity-80 focus-visible:outline-2 focus-visible:outline-accent"
             >
-              <Calculator className="w-3.5 h-3.5" />
+              <Calculator className="w-3.5 h-3.5" aria-hidden="true" />
               <span>Fare calculator</span>
             </Link>
           </div>
         </div>
-      </div>
+      </section>
 
       {/* Onboard GPS Reporter Collapsible Drawer */}
       {showGpsReporter && (

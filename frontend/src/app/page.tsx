@@ -8,7 +8,6 @@ import {
   Search,
   Building2,
   Ticket,
-  LayoutGrid,
   Calculator,
   ArrowRight,
   Gauge,
@@ -170,20 +169,25 @@ export default function HomePage() {
     <div className="space-y-12 sm:space-y-16 py-2">
       {/* Open Hero Section - No enclosing card boxes, pure typography and spatial hierarchy */}
       <section className="space-y-6 max-w-4xl">
-        <h1 className="text-3xl sm:text-5xl md:text-6xl font-display font-bold tracking-tight text-ink leading-[1.05]">
-          Track any train across India.
-        </h1>
+        <div className="space-y-2">
+          <h1 className="text-3xl sm:text-5xl md:text-6xl font-display font-bold tracking-tight text-ink leading-[1.05]">
+            Track any train across India.
+          </h1>
+          <p className="text-sm sm:text-base text-muted max-w-xl">
+            Live GPS telemetry, platform arrival boards, and distance tariffs.
+          </p>
+        </div>
 
         {/* Clean Single-Tier Search Console */}
-        <div className="space-y-3 pt-2">
+        <div className="space-y-3 pt-1">
           {/* Mode Switcher */}
-          <div className="flex items-center gap-4 text-xs border-b border-rule pb-2">
+          <div className="inline-flex items-center gap-1 p-1 rounded-pill bg-paper-2 border border-rule text-xs">
             <button
               type="button"
               onClick={() => setSearchMode("train")}
-              className={`pb-1 font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-pill font-medium transition-colors cursor-pointer flex items-center gap-1.5 focus-visible:outline-2 focus-visible:outline-accent ${
                 searchMode === "train"
-                  ? "text-accent border-b-2 border-accent font-semibold -mb-[9px]"
+                  ? "bg-accent text-accent-ink font-semibold"
                   : "text-muted hover:text-ink"
               }`}
             >
@@ -194,9 +198,9 @@ export default function HomePage() {
             <button
               type="button"
               onClick={() => setSearchMode("station")}
-              className={`pb-1 font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-pill font-medium transition-colors cursor-pointer flex items-center gap-1.5 focus-visible:outline-2 focus-visible:outline-accent ${
                 searchMode === "station"
-                  ? "text-accent border-b-2 border-accent font-semibold -mb-[9px]"
+                  ? "bg-accent text-accent-ink font-semibold"
                   : "text-muted hover:text-ink"
               }`}
             >
@@ -207,9 +211,9 @@ export default function HomePage() {
             <button
               type="button"
               onClick={() => setSearchMode("pnr")}
-              className={`pb-1 font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-pill font-medium transition-colors cursor-pointer flex items-center gap-1.5 focus-visible:outline-2 focus-visible:outline-accent ${
                 searchMode === "pnr"
-                  ? "text-accent border-b-2 border-accent font-semibold -mb-[9px]"
+                  ? "bg-accent text-accent-ink font-semibold"
                   : "text-muted hover:text-ink"
               }`}
             >
@@ -218,26 +222,27 @@ export default function HomePage() {
             </button>
           </div>
 
-          {/* Search Inputs */}
+          {/* Unified Omnibar Search Shell */}
           {searchMode === "train" && (
-            <form onSubmit={handleSearch} className="flex gap-2 max-w-2xl">
-              <div className="relative flex-1">
-                <Search
-                  className="w-4 h-4 text-muted absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none"
-                  aria-hidden="true"
-                />
-                <input
-                  type="text"
-                  value={trainQuery}
-                  onChange={(e) => setTrainQuery(e.target.value)}
-                  placeholder="Enter 5-digit train number (e.g. 22225, 12951) …"
-                  className="w-full bg-paper-2 focus:bg-paper text-ink placeholder:text-muted rounded-pill pl-10 pr-4 py-3 text-sm outline-none border border-rule transition-colors focus:border-accent disabled:opacity-40"
-                />
-              </div>
+            <form
+              onSubmit={handleSearch}
+              className="relative flex items-center w-full max-w-2xl bg-paper-2 border border-rule hover:border-rule-2 focus-within:border-accent focus-within:bg-paper focus-within:ring-1 focus-within:ring-accent rounded-pill p-1.5 pl-4 sm:pl-5 transition-colors"
+            >
+              <Search
+                className="w-4 h-4 text-muted shrink-0 mr-3 pointer-events-none"
+                aria-hidden="true"
+              />
+              <input
+                type="text"
+                value={trainQuery}
+                onChange={(e) => setTrainQuery(e.target.value)}
+                placeholder="Enter train number or name (e.g. 22225, 12951) …"
+                className="bg-transparent text-sm text-ink placeholder:text-muted outline-none flex-1 min-w-0 font-outlier font-semibold disabled:opacity-40"
+              />
               <button
                 type="submit"
                 disabled={!trainQuery.trim()}
-                className="bg-accent hover:opacity-90 active:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed text-accent-ink font-medium text-xs px-6 py-3 rounded-pill transition-opacity flex items-center justify-center gap-2 shrink-0 cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-accent"
+                className="bg-accent hover:opacity-90 active:opacity-85 disabled:opacity-40 disabled:cursor-not-allowed text-accent-ink font-medium text-xs px-5 py-2.5 rounded-pill transition-opacity flex items-center justify-center gap-1.5 shrink-0 cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-accent"
               >
                 <span>Track</span>
                 <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
@@ -246,24 +251,25 @@ export default function HomePage() {
           )}
 
           {searchMode === "station" && (
-            <form onSubmit={handleSearch} className="flex gap-2 max-w-2xl">
-              <div className="relative flex-1">
-                <Building2
-                  className="w-4 h-4 text-muted absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none"
-                  aria-hidden="true"
-                />
-                <input
-                  type="text"
-                  value={stationQuery}
-                  onChange={(e) => setStationQuery(e.target.value.toUpperCase())}
-                  placeholder="Station code (e.g. CSMT, PUNE, NDLS, HWH) …"
-                  className="w-full bg-paper-2 focus:bg-paper text-ink placeholder:text-muted rounded-pill pl-10 pr-4 py-3 text-sm outline-none border border-rule transition-colors focus:border-accent disabled:opacity-40 font-outlier font-bold"
-                />
-              </div>
+            <form
+              onSubmit={handleSearch}
+              className="relative flex items-center w-full max-w-2xl bg-paper-2 border border-rule hover:border-rule-2 focus-within:border-accent focus-within:bg-paper focus-within:ring-1 focus-within:ring-accent rounded-pill p-1.5 pl-4 sm:pl-5 transition-colors"
+            >
+              <Building2
+                className="w-4 h-4 text-muted shrink-0 mr-3 pointer-events-none"
+                aria-hidden="true"
+              />
+              <input
+                type="text"
+                value={stationQuery}
+                onChange={(e) => setStationQuery(e.target.value.toUpperCase())}
+                placeholder="Station code (e.g. CSMT, PUNE, NDLS, HWH) …"
+                className="bg-transparent text-sm text-ink placeholder:text-muted outline-none flex-1 min-w-0 font-outlier font-semibold disabled:opacity-40"
+              />
               <button
                 type="submit"
                 disabled={!stationQuery.trim()}
-                className="bg-accent hover:opacity-90 active:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed text-accent-ink font-medium text-xs px-6 py-3 rounded-pill transition-opacity flex items-center justify-center gap-2 shrink-0 cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-accent"
+                className="bg-accent hover:opacity-90 active:opacity-85 disabled:opacity-40 disabled:cursor-not-allowed text-accent-ink font-medium text-xs px-5 py-2.5 rounded-pill transition-opacity flex items-center justify-center gap-1.5 shrink-0 cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-accent"
               >
                 <span>View</span>
                 <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
@@ -272,25 +278,26 @@ export default function HomePage() {
           )}
 
           {searchMode === "pnr" && (
-            <form onSubmit={handleSearch} className="flex gap-2 max-w-2xl">
-              <div className="relative flex-1">
-                <Ticket
-                  className="w-4 h-4 text-muted absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none"
-                  aria-hidden="true"
-                />
-                <input
-                  type="text"
-                  maxLength={10}
-                  value={pnrQuery}
-                  onChange={(e) => setPnrQuery(e.target.value.replace(/\D/g, ""))}
-                  placeholder="Enter 10-digit PNR number …"
-                  className="w-full bg-paper-2 focus:bg-paper text-ink placeholder:text-muted rounded-pill pl-10 pr-4 py-3 text-sm outline-none border border-rule transition-colors focus:border-accent disabled:opacity-40 font-outlier font-bold"
-                />
-              </div>
+            <form
+              onSubmit={handleSearch}
+              className="relative flex items-center w-full max-w-2xl bg-paper-2 border border-rule hover:border-rule-2 focus-within:border-accent focus-within:bg-paper focus-within:ring-1 focus-within:ring-accent rounded-pill p-1.5 pl-4 sm:pl-5 transition-colors"
+            >
+              <Ticket
+                className="w-4 h-4 text-muted shrink-0 mr-3 pointer-events-none"
+                aria-hidden="true"
+              />
+              <input
+                type="text"
+                maxLength={10}
+                value={pnrQuery}
+                onChange={(e) => setPnrQuery(e.target.value.replace(/\D/g, ""))}
+                placeholder="Enter 10-digit PNR number …"
+                className="bg-transparent text-sm text-ink placeholder:text-muted outline-none flex-1 min-w-0 font-outlier font-semibold disabled:opacity-40"
+              />
               <button
                 type="submit"
                 disabled={pnrQuery.trim().length !== 10}
-                className="bg-accent hover:opacity-90 active:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed text-accent-ink font-medium text-xs px-6 py-3 rounded-pill transition-opacity flex items-center justify-center gap-2 shrink-0 cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-accent"
+                className="bg-accent hover:opacity-90 active:opacity-85 disabled:opacity-40 disabled:cursor-not-allowed text-accent-ink font-medium text-xs px-5 py-2.5 rounded-pill transition-opacity flex items-center justify-center gap-1.5 shrink-0 cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-accent"
               >
                 <span>Check</span>
                 <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
@@ -301,6 +308,7 @@ export default function HomePage() {
           {/* Quick Shortcuts */}
           {searchMode === "train" && (
             <div className="flex flex-wrap items-center gap-2 text-xs pt-1">
+              <span className="text-muted text-[11px] font-medium font-outlier">Quick:</span>
               {popularTrains.map((item) => (
                 <button
                   key={item.num}
@@ -309,7 +317,7 @@ export default function HomePage() {
                     setTrainQuery(item.num);
                     router.push(`/train?number=${item.num}`);
                   }}
-                  className="px-2.5 py-1 rounded-pill bg-paper-2 hover:bg-paper-3 text-muted hover:text-ink transition-colors font-outlier text-[11px] cursor-pointer focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-40"
+                  className="px-2.5 py-1 rounded-pill bg-paper-2 hover:bg-paper-3 text-muted hover:text-ink border border-rule transition-colors font-outlier text-[11px] cursor-pointer focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-40"
                 >
                   {item.label}
                 </button>
@@ -319,6 +327,7 @@ export default function HomePage() {
 
           {searchMode === "station" && (
             <div className="flex flex-wrap items-center gap-2 text-xs pt-1">
+              <span className="text-muted text-[11px] font-medium font-outlier">Quick:</span>
               {popularStations.map((item) => (
                 <button
                   key={item.code}
@@ -327,7 +336,7 @@ export default function HomePage() {
                     setStationQuery(item.code);
                     router.push(`/stations?code=${item.code}`);
                   }}
-                  className="px-2.5 py-1 rounded-pill bg-paper-2 hover:bg-paper-3 text-muted hover:text-ink transition-colors font-outlier text-[11px] cursor-pointer focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-40"
+                  className="px-2.5 py-1 rounded-pill bg-paper-2 hover:bg-paper-3 text-muted hover:text-ink border border-rule transition-colors font-outlier text-[11px] cursor-pointer focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-40"
                 >
                   {item.label}
                 </button>
@@ -337,13 +346,14 @@ export default function HomePage() {
 
           {searchMode === "pnr" && (
             <div className="flex flex-wrap items-center gap-2 text-xs pt-1">
+              <span className="text-muted text-[11px] font-medium font-outlier">Quick:</span>
               <button
                 type="button"
                 onClick={() => {
                   setPnrQuery("1234567890");
                   router.push(`/pnr?pnr=1234567890`);
                 }}
-                className="px-2.5 py-1 rounded-pill bg-paper-2 hover:bg-paper-3 text-muted hover:text-ink transition-colors font-outlier text-[11px] cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-accent"
+                className="px-2.5 py-1 rounded-pill bg-paper-2 hover:bg-paper-3 text-muted hover:text-ink border border-rule transition-colors font-outlier text-[11px] cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-accent"
               >
                 Demo #1234567890
               </button>

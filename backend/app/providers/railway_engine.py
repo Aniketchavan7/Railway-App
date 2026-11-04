@@ -29,7 +29,7 @@ class RailwayEngineProvider(RailwayProvider):
     def __init__(self):
         self.base_url = settings.RAILWAY_ENGINE_BASE_URL.rstrip("/")
         self.api_key = settings.RAILWAY_ENGINE_API_KEY or getattr(settings, "RAILWAY_API_KEY", "") or ""
-        self.timeout = 6.0
+        self.timeout = 10.0
         self.headers = {
             "User-Agent": "RailPulse-SaaS/1.0 (Mozilla/5.0)",
             "Accept": "application/json",

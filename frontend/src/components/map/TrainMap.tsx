@@ -11,7 +11,6 @@ import {
   MapPin,
   Maximize2,
   Train,
-  Sparkles,
 } from "lucide-react";
 
 const CARTO_API_KEY =
@@ -97,9 +96,9 @@ export function TrainMap({
         });
       }
 
-      if (!map.getLayer("route-glow-layer")) {
+      if (!map.getLayer("route-casing-layer")) {
         map.addLayer({
-          id: "route-glow-layer",
+          id: "route-casing-layer",
           type: "line",
           source: "route-line",
           layout: {
@@ -107,9 +106,9 @@ export function TrainMap({
             "line-cap": "round",
           },
           paint: {
-            "line-color": "#e5a93b",
-            "line-width": 8,
-            "line-opacity": 0.25,
+            "line-color": "#1c1d22",
+            "line-width": 5,
+            "line-opacity": 0.8,
           },
         });
       }
@@ -125,8 +124,8 @@ export function TrainMap({
           },
           paint: {
             "line-color": "#e5a93b",
-            "line-width": 3.5,
-            "line-opacity": 0.95,
+            "line-width": 2.5,
+            "line-opacity": 1.0,
           },
         });
       }
@@ -513,26 +512,25 @@ export function TrainMap({
         </button>
       </div>
 
-      {/* CARTO Vector Badge (Top-Left) */}
-      <div className="absolute top-2.5 left-2.5 bg-paper-2 border border-rule px-2.5 py-1 rounded-pill text-[11px] text-muted flex items-center gap-1.5 z-10">
-        <Sparkles className="w-3 h-3 text-accent shrink-0" aria-hidden="true" />
+      {/* CARTO Basemap Indicator (Top-Left) */}
+      <div className="absolute top-2.5 left-2.5 bg-paper-2 border border-rule px-2.5 py-1 rounded text-[11px] text-muted flex items-center gap-1.5 z-10">
         <span className="font-semibold text-ink">CARTO</span>
         <span className="text-rule-2">/</span>
-        <span className="text-[11px] text-accent font-medium">
+        <span className="text-[11px] text-accent font-medium font-outlier">
           {mapTheme === "raster" ? "Raster" : "Vector GL"}
         </span>
       </div>
 
-      {/* Floating Tactical HUD Bar (Bottom) */}
-      <div className="absolute bottom-2.5 left-2.5 right-2.5 sm:right-auto bg-paper-2/95 backdrop-blur-sm border border-rule px-3 sm:px-4 py-2 rounded-pill flex flex-wrap items-center gap-2 sm:gap-3 text-xs z-10 shadow-lg">
-        <div className="flex items-center gap-1.5 font-outlier font-bold text-ink">
+      {/* Railway Telemetry HUD (Bottom) - Solid neutral surface, no glassmorphism */}
+      <div className="absolute bottom-2.5 left-2.5 right-2.5 sm:right-auto bg-paper-2 border border-rule px-3 sm:px-3.5 py-1.5 rounded flex flex-wrap items-center gap-2 sm:gap-3 text-xs z-10">
+        <div className="flex items-center gap-1.5 font-outlier font-bold text-ink tabular-nums">
           <Train className="w-3.5 h-3.5 text-accent" />
           <span>#{status.train_number}</span>
         </div>
 
         <span className="text-rule-2">/</span>
 
-        <div className="flex items-center gap-1 text-ink font-outlier font-semibold">
+        <div className="flex items-center gap-1 text-ink font-outlier font-semibold tabular-nums">
           <Gauge className="w-3.5 h-3.5 text-cool" />
           <span>{status.speed_kmph ?? 0} km/h</span>
         </div>
@@ -547,16 +545,16 @@ export function TrainMap({
         {status.latitude && status.longitude && (
           <>
             <span className="text-rule-2 hidden md:inline">/</span>
-            <span className="text-[10px] text-muted font-outlier hidden md:inline">
+            <span className="text-[10px] text-muted font-outlier hidden md:inline tabular-nums">
               {status.latitude.toFixed(4)}° N, {status.longitude.toFixed(4)}° E
             </span>
           </>
         )}
       </div>
 
-      {/* Station Coordinates Warning Notice (Fallback only) */}
+      {/* Station Coordinates Notice */}
       {!status.latitude && (
-        <div className="absolute top-10 left-2.5 right-12 sm:right-auto bg-paper-2 text-ink px-3 py-1.5 rounded-pill border border-rule text-xs flex items-center gap-2 z-10">
+        <div className="absolute top-10 left-2.5 right-12 sm:right-auto bg-paper-2 text-ink px-3 py-1 rounded border border-rule text-xs flex items-center gap-2 z-10">
           <Info className="w-3.5 h-3.5 text-accent shrink-0" />
           <span className="text-[11px]">Station halting trajectory active</span>
         </div>
