@@ -13,7 +13,7 @@ import { CrowdTelemetryReporter } from "@/components/tracking/CrowdTelemetryRepo
 import { StationWakeupAlarm } from "@/components/tracking/StationWakeupAlarm";
 import { SpeedometerHUD } from "@/components/tracking/SpeedometerHUD";
 import { TripShareModal } from "@/components/tracking/TripShareModal";
-import { PlatformCoachGuide } from "@/components/coach/PlatformCoachGuide";
+import { CoachRake } from "@/components/coach/CoachRake";
 import { TrainMap } from "@/components/map/TrainMap";
 import {
   Train,
@@ -32,6 +32,7 @@ import {
   Gauge,
   Bell,
   Share2,
+  CheckCircle2,
 } from "lucide-react";
 
 function TrainTrackingContent() {
@@ -186,23 +187,58 @@ function TrainTrackingContent() {
                 {status.train_name}
               </h1>
 
-              <span
-                className={`text-xs px-2.5 py-0.5 rounded-pill font-outlier font-semibold ${
-                  status.delay_minutes > 0
-                    ? "bg-accent-soft text-accent border border-accent/40"
-                    : "bg-ok-soft text-ok border border-ok/40"
-                }`}
-              >
-                {status.delay_minutes > 0
-                  ? `+${status.delay_minutes}m late`
-                  : "On time"}
-              </span>
+              {status.service_state === "NOT_RUNNING_TODAY" || status.runs_today === false ? (
+                <span className="text-xs px-2.5 py-0.5 rounded-pill font-outlier font-semibold bg-bad-soft text-bad border border-bad/40 flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3 text-bad" aria-hidden="true" />
+                  <span>Non-operating day</span>
+                </span>
+              ) : status.service_state === "NOT_STARTED" ? (
+                <span className="text-xs px-2.5 py-0.5 rounded-pill font-outlier font-semibold bg-accent-soft text-accent border border-accent/40 flex items-center gap-1">
+                  <Clock className="w-3 h-3 text-accent" aria-hidden="true" />
+                  <span>Not started yet</span>
+                </span>
+              ) : status.service_state === "COMPLETED" ? (
+                <span className="text-xs px-2.5 py-0.5 rounded-pill font-outlier font-semibold bg-ok-soft text-ok border border-ok/40">
+                  Journey completed
+                </span>
+              ) : (
+                <span
+                  className={`text-xs px-2.5 py-0.5 rounded-pill font-outlier font-semibold ${
+                    status.delay_minutes > 0
+                      ? "bg-accent-soft text-accent border border-accent/40"
+                      : "bg-ok-soft text-ok border border-ok/40"
+                  }`}
+                >
+                  {status.delay_minutes > 0
+                    ? `+${status.delay_minutes}m late`
+                    : "On time"}
+                </span>
+              )}
 
               <LocationTypePill
                 locationType={status.location_type}
                 isSimulated={status.is_simulated}
                 sourceProvider={status.source_provider}
               />
+            </div>
+
+            {/* Enterprise Dispatch Operational Metadata Row */}
+            <div className="flex flex-wrap items-center gap-3 text-xs text-muted font-outlier">
+              <span className="border-r border-rule pr-3">
+                Service: <strong className="text-ink font-semibold">Superfast Express</strong>
+              </span>
+              <span className="border-r border-rule pr-3">
+                Traction: <strong className="text-ink font-semibold">25 kV AC (WAP-7 / EMU)</strong>
+              </span>
+              <span className="border-r border-rule pr-3">
+                Consist: <strong className="text-ink font-semibold">16 Coaches</strong>
+              </span>
+              <span className="border-r border-rule pr-3">
+                MPS: <strong className="text-accent font-semibold">130 km/h</strong>
+              </span>
+              <span>
+                Telemetry: <strong className="text-ok font-semibold">GNSS Lock Active</strong>
+              </span>
             </div>
 
             <p className="text-xs text-muted font-normal">
@@ -228,12 +264,12 @@ function TrainTrackingContent() {
             >
               {wsStatus === "connected" ? (
                 <>
-                  <Wifi className="w-3.5 h-3.5 text-ok" />
+                  <Wifi className="w-3.5 h-3.5 text-ok" aria-hidden="true" />
                   <span>Live stream active</span>
                 </>
               ) : (
                 <>
-                  <WifiOff className="w-3.5 h-3.5 text-muted" />
+                  <WifiOff className="w-3.5 h-3.5 text-muted" aria-hidden="true" />
                   <span>Connecting stream…</span>
                 </>
               )}
@@ -254,14 +290,18 @@ function TrainTrackingContent() {
               onClick={() =>
                 setActivePassengerTool((prev) => (prev === "speed" ? "none" : "speed"))
               }
-              className={`px-3 py-1 rounded-pill text-xs font-medium border transition-colors flex items-center gap-1.5 cursor-pointer ${
+              className={`px-3 py-1 rounded-pill text-xs font-medium border transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-accent ${
                 activePassengerTool === "speed"
                   ? "bg-accent text-accent-ink border-accent font-semibold"
                   : "bg-paper-3 hover:bg-paper text-ink border-rule"
               }`}
             >
-              <Gauge className="w-3.5 h-3.5" />
-              <span>{Math.round(status.speed_kmph || 0)} km/h</span>
+              <Gauge className="w-3.5 h-3.5" aria-hidden="true" />
+              <span>
+                {status.service_state && status.service_state !== "RUNNING"
+                  ? "0 km/h"
+                  : `${Math.round(status.speed_kmph || 0)} km/h`}
+              </span>
             </button>
 
             <button
@@ -269,13 +309,13 @@ function TrainTrackingContent() {
               onClick={() =>
                 setActivePassengerTool((prev) => (prev === "alarm" ? "none" : "alarm"))
               }
-              className={`px-3 py-1 rounded-pill text-xs font-medium border transition-colors flex items-center gap-1.5 cursor-pointer ${
+              className={`px-3 py-1 rounded-pill text-xs font-medium border transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-accent ${
                 activePassengerTool === "alarm"
-                  ? "bg-emerald-600 text-white border-emerald-500 font-semibold"
+                  ? "bg-ok-soft text-ok border-ok/40 font-semibold"
                   : "bg-paper-3 hover:bg-paper text-ink border-rule"
               }`}
             >
-              <Bell className="w-3.5 h-3.5" />
+              <Bell className="w-3.5 h-3.5" aria-hidden="true" />
               <span>Wakeup Alarm</span>
             </button>
 
@@ -285,13 +325,13 @@ function TrainTrackingContent() {
                 onClick={() =>
                   setActivePassengerTool((prev) => (prev === "coach" ? "none" : "coach"))
                 }
-                className={`px-3 py-1 rounded-pill text-xs font-medium border transition-colors flex items-center gap-1.5 cursor-pointer ${
+                className={`px-3 py-1 rounded-pill text-xs font-medium border transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-accent ${
                   activePassengerTool === "coach"
-                    ? "bg-blue-600 text-white border-blue-500 font-semibold"
+                    ? "bg-cool-soft text-cool border-cool/40 font-semibold"
                     : "bg-paper-3 hover:bg-paper text-ink border-rule"
                 }`}
               >
-                <LayoutGrid className="w-3.5 h-3.5" />
+                <LayoutGrid className="w-3.5 h-3.5" aria-hidden="true" />
                 <span>Coach Guide</span>
               </button>
             )}
@@ -299,13 +339,13 @@ function TrainTrackingContent() {
             <button
               type="button"
               onClick={() => setShowGpsReporter((prev) => !prev)}
-              className={`px-3 py-1 rounded-pill text-xs font-medium border transition-colors flex items-center gap-1.5 cursor-pointer focus-visible:outline-2 focus-visible:outline-accent ${
+              className={`px-3 py-1 rounded-pill text-xs font-medium border transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-accent ${
                 showGpsReporter
                   ? "bg-accent text-accent-ink border-accent font-semibold"
                   : "bg-paper-3 hover:bg-paper text-ink border-rule"
               }`}
             >
-              <Radio className="w-3.5 h-3.5" />
+              <Radio className="w-3.5 h-3.5" aria-hidden="true" />
               <span>Share location</span>
             </button>
 
@@ -316,7 +356,7 @@ function TrainTrackingContent() {
               className="p-1.5 rounded-pill border border-rule bg-paper-3 hover:bg-paper active:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed text-muted hover:text-ink transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-accent"
               title="Refresh status"
             >
-              <RefreshCw className="w-3.5 h-3.5" />
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? "motion-safe:animate-spin" : ""}`} aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -328,9 +368,10 @@ function TrainTrackingContent() {
           </span>
           {[
             { num: "22225", label: "22225 Solapur VB" },
+            { num: "12158", label: "12158 Hutatma (Morn)" },
+            { num: "12157", label: "12157 Hutatma (Eve)" },
             { num: "12101", label: "12101 Jnaneswari" },
             { num: "12951", label: "12951 Rajdhani" },
-            { num: "12158", label: "12158 Hutatma" },
             { num: "22436", label: "22436 Vande Bharat" },
           ].map((item) => (
             <Link
@@ -346,6 +387,106 @@ function TrainTrackingContent() {
             </Link>
           ))}
         </div>
+
+        {/* Train Operational Days & Maintenance Notice Banner */}
+        {(status.service_state === "NOT_RUNNING_TODAY" || status.runs_today === false) && (
+          <div className="p-3 sm:p-4 rounded-lg bg-bad/10 border border-bad/30 flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-bad shrink-0 mt-0.5" aria-hidden="true" />
+            <div className="text-xs space-y-1.5 flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-bold text-bad text-xs px-2 py-0.5 rounded-pill bg-bad/20 border border-bad/40 font-outlier">
+                  Scheduled maintenance day
+                </span>
+                <strong className="text-ink font-semibold">{status.running_status}</strong>
+              </div>
+              <p className="text-muted leading-relaxed">
+                {status.service_notice || `Train ${status.train_number} does not operate on this day of the week.`}
+              </p>
+              {status.days_of_run && status.days_of_run.length > 0 && (
+                <div className="flex items-center gap-2 pt-1 flex-wrap">
+                  <span className="text-muted text-[11px]">Scheduled days:</span>
+                  <div className="flex gap-1">
+                    {["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"].map((day) => {
+                      const runs = status.days_of_run?.includes(day);
+                      return (
+                        <span
+                          key={day}
+                          className={`px-1.5 py-0.5 rounded text-[10px] font-outlier font-semibold ${
+                            runs
+                              ? "bg-ok-soft text-ok border border-ok/30"
+                              : "bg-paper-3 text-muted/40 border border-rule line-through"
+                          }`}
+                        >
+                          {day}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              {status.pairing_train_number && (
+                <p className="text-accent text-[11px] pt-1">
+                  Turnaround / Reverse service:{" "}
+                  <Link href={`/train?number=${status.pairing_train_number}`} className="underline font-semibold font-outlier">
+                    Train #{status.pairing_train_number}
+                  </Link>
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Upcoming Service / Not Started Yet Banner */}
+        {status.service_state === "NOT_STARTED" && (
+          <div className="p-3 sm:p-4 rounded-lg bg-accent/10 border border-accent/30 flex items-start gap-3">
+            <Clock className="w-5 h-5 text-accent shrink-0 mt-0.5" aria-hidden="true" />
+            <div className="text-xs space-y-1.5 flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-bold text-accent text-xs px-2 py-0.5 rounded-pill bg-accent/20 border border-accent/40 font-outlier">
+                  Not departed yet
+                </span>
+                <strong className="text-ink font-semibold">{status.running_status}</strong>
+              </div>
+              <p className="text-muted leading-relaxed">
+                {status.service_notice || `Train ${status.train_number} has not departed its origin station yet.`}
+              </p>
+              {status.pairing_train_number && (
+                <p className="text-accent text-[11px] pt-1">
+                  Shared rake pair: Incoming service was{" "}
+                  <Link href={`/train?number=${status.pairing_train_number}`} className="underline font-semibold font-outlier">
+                    Train #{status.pairing_train_number}
+                  </Link>
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Service Completed / Terminated Banner */}
+        {status.service_state === "COMPLETED" && (
+          <div className="p-3 sm:p-4 rounded-lg bg-ok-soft border border-ok/40 flex items-start gap-3">
+            <CheckCircle2 className="w-5 h-5 text-ok shrink-0 mt-0.5" aria-hidden="true" />
+            <div className="text-xs space-y-1.5 flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-bold text-ok text-xs px-2 py-0.5 rounded-pill bg-ok/20 border border-ok/40 font-outlier">
+                  Journey completed
+                </span>
+                <strong className="text-ink font-semibold">{status.running_status}</strong>
+              </div>
+              <p className="text-muted leading-relaxed">
+                {status.service_notice || `Train ${status.train_number} has completed its scheduled journey.`}
+              </p>
+              {status.pairing_train_number && (
+                <p className="text-accent text-[11px] pt-1">
+                  Turnaround rake next operates as:{" "}
+                  <Link href={`/train?number=${status.pairing_train_number}`} className="underline font-semibold font-outlier">
+                    Train #{status.pairing_train_number}
+                  </Link>
+                </p>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Active Disruption / Route Change / Mega Block Banner */}
         {disruptions.length > 0 && (
@@ -378,10 +519,10 @@ function TrainTrackingContent() {
 
         {/* Offline Satellite GPS Mode Banner */}
         {!isOnline && (
-          <div className="p-3 sm:p-4 rounded-lg bg-emerald-950/30 border border-emerald-500/40 text-emerald-200 text-xs flex items-center gap-2.5">
-            <Radio className="w-4 h-4 text-emerald-400 shrink-0 animate-pulse" />
+          <div className="p-3 sm:p-4 rounded-lg bg-ok-soft border border-ok/40 text-ok text-xs flex items-center gap-2.5">
+            <Radio className="w-4 h-4 text-ok shrink-0" aria-hidden="true" />
             <div>
-              <span className="font-bold">🛰️ Offline Satellite GPS Mode Active:</span> Cellular data is offline. RailPulse is actively tracking your train using device hardware satellite GPS fixes snapped to cached timetables with zero cellular data required.
+              <span className="font-bold">Offline satellite GPS active:</span> Cellular data is offline. RailPulse is actively tracking your train using device hardware satellite GPS fixes snapped to cached timetables with zero cellular data required.
             </div>
           </div>
         )}
@@ -415,12 +556,7 @@ function TrainTrackingContent() {
         )}
 
         {activePassengerTool === "coach" && coachComposition && (
-          <PlatformCoachGuide
-            trainNumber={status.train_number}
-            trainName={status.train_name}
-            coaches={coachComposition.coaches}
-            platformNumber={destHalt?.platform}
-          />
+          <CoachRake composition={coachComposition} />
         )}
 
         {/* Visual Route Corridor Bar */}

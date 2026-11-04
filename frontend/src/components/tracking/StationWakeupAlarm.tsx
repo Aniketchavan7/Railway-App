@@ -233,88 +233,98 @@ export function StationWakeupAlarm({
   };
 
   return (
-    <div className={`rounded-xl border transition-all ${
-      isAlarmFiring
-        ? "border-red-500 bg-red-950/40 shadow-lg shadow-red-500/20 animate-pulse"
-        : isAlarmArmed
-        ? "border-emerald-500/50 bg-emerald-950/20"
-        : "border-slate-800 bg-slate-900/60"
-    } p-5 backdrop-blur-md`}>
+    <div
+      className={`rounded-card border transition-colors ${
+        isAlarmFiring
+          ? "border-bad bg-bad-soft text-ink"
+          : isAlarmArmed
+          ? "border-ok/40 bg-ok-soft/30"
+          : "border-rule bg-paper-2"
+      } p-5`}
+    >
       {/* Header */}
       <div className="flex items-center justify-between gap-3 mb-4">
         <div className="flex items-center gap-2.5">
-          <div className={`p-2 rounded-lg ${
-            isAlarmFiring ? "bg-red-500 text-white animate-bounce" : isAlarmArmed ? "bg-emerald-500/20 text-emerald-400" : "bg-slate-800 text-slate-400"
-          }`}>
+          <div
+            className={`p-2 rounded-pill ${
+              isAlarmFiring
+                ? "bg-bad text-paper"
+                : isAlarmArmed
+                ? "bg-ok-soft text-ok border border-ok/30"
+                : "bg-paper-3 text-muted border border-rule"
+            }`}
+          >
             <Bell className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="text-base font-semibold text-slate-100 flex items-center gap-2">
-              Station Wakeup Alarm
+            <h3 className="text-base font-display font-bold text-ink flex items-center gap-2">
+              Station wakeup alarm
               {isAlarmArmed && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                  ARMED
+                <span className="inline-flex items-center px-2 py-0.5 rounded-pill text-xs font-semibold font-outlier bg-ok-soft text-ok border border-ok/30">
+                  Armed
                 </span>
               )}
             </h3>
-            <p className="text-xs text-slate-400">
-              Chime chime + voice reminder before approaching your alight station
+            <p className="text-xs text-muted font-outlier">
+              Audio chime and voice announcement before approaching your destination
             </p>
           </div>
         </div>
 
         {/* Test Chime Button */}
         <button
+          type="button"
           onClick={testChimeSound}
           disabled={audioTesting}
-          className="text-xs px-2.5 py-1.5 rounded-lg border border-slate-700 bg-slate-800/80 text-slate-300 hover:text-white hover:border-slate-600 transition flex items-center gap-1.5"
+          className="text-xs px-3 py-1.5 rounded-pill border border-rule bg-paper-3 text-muted hover:text-ink transition-colors flex items-center gap-1.5 whitespace-nowrap cursor-pointer focus-visible:outline-2 focus-visible:outline-accent"
           title="Preview railway chime & voice announcement"
         >
-          {audioTesting ? <Volume2 className="w-3.5 h-3.5 text-blue-400 animate-pulse" /> : <Volume2 className="w-3.5 h-3.5" />}
-          <span>Preview Chime</span>
+          <Volume2 className="w-3.5 h-3.5 text-accent" />
+          <span>Preview chime</span>
         </button>
       </div>
 
       {/* Alarm Firing Banner */}
       {isAlarmFiring && (
-        <div className="mb-4 p-4 rounded-lg bg-red-600/30 border border-red-500 text-red-100 flex flex-col md:flex-row items-center justify-between gap-3">
+        <div className="mb-4 p-4 rounded-lg bg-bad-soft border border-bad text-ink flex flex-col md:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <AlertTriangle className="w-6 h-6 text-red-400 flex-shrink-0 animate-bounce" />
+            <AlertTriangle className="w-6 h-6 text-bad shrink-0" />
             <div>
-              <div className="font-bold text-sm md:text-base">
+              <div className="font-bold text-sm md:text-base text-bad">
                 APPROACHING: {targetStation?.stationName} ({targetStation?.stationCode})!
               </div>
-              <div className="text-xs text-red-200">
+              <div className="text-xs text-muted font-outlier">
                 Remaining distance: {remainingDistanceKm.toFixed(1)} km (~{estimatedRemainingMin} mins) • Platform: {targetStation?.platform || "TBA"}
               </div>
             </div>
           </div>
           <button
+            type="button"
             onClick={dismissAlarm}
-            className="w-full md:w-auto px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500 font-bold text-white text-xs shadow-lg transition flex items-center justify-center gap-1.5"
+            className="w-full md:w-auto px-4 py-2 rounded-pill bg-bad text-paper font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
           >
             <BellOff className="w-4 h-4" />
-            Dismiss Alarm
+            <span>Dismiss alarm</span>
           </button>
         </div>
       )}
 
       {/* Configuration Controls */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 mb-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 mb-4 text-xs">
         {/* Target Station Selector */}
         <div>
-          <label className="block text-xs font-medium text-slate-300 mb-1.5">
-            Destination / Alight Halt
+          <label className="block text-xs font-medium text-muted mb-1.5 font-outlier">
+            Destination / alight halt
           </label>
           <select
             value={targetStationCode}
             onChange={(e) => setTargetStationCode(e.target.value)}
             disabled={isAlarmArmed}
             aria-label="Destination / Alight Halt"
-            className="w-full bg-slate-950 border border-slate-700 text-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none disabled:opacity-60"
+            className="w-full bg-paper border border-rule text-ink rounded-pill px-3 py-2 text-xs outline-none focus:border-accent disabled:opacity-60 font-outlier font-semibold cursor-pointer"
           >
             {halts.map((h) => (
-              <option key={h.stationCode} value={h.stationCode}>
+              <option key={h.stationCode} value={h.stationCode} className="bg-paper-2 text-ink">
                 {h.stationName} ({h.stationCode}) {h.distanceKm ? `• ${h.distanceKm} km` : ""}
               </option>
             ))}
@@ -323,18 +333,18 @@ export function StationWakeupAlarm({
 
         {/* Trigger Mode */}
         <div>
-          <label className="block text-xs font-medium text-slate-300 mb-1.5">
-            Wakeup Trigger By
+          <label className="block text-xs font-medium text-muted mb-1.5 font-outlier">
+            Wakeup trigger by
           </label>
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
               onClick={() => setTriggerType("distance")}
               disabled={isAlarmArmed}
-              className={`px-3 py-2 rounded-lg text-xs font-medium border transition ${
+              className={`px-3 py-2 rounded-pill text-xs font-medium border transition-colors cursor-pointer font-outlier ${
                 triggerType === "distance"
-                  ? "bg-blue-600/30 border-blue-500 text-blue-300"
-                  : "bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-300"
+                  ? "bg-accent text-accent-ink border-accent font-semibold"
+                  : "bg-paper border-rule text-muted hover:text-ink"
               } disabled:opacity-60`}
             >
               Distance (km)
@@ -343,10 +353,10 @@ export function StationWakeupAlarm({
               type="button"
               onClick={() => setTriggerType("time")}
               disabled={isAlarmArmed}
-              className={`px-3 py-2 rounded-lg text-xs font-medium border transition ${
+              className={`px-3 py-2 rounded-pill text-xs font-medium border transition-colors cursor-pointer font-outlier ${
                 triggerType === "time"
-                  ? "bg-blue-600/30 border-blue-500 text-blue-300"
-                  : "bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-300"
+                  ? "bg-accent text-accent-ink border-accent font-semibold"
+                  : "bg-paper border-rule text-muted hover:text-ink"
               } disabled:opacity-60`}
             >
               Time (mins)
@@ -356,8 +366,8 @@ export function StationWakeupAlarm({
 
         {/* Threshold Value */}
         <div>
-          <label className="block text-xs font-medium text-slate-300 mb-1.5">
-            {triggerType === "distance" ? "Alert Distance Before Stop" : "Alert Time Before Stop"}
+          <label className="block text-xs font-medium text-muted mb-1.5 font-outlier">
+            {triggerType === "distance" ? "Alert distance before stop" : "Alert time before stop"}
           </label>
           {triggerType === "distance" ? (
             <select
@@ -365,7 +375,7 @@ export function StationWakeupAlarm({
               onChange={(e) => setDistanceThresholdKm(Number(e.target.value))}
               disabled={isAlarmArmed}
               aria-label="Alert Distance Before Stop"
-              className="w-full bg-slate-950 border border-slate-700 text-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none disabled:opacity-60"
+              className="w-full bg-paper border border-rule text-ink rounded-pill px-3 py-2 text-xs outline-none focus:border-accent disabled:opacity-60 font-outlier cursor-pointer"
             >
               <option value={5}>5 km before station (~5-7 mins)</option>
               <option value={10}>10 km before station (~10-12 mins)</option>
@@ -378,7 +388,7 @@ export function StationWakeupAlarm({
               onChange={(e) => setTimeThresholdMin(Number(e.target.value))}
               disabled={isAlarmArmed}
               aria-label="Alert Time Before Stop"
-              className="w-full bg-slate-950 border border-slate-700 text-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none disabled:opacity-60"
+              className="w-full bg-paper border border-rule text-ink rounded-pill px-3 py-2 text-xs outline-none focus:border-accent disabled:opacity-60 font-outlier cursor-pointer"
             >
               <option value={10}>10 minutes before</option>
               <option value={15}>15 minutes before</option>
@@ -390,49 +400,50 @@ export function StationWakeupAlarm({
       </div>
 
       {/* Target Status Card & Arm Action */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3.5 rounded-lg bg-slate-950/70 border border-slate-800">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3.5 rounded-lg bg-paper-3 border border-rule">
         <div className="flex items-center gap-3">
-          <Navigation className="w-5 h-5 text-blue-400 flex-shrink-0" />
+          <Navigation className="w-4 h-4 text-accent shrink-0" />
           <div className="text-xs">
-            <span className="text-slate-400">Destination: </span>
-            <span className="font-semibold text-slate-200">
+            <span className="text-muted font-outlier">Destination: </span>
+            <span className="font-semibold text-ink">
               {targetStation?.stationName} ({targetStation?.stationCode})
             </span>
-            <span className="mx-2 text-slate-600">•</span>
-            <span className="text-slate-400">Remaining: </span>
-            <span className="font-semibold text-emerald-400">
+            <span className="mx-2 text-rule-2">•</span>
+            <span className="text-muted font-outlier">Remaining: </span>
+            <span className="font-semibold text-ok font-outlier">
               {remainingDistanceKm.toFixed(1)} km
             </span>
-            <span className="text-slate-400"> (~{estimatedRemainingMin} mins)</span>
+            <span className="text-muted font-outlier"> (~{estimatedRemainingMin} mins)</span>
           </div>
         </div>
 
         <button
+          type="button"
           onClick={handleToggleArm}
-          className={`px-4 py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition shadow-md ${
+          className={`px-4 py-2 rounded-pill text-xs font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-accent ${
             isAlarmArmed
-              ? "bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700"
-              : "bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-950/40"
+              ? "bg-paper hover:bg-paper-2 text-ink border border-rule"
+              : "bg-accent hover:opacity-90 text-accent-ink"
           }`}
         >
           {isAlarmArmed ? (
             <>
-              <BellOff className="w-4 h-4 text-amber-400" />
-              <span>Disarm Alarm</span>
+              <BellOff className="w-4 h-4 text-accent" />
+              <span className="whitespace-nowrap">Disarm</span>
             </>
           ) : (
             <>
               <Bell className="w-4 h-4" />
-              <span>Arm Wakeup Alarm</span>
+              <span className="whitespace-nowrap">Arm alarm</span>
             </>
           )}
         </button>
       </div>
 
       {notificationPermission !== "granted" && isAlarmArmed && (
-        <p className="mt-2 text-[11px] text-amber-400/90 flex items-center gap-1.5">
-          <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
-          Tip: Grant browser notification permissions so alerts ring even when your screen is locked.
+        <p className="mt-2 text-[11px] text-accent flex items-center gap-1.5 font-outlier">
+          <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+          <span>Tip: Enable browser notifications so audio triggers even when your mobile display is dimmed.</span>
         </p>
       )}
     </div>

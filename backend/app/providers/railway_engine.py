@@ -8,6 +8,7 @@ from app.schemas.details import CoachComposition, CoachPosition, CoachType, Fare
 from app.schemas.pnr import PassengerStatus, PNRStatus
 from app.schemas.station import Station, StationBoardItem, StationLiveBoard
 from app.schemas.status import ConfidenceLevel, FreshnessState, LocationType, RailwayStatus, StationHalt
+from app.services.train_schedule_service import TrainOperationsMetadata, IST
 
 logger = logging.getLogger("railpulse.providers.railway_engine")
 
@@ -81,11 +82,44 @@ class RailwayEngineProvider(RailwayProvider):
             return None
 
     async def get_live_status(self, train_number: str) -> Optional[RailwayStatus]:
+        now = datetime.now(timezone.utc)
+        now_ist = datetime.now(IST)
+        op_check = TrainOperationsMetadata.check_operational_status(train_number, now)
+        profile = TrainOperationsMetadata.get_profile(train_number)
+
         data = await self._get(f"/train/{train_number}/status")
         if not data or not isinstance(data, dict):
+            # If upstream returned None (e.g. 404 because train is not operating today)
+            if not op_check.get("runs_today", True):
+                origin_name = profile["origin_name"] if profile else "Origin Station"
+                return RailwayStatus(
+                    train_number=str(train_number),
+                    train_name=profile["name"] if profile else f"Train {train_number}",
+                    journey_date=now_ist.strftime("%Y-%m-%d"),
+                    running_status=op_check["running_status"],
+                    delay_minutes=0,
+                    current_station=f"{origin_name} (Depot / Non-Operating Day)",
+                    previous_station=None,
+                    next_station=None,
+                    latitude=None,
+                    longitude=None,
+                    speed_kmph=0.0,
+                    source_provider=self.provider_name,
+                    observed_at=now,
+                    fetched_at=now,
+                    age_seconds=0,
+                    freshness=FreshnessState.LIVE,
+                    confidence=ConfidenceLevel.HIGH,
+                    location_type=LocationType.STATION_OBSERVED,
+                    is_simulated=False,
+                    halts=[],
+                    runs_today=False,
+                    days_of_run=op_check["days_of_run"],
+                    service_state="NOT_RUNNING_TODAY",
+                    service_notice=op_check["service_notice"],
+                    pairing_train_number=op_check.get("pairing_train"),
+                )
             return None
-
-        now = datetime.now(timezone.utc)
         observed_time_str = (
             data.get("observed_at")
             or data.get("observedAt")
@@ -160,8 +194,7 @@ class RailwayEngineProvider(RailwayProvider):
 
         train_num = str(data.get("trainNumber") or data.get("train_number") or train_number)
         train_name = str(data.get("trainName") or data.get("train_name") or f"Train {train_num}")
-        journey_date = str(data.get("journeyDate") or data.get("journey_date") or now.strftime("%Y-%m-%d"))
-        running_status = str(data.get("status") or data.get("running_status") or data.get("state") or "RUNNING")
+        journey_date = str(data.get("journeyDate") or data.get("journey_date") or now_ist.strftime("%Y-%m-%d"))
 
         raw_speed = data.get("speedKmph") if data.get("speedKmph") is not None else data.get("speed_kmph")
         speed_kmph = float(raw_speed) if raw_speed is not None else None
@@ -172,6 +205,31 @@ class RailwayEngineProvider(RailwayProvider):
         current_stn = _format_station(data.get("currentStation") or data.get("current_station"))
         previous_stn = _format_station(data.get("previousStation") or data.get("previous_station"))
         next_stn = _format_station(data.get("nextStation") or data.get("next_station"))
+
+        # Determine authentic service state (NOT_STARTED, COMPLETED, RUNNING)
+        raw_status = str(data.get("status") or data.get("running_status") or data.get("state") or "RUNNING").upper()
+        service_state = "RUNNING"
+        service_notice = op_check.get("service_notice")
+
+        if "NOT_STARTED" in raw_status or (op_check.get("service_state") == "NOT_STARTED" and (speed_kmph is None or speed_kmph == 0)):
+            service_state = "NOT_STARTED"
+            speed_kmph = 0.0
+            if profile and profile.get("dep_time"):
+                running_status = f"Scheduled to Depart {profile['origin_name']} at {profile['dep_time']} IST"
+            else:
+                running_status = "Scheduled — Not Started Yet"
+            service_notice = op_check.get("service_notice") or f"Train {train_num} has not departed yet today."
+        elif "COMPLETED" in raw_status or "TERMINATED" in raw_status or "ARRIVED" in raw_status or (op_check.get("service_state") == "COMPLETED" and (speed_kmph is None or speed_kmph == 0)):
+            service_state = "COMPLETED"
+            speed_kmph = 0.0
+            if profile and profile.get("arr_time"):
+                running_status = f"Journey Completed at {profile['destination_name']} ({profile['arr_time']} IST)"
+            else:
+                running_status = "Journey Completed (Terminated)"
+            service_notice = op_check.get("service_notice") or f"Train {train_num} has reached its final destination."
+        else:
+            service_state = "RUNNING"
+            running_status = str(data.get("status") or data.get("running_status") or "RUNNING")
 
         return RailwayStatus(
             train_number=train_num,
@@ -194,6 +252,11 @@ class RailwayEngineProvider(RailwayProvider):
             location_type=loc_type,
             is_simulated=False,
             halts=halts,
+            runs_today=op_check.get("runs_today", True),
+            days_of_run=op_check.get("days_of_run", ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"]),
+            service_state=service_state,
+            service_notice=service_notice,
+            pairing_train_number=op_check.get("pairing_train"),
         )
 
     async def get_schedule(self, train_number: str) -> Optional[Dict[str, Any]]:

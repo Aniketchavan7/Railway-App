@@ -87,17 +87,9 @@ export default function StationsPage() {
           </div>
 
           <div className="flex items-center gap-3">
-            <div
-              data-slot="station-architecture"
-              className="hidden md:block w-36 h-12 rounded-pill overflow-hidden relative border border-rule shrink-0"
-            >
-              <img
-                src="https://upload.wikimedia.org/wikipedia/commons/7/70/Prague_Main_Railway_Station_Ceiling_Lights.jpg"
-                alt="Station concourse terminal lights"
-                width={200}
-                height={80}
-                className="w-full h-full object-cover"
-              />
+            <div className="hidden md:flex items-center gap-2 px-3 py-1 bg-paper-3 rounded-pill border border-rule text-xs font-outlier text-muted shrink-0">
+              <span className="w-2 h-2 rounded-full bg-ok" />
+              <span className="font-semibold text-ink">LIVE TERMINAL RADAR</span>
             </div>
 
             {/* Time Window Buttons */}
@@ -118,7 +110,7 @@ export default function StationsPage() {
                   disabled={loading}
                   className={`px-3 py-1 rounded-pill whitespace-nowrap transition-colors disabled:opacity-40 disabled:cursor-not-allowed active:opacity-80 focus-visible:outline-2 focus-visible:outline-accent font-outlier ${
                     windowHours === h
-                      ? "bg-accent text-accent-ink font-semibold shadow-xs"
+                      ? "bg-accent text-accent-ink font-semibold"
                       : "text-muted hover:text-ink"
                   }`}
                 >
@@ -195,12 +187,58 @@ export default function StationsPage() {
             </span>
           </div>
 
-          <div className="overflow-x-auto">
+          {/* Mobile Card List (<768px) */}
+          <div className="md:hidden divide-y divide-rule">
+            {board.trains.map((t, idx) => (
+              <div key={`mob-${t.train_number}-${idx}`} className="p-4 space-y-2.5">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <h3 className="font-display font-semibold text-sm text-ink">{t.train_name}</h3>
+                    <div className="flex items-center gap-2 mt-0.5 text-xs">
+                      <span className="font-outlier font-bold text-accent">#{t.train_number}</span>
+                      <span className="text-muted">•</span>
+                      <span className="text-muted font-outlier">to {t.destination}</span>
+                    </div>
+                  </div>
+                  <span className="font-outlier font-bold text-xs px-2 py-0.5 rounded-pill bg-paper border border-rule text-ink shrink-0">
+                    {t.platform ? `PF ${t.platform}` : "PF TBA"}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between text-xs pt-1 border-t border-rule/50">
+                  <div className="space-y-0.5">
+                    <div className="font-outlier text-ink">
+                      Arr: {formatTime(t.scheduled_arrival)}
+                      {t.delay_arrival_minutes > 0 ? (
+                        <span className="text-accent ml-1 font-outlier">(+{t.delay_arrival_minutes}m)</span>
+                      ) : (
+                        <span className="text-ok ml-1 font-outlier">(On time)</span>
+                      )}
+                    </div>
+                    <div className="font-outlier text-muted text-[11px]">
+                      Dep: {formatTime(t.scheduled_departure)}
+                    </div>
+                  </div>
+
+                  <Link
+                    href={`/train?number=${t.train_number}`}
+                    className="px-2.5 py-1 rounded-pill bg-accent text-accent-ink font-medium text-xs flex items-center gap-1 shrink-0"
+                  >
+                    <span>Track</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop Tabular Board (>=768px) */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead className="bg-paper-3 text-muted text-[11px] border-b border-rule font-medium">
                 <tr>
-                  <th className="py-2.5 px-4">Train</th>
-                  <th className="py-2.5 px-4">Where heading (Destination)</th>
+                  <th className="py-2.5 px-4">Train & service</th>
+                  <th className="py-2.5 px-4">Destination</th>
                   <th className="py-2.5 px-4">Platform</th>
                   <th className="py-2.5 px-4">Arrival</th>
                   <th className="py-2.5 px-4">Departure</th>
@@ -217,26 +255,15 @@ export default function StationsPage() {
                     </td>
 
                     <td className="py-3 px-4">
-                      <div className="font-semibold text-ink flex items-center gap-1.5 flex-wrap">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-accent bg-accent/15 px-1.5 py-0.5 rounded border border-accent/30 font-outlier">
-                          Heading To
-                        </span>
-                        <span className="text-xs font-bold text-ink">{t.destination}</span>
-                      </div>
-                      <div className="text-[11px] text-muted font-outlier mt-0.5">
+                      <div className="font-semibold text-ink">{t.destination}</div>
+                      <div className="text-[11px] text-muted font-outlier">
                         Origin: {t.origin}
                       </div>
                     </td>
 
                     <td className="py-3 px-4">
-                      <span
-                        className={`font-outlier font-black px-2.5 py-1 rounded-pill text-xs border inline-flex items-center gap-1 ${
-                          t.platform
-                            ? "bg-accent/15 text-accent border-accent/40 shadow-xs"
-                            : "bg-paper-3 text-muted border-rule"
-                        }`}
-                      >
-                        {t.platform ? `Platform ${t.platform}` : "Announced Soon"}
+                      <span className="font-outlier font-bold text-ink px-2.5 py-1 rounded-pill bg-paper border border-rule text-xs inline-flex items-center gap-1">
+                        {t.platform ? `Platform ${t.platform}` : "TBA"}
                       </span>
                     </td>
 
@@ -273,7 +300,7 @@ export default function StationsPage() {
                         }`}
                       >
                         {t.status === "AT_STATION" || t.status === "at-station"
-                          ? "At Station"
+                          ? "At station"
                           : t.status === "DEPARTED" || t.status === "departed"
                           ? "Departed"
                           : "Approaching"}

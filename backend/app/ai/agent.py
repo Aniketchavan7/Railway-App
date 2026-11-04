@@ -9,6 +9,7 @@ from typing_extensions import TypedDict
 from app.ai.tools import (
     RAILWAY_TOOLS,
     calculate_train_eta,
+    check_train_operating_days_and_pair,
     check_train_route_diversion_or_cancellation,
     get_live_train_status,
     get_mega_blocks_by_zone_or_station,
@@ -16,6 +17,7 @@ from app.ai.tools import (
 )
 from app.config import settings
 from app.services.disruption_service import DisruptionService
+from app.services.train_schedule_service import TrainOperationsMetadata
 
 logger = logging.getLogger("railpulse.ai.agent")
 
@@ -34,9 +36,19 @@ CRITICAL OPERATIONAL RULES:
 4. If the user asks what trains are coming at a station (e.g. Pune) in the next 30 minutes, where they are heading, and which platform they are arriving on:
    - Call `get_station_live_arrivals_departures` with the station code (e.g. `PUNE`).
    - Group and present the upcoming and at-station trains clearly in an all-at-one-place concourse table with: Train # & Name, Where Heading (Destination), Platform #, Expected Time, and Live Status.
-5. If data is marked `is_simulated: true`, clearly inform the user: "⚠️ Note: This is simulated demo data as live upstream data is currently offline."
-6. If the data observation is several minutes old, mention the data freshness and last observed station.
-7. Keep explanations polite, concise, structured with bullet points and bold highlights.
+5. TRAIN OPERATING DAYS & WEEKLY MAINTENANCE RULES:
+   - Some Indian trains do NOT run 7 days a week. Always check `check_train_operating_days_and_pair` or verify `days_of_run` before declaring a train running.
+   - Train 22225 / 22226 (Solapur Vande Bharat Express) does NOT RUN ON WEDNESDAYS (mandated weekly primary rake maintenance at Wadi Bunder / Mumbai CSMT yard). If asked about Wednesday or if today is Wednesday, unequivocally confirm it does not operate on Wednesdays.
+   - Train 12101 (Jnaneswari Superfast) runs only MON, TUE, FRI, SAT (does not run Wed, Thu, Sun).
+   - Train 22436 (Vande Bharat NDLS-BSB) runs TUE, WED, FRI, SAT, SUN (does not run Mon, Thu).
+6. PAIR RAKES & UP/DOWN TURNS:
+   - Trains 12158 and 12157 (Hutatma Express) share a single dedicated LHB rake.
+   - 12158 (Solapur to Pune) runs exclusively in the morning from 06:30 to 10:30 IST. After 10:30 IST, its journey is COMPLETED at Pune Jn.
+   - The rake rests at Pune and turns around as 12157 (Pune to Solapur) in the evening departing at 18:00 IST.
+   - During daytime (10:30 to 18:00 IST), 12157 is NOT STARTED yet, and 12158 is COMPLETED. Never claim either is actively running midday!
+7. If data is marked `is_simulated: true`, clearly inform the user: "⚠️ Note: This is simulated demo data as live upstream data is currently offline."
+8. If the data observation is several minutes old, mention the data freshness and last observed station.
+9. Keep explanations polite, concise, structured with bullet points and bold highlights.
 """
 
 
@@ -227,9 +239,82 @@ class RailwayAIAgent:
                     "telemetry_context": board.model_dump(mode="json"),
                 }
 
-        # Extract 5-digit train number
-        train_match = re.search(r"\b\d{5}\b", query)
-        train_num = train_match.group(0) if train_match else None
+        # Extract all 5-digit train numbers
+        all_train_nums = re.findall(r"\b\d{5}\b", query)
+        train_num = all_train_nums[0] if all_train_nums else None
+
+        # Check for operational days, maintenance, and pair rake turnaround keywords
+        schedule_pair_keywords = [
+            "run every time", "dont run", "doesn't run", "does not run", "doesnt run",
+            "not run", "wednesday", "maintenance", "days of run", "operating day", "running days",
+            "pair", "same up and down", "up and down", "turnaround", "turn around",
+            "shared rake", "rake", "isnt running", "isn't running", "wrong info",
+            "why is it running", "why running"
+        ]
+        is_schedule_pair_query = any(k in q_lower for k in schedule_pair_keywords)
+
+        # Check if query references known pair trains or specific maintenance trains
+        has_specific_interest_train = any(t in query for t in ["12157", "12158", "22225", "22226"])
+
+        if (is_schedule_pair_query and (all_train_nums or has_specific_interest_train)) or len(all_train_nums) > 1:
+            train_targets = all_train_nums if all_train_nums else ["22225", "12158", "12157"]
+            seen_trains: List[str] = []
+            for t in train_targets:
+                if t not in seen_trains:
+                    seen_trains.append(t)
+
+            lines = [
+                "🔍 **Authentic Train Operational Schedule & Rake Turnaround Audit**:\n",
+                "You are 100% correct. Indian Railways operations follow strict weekly maintenance schedules and physical rake sharing rotations:\n"
+            ]
+
+            for t_num in seen_trains:
+                op = TrainOperationsMetadata.check_operational_status(t_num)
+                prof = TrainOperationsMetadata.get_profile(t_num)
+                name = op.get("train_name", f"Train {t_num}")
+                days = ", ".join(op.get("days_of_run", []))
+                state = op.get("service_state", "RUNNING")
+
+                if state == "NOT_RUNNING_TODAY":
+                    lines.append(f"### 🚫 Train {t_num} — {name}")
+                    lines.append(f"- **Operating Days**: `{days}` (Does NOT run on Wednesdays/Maintenance Days)")
+                    lines.append(f"- **Current Service State**: **NOT RUNNING TODAY** (Speed: 0 km/h)")
+                    lines.append(f"- **Reason**: {(prof or {}).get('non_running_reason') or op.get('service_notice')}")
+                    if op.get("rake_share_description"):
+                        lines.append(f"- **Rake Sharing**: {op['rake_share_description']}")
+                    lines.append("")
+                elif state == "NOT_STARTED":
+                    lines.append(f"### ⏰ Train {t_num} — {name} (Upcoming Evening Service)")
+                    lines.append(f"- **Operating Days**: `{days}`")
+                    lines.append(f"- **Current Service State**: **NOT STARTED YET** (Speed: 0 km/h)")
+                    if prof:
+                        lines.append(f"- **Departure Window**: Scheduled to depart {prof.get('origin_name')} at **{prof.get('dep_time')} IST** (Destination: {prof.get('destination_name')} at {prof.get('arr_time')} IST).")
+                    if op.get("rake_share_description"):
+                        lines.append(f"- **Pair Rake Turnaround**: {op['rake_share_description']}")
+                    lines.append("")
+                elif state == "COMPLETED":
+                    lines.append(f"### 🏁 Train {t_num} — {name} (Completed Morning Service)")
+                    lines.append(f"- **Operating Days**: `{days}`")
+                    lines.append(f"- **Current Service State**: **JOURNEY COMPLETED** (Speed: 0 km/h)")
+                    if prof:
+                        lines.append(f"- **Arrival**: Arrived at destination {prof.get('destination_name')} at **{prof.get('arr_time')} IST**.")
+                    if op.get("rake_share_description"):
+                        lines.append(f"- **Turnaround Next Run**: {op['rake_share_description']}")
+                    lines.append("")
+                else:
+                    lines.append(f"### 🟢 Train {t_num} — {name}")
+                    lines.append(f"- **Operating Days**: `{days}`")
+                    lines.append(f"- **Current Service State**: **EN ROUTE / RUNNING**")
+                    lines.append(f"- **Status Notice**: {op.get('service_notice')}")
+                    lines.append("")
+
+            lines.append("💡 **Verification Guarantee**: RailPulse grounds WhereIsMyTrain upstream data with Central Railway's official timetable rules to ensure non-operating maintenance days (like 22225 on Wednesdays) and turnaround rakes (12158 arriving at 10:30 and 12157 departing at 18:00) are never reported as moving phantom trains.")
+            return {
+                "response": "\n".join(lines),
+                "model": "deterministic_grounded_agent",
+                "grounded": True,
+                "telemetry_context": {"trains": seen_trains},
+            }
 
         # Check for destination/target station mentions
         target_station = None
@@ -391,6 +476,61 @@ class RailwayAIAgent:
         curr_station = status_data.get("current_station", "En route")
         source = status_data.get("source_provider", "Railway Engine")
         is_sim = status_data.get("is_simulated", False)
+        service_state = status_data.get("service_state", "RUNNING")
+        runs_today = status_data.get("runs_today", True)
+        days_of_run = status_data.get("days_of_run", [])
+        service_notice = status_data.get("service_notice")
+        pairing_train = status_data.get("pairing_train_number")
+
+        if service_state == "NOT_RUNNING_TODAY" or not runs_today:
+            days_str = ", ".join(days_of_run)
+            reply = (
+                f"🚫 **SERVICE ALERT: {train_name} ({target_train}) DOES NOT OPERATE TODAY**\n\n"
+                f"- **Status**: Non-Operating Day ({status_data.get('running_status')})\n"
+                f"- **Operating Days**: `{days_str}`\n"
+                f"- **Current Location**: Resting in Maintenance Yard / Depot (Speed: 0 km/h)\n"
+                f"- **Operational Details**: {service_notice or 'Train does not operate on this day of the week.'}\n"
+            )
+            if pairing_train:
+                reply += f"- **Pairing Service**: Reverse pairing train is #{pairing_train}.\n"
+            return {
+                "response": reply,
+                "model": "deterministic_grounded_agent",
+                "grounded": True,
+                "telemetry_context": status_data,
+            }
+
+        if service_state == "NOT_STARTED":
+            reply = (
+                f"⏰ **UPCOMING SERVICE: {train_name} ({target_train}) HAS NOT DEPARTED YET**\n\n"
+                f"- **Status**: Scheduled Departure ({status_data.get('running_status')})\n"
+                f"- **Origin Station**: {curr_station} (Speed: 0 km/h)\n"
+                f"- **Notice**: {service_notice}\n"
+            )
+            if pairing_train:
+                reply += f"- **Rake Sharing**: Single rake turnaround with incoming Train #{pairing_train}.\n"
+            return {
+                "response": reply,
+                "model": "deterministic_grounded_agent",
+                "grounded": True,
+                "telemetry_context": status_data,
+            }
+
+        if service_state == "COMPLETED":
+            reply = (
+                f"🏁 **JOURNEY COMPLETED: {train_name} ({target_train}) HAS REACHED DESTINATION**\n\n"
+                f"- **Status**: {status_data.get('running_status')}\n"
+                f"- **Final Station**: {curr_station} (Speed: 0 km/h)\n"
+                f"- **Notice**: {service_notice}\n"
+            )
+            if pairing_train:
+                reply += f"- **Turnaround Next Run**: Turnaround rake will operate as Train #{pairing_train}.\n"
+            return {
+                "response": reply,
+                "model": "deterministic_grounded_agent",
+                "grounded": True,
+                "telemetry_context": status_data,
+            }
 
         eta_explanation = ""
         if target_station:

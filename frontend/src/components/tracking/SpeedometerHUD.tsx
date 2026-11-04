@@ -42,63 +42,62 @@ export function SpeedometerHUD({
   }, [speedKmH, maxSpeedRecorded, prevSpeed]);
 
   // Radial Dial Math
-  // Speed mapped 0..160 km/h to angle -120 deg to +120 deg (240 deg sweep)
   const maxDialSpeed = Math.max(160, maxPermissibleSpeedKmH + 20);
   const clampedSpeed = Math.min(Math.max(speedKmH, 0), maxDialSpeed);
   const percentage = clampedSpeed / maxDialSpeed;
-  const strokeDashoffset = 314 - percentage * 250; // arc circumference approximation
+  const strokeDashoffset = 314 - percentage * 250;
 
   const trendColor =
     speedTrend === "accelerating"
-      ? "text-emerald-400 border-emerald-500/30 bg-emerald-950/40"
+      ? "text-ok border-ok/30 bg-ok-soft"
       : speedTrend === "braking"
-      ? "text-amber-400 border-amber-500/30 bg-amber-950/40"
+      ? "text-accent border-accent/30 bg-accent-soft"
       : speedTrend === "cruising"
-      ? "text-blue-400 border-blue-500/30 bg-blue-950/40"
-      : "text-slate-400 border-slate-700 bg-slate-900/40";
+      ? "text-cool border-cool/30 bg-cool-soft"
+      : "text-muted border-rule bg-paper-3";
 
   const trendLabel =
     speedTrend === "accelerating"
       ? "Accelerating"
       : speedTrend === "braking"
-      ? "Decelerating / Braking"
+      ? "Decelerating / braking"
       : speedTrend === "cruising"
-      ? "Cruising Speed"
-      : "Train Halted / Station";
+      ? "Cruising speed"
+      : "Train halted / station";
 
   return (
     <div
-      className={`rounded-xl border transition-all ${
+      className={`rounded-card border border-rule transition-colors ${
         isFullscreen
-          ? "fixed inset-0 z-50 bg-slate-950/95 p-8 flex flex-col justify-center items-center backdrop-blur-2xl"
-          : "border-slate-800 bg-slate-900/60 p-5 backdrop-blur-md"
+          ? "fixed inset-0 z-50 bg-paper/95 p-8 flex flex-col justify-center items-center"
+          : "bg-paper-2 p-5"
       }`}
     >
       {/* Header */}
       <div className="w-full flex items-center justify-between gap-3 mb-4">
         <div className="flex items-center gap-2">
-          <div className="p-2 rounded-lg bg-blue-500/20 text-blue-400">
-            <Gauge className="w-5 h-5" />
-          </div>
+          <Gauge className="w-5 h-5 text-accent shrink-0" />
           <div>
-            <h3 className="text-sm md:text-base font-semibold text-slate-100 flex items-center gap-2">
-              GPS HUD Speedometer
+            <h3 className="text-sm md:text-base font-display font-bold text-ink flex items-center gap-2">
+              GPS HUD speedometer
               {speedKmH >= 110 && (
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                  <Flame className="w-3 h-3 mr-0.5 text-amber-400" /> HIGH SPEED
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded-pill text-[10px] font-outlier font-semibold bg-accent-soft text-accent border border-accent/30">
+                  <Flame className="w-3 h-3 mr-0.5 text-accent" /> High speed
                 </span>
               )}
             </h3>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-muted font-outlier">
               Real-time telemetry velocity with Section MPS limit
             </p>
           </div>
         </div>
 
         <button
+          type="button"
           onClick={() => setIsFullscreen(!isFullscreen)}
-          className="p-2 rounded-lg border border-slate-700 bg-slate-800 text-slate-300 hover:text-white transition"
-          title={isFullscreen ? "Exit Fullscreen HUD" : "Enter Fullscreen HUD"}
+          className="p-2 rounded-pill border border-rule bg-paper-3 text-muted hover:text-ink transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-accent"
+          title={isFullscreen ? "Exit fullscreen HUD" : "Enter fullscreen HUD"}
+          aria-label={isFullscreen ? "Exit fullscreen HUD" : "Enter fullscreen HUD"}
         >
           {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
         </button>
@@ -107,34 +106,34 @@ export function SpeedometerHUD({
       {/* Main Gauge & Metrics Display */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center w-full max-w-4xl">
         {/* Left: Speed Dynamics & Section MPS */}
-        <div className="flex flex-col gap-3 order-2 md:order-1">
-          <div className="p-3.5 rounded-lg bg-slate-950/70 border border-slate-800">
-            <div className="text-[11px] text-slate-400 mb-1 flex items-center gap-1.5">
-              <Activity className="w-3.5 h-3.5 text-blue-400" />
-              Dynamic State
+        <div className="flex flex-col gap-3 order-2 md:order-1 text-xs">
+          <div className="p-3.5 rounded-lg bg-paper-3 border border-rule">
+            <div className="text-[11px] text-muted mb-1 flex items-center gap-1.5 font-outlier">
+              <Activity className="w-3.5 h-3.5 text-cool" />
+              <span>Dynamic state</span>
             </div>
-            <div className={`inline-block px-2.5 py-1 rounded text-xs font-semibold border ${trendColor}`}>
+            <div className={`inline-block px-2.5 py-1 rounded-pill text-xs font-semibold font-outlier border ${trendColor}`}>
               {trendLabel}
             </div>
           </div>
 
-          <div className="p-3.5 rounded-lg bg-slate-950/70 border border-slate-800">
-            <div className="text-[11px] text-slate-400 mb-1 flex items-center gap-1.5">
-              <Zap className="w-3.5 h-3.5 text-amber-400" />
-              Section Permissible MPS
+          <div className="p-3.5 rounded-lg bg-paper-3 border border-rule">
+            <div className="text-[11px] text-muted mb-1 flex items-center gap-1.5 font-outlier">
+              <Zap className="w-3.5 h-3.5 text-accent" />
+              <span>Section permissible MPS</span>
             </div>
-            <div className="text-lg font-bold text-slate-200">
-              {maxPermissibleSpeedKmH} <span className="text-xs font-normal text-slate-400">km/h</span>
+            <div className="text-lg font-bold text-ink font-outlier">
+              {maxPermissibleSpeedKmH} <span className="text-xs font-normal text-muted">km/h</span>
             </div>
           </div>
 
-          <div className="p-3.5 rounded-lg bg-slate-950/70 border border-slate-800">
-            <div className="text-[11px] text-slate-400 mb-1 flex items-center gap-1.5">
-              <Flame className="w-3.5 h-3.5 text-rose-400" />
-              Peak Speed Recorded
+          <div className="p-3.5 rounded-lg bg-paper-3 border border-rule">
+            <div className="text-[11px] text-muted mb-1 flex items-center gap-1.5 font-outlier">
+              <Flame className="w-3.5 h-3.5 text-accent" />
+              <span>Peak speed recorded</span>
             </div>
-            <div className="text-lg font-bold text-rose-300">
-              {Math.round(maxSpeedRecorded)} <span className="text-xs font-normal text-slate-400">km/h</span>
+            <div className="text-lg font-bold text-accent font-outlier">
+              {Math.round(maxSpeedRecorded)} <span className="text-xs font-normal text-muted">km/h</span>
             </div>
           </div>
         </div>
@@ -143,13 +142,17 @@ export function SpeedometerHUD({
         <div className="relative flex flex-col items-center justify-center order-1 md:order-2">
           {/* Radial SVG Dial */}
           <div className="relative w-48 h-48 md:w-56 md:h-56">
-            <svg className="w-full h-full transform -rotate-90" viewBox="0 0 120 120">
+            <svg
+              className="w-full h-full transform -rotate-90"
+              viewBox="0 0 120 120"
+              aria-hidden="true"
+            >
               {/* Dial Track */}
               <circle
                 cx="60"
                 cy="60"
                 r="50"
-                className="stroke-slate-800"
+                className="stroke-paper-3"
                 strokeWidth="8"
                 fill="none"
                 strokeDasharray="250 314"
@@ -160,12 +163,12 @@ export function SpeedometerHUD({
                 cx="60"
                 cy="60"
                 r="50"
-                className={`transition-all duration-700 ease-out ${
+                className={`transition-colors duration-500 ease-out ${
                   speedKmH >= 120
-                    ? "stroke-amber-400"
+                    ? "stroke-accent"
                     : speedKmH >= 80
-                    ? "stroke-emerald-400"
-                    : "stroke-blue-500"
+                    ? "stroke-ok"
+                    : "stroke-cool"
                 }`}
                 strokeWidth="8"
                 fill="none"
@@ -177,40 +180,40 @@ export function SpeedometerHUD({
 
             {/* Centered Digital Numbers */}
             <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-              <span className="text-5xl md:text-6xl font-black tracking-tight text-white font-mono">
+              <span className="text-5xl md:text-6xl font-bold tracking-tight text-ink font-outlier">
                 {Math.round(speedKmH)}
               </span>
-              <span className="text-xs md:text-sm font-semibold tracking-wider text-slate-400 uppercase mt-0.5">
-                KM / H
+              <span className="text-xs font-medium text-muted font-outlier mt-0.5">
+                km/h
               </span>
             </div>
           </div>
 
-          <div className="text-[11px] text-slate-400 text-center mt-2">
-            Snapped from onboard GPS & crowd telemetry
+          <div className="text-[11px] text-muted text-center mt-2 font-outlier">
+            Live telemetry velocity
           </div>
         </div>
 
         {/* Right: Train Identity & Heading */}
-        <div className="flex flex-col gap-3 order-3">
-          <div className="p-3.5 rounded-lg bg-slate-950/70 border border-slate-800">
-            <div className="text-[11px] text-slate-400 mb-1">Rake & Service</div>
-            <div className="font-semibold text-slate-200 text-sm truncate">
-              {trainName || "Indian Railways Service"}
+        <div className="flex flex-col gap-3 order-3 text-xs">
+          <div className="p-3.5 rounded-lg bg-paper-3 border border-rule">
+            <div className="text-[11px] text-muted mb-1 font-outlier">Rake & service</div>
+            <div className="font-semibold text-ink text-sm truncate">
+              {trainName || "Indian Railways service"}
             </div>
-            <div className="text-xs text-blue-400 font-mono mt-0.5">
+            <div className="text-xs text-accent font-outlier mt-0.5">
               Train #{trainNumber || "—"}
             </div>
           </div>
 
-          <div className="p-3.5 rounded-lg bg-slate-950/70 border border-slate-800">
-            <div className="text-[11px] text-slate-400 mb-1 flex items-center gap-1.5">
-              <Compass className="w-3.5 h-3.5 text-blue-400" />
-              Bearing / Heading
+          <div className="p-3.5 rounded-lg bg-paper-3 border border-rule">
+            <div className="text-[11px] text-muted mb-1 flex items-center gap-1.5 font-outlier">
+              <Compass className="w-3.5 h-3.5 text-cool" />
+              <span>Bearing / heading</span>
             </div>
-            <div className="text-sm font-semibold text-slate-200">
+            <div className="text-sm font-semibold text-ink font-outlier">
               {Math.round(directionDegrees)}°{" "}
-              <span className="text-xs text-slate-400 font-normal">
+              <span className="text-xs text-muted font-normal">
                 ({directionDegrees >= 315 || directionDegrees < 45
                   ? "Northbound"
                   : directionDegrees < 135
@@ -222,9 +225,9 @@ export function SpeedometerHUD({
             </div>
           </div>
 
-          <div className="p-3.5 rounded-lg bg-slate-950/70 border border-slate-800">
-            <div className="text-[11px] text-slate-400 mb-1">Pacing Status</div>
-            <div className="text-xs text-slate-300">
+          <div className="p-3.5 rounded-lg bg-paper-3 border border-rule">
+            <div className="text-[11px] text-muted mb-1 font-outlier">Pacing status</div>
+            <div className="text-xs text-muted leading-relaxed">
               {speedKmH > 70
                 ? "Optimal clear section tracking"
                 : speedKmH > 20

@@ -14,20 +14,20 @@ export function ChatDrawer() {
     {
       role: "assistant",
       content:
-        "Welcome to RailPulse AI! Ask about live train status, mega blocks, route diversions, cancelled trains, running delays, platform numbers, or ticket fares.",
+        "Welcome to RailPulse Assistant. Ask me anything about live train locations, delays, station arrival schedules, coach compositions, or distance ticket tariffs.",
     },
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  // Model is fixed to Mistral Small internally — no user chooser
+  // Model is fixed internally to mistralai/mistral-small-2603 — no user chooser
   const fixedModel = "mistralai/mistral-small-2603";
 
   const sampleQuestions = [
-    "What trains are coming in Pune in the next 30 min, where heading, and which platform?",
-    "What Mega Blocks, train diversions, or cancellations are active today?",
-    "Is train 12115 Siddheshwar Express running diverted or delayed?",
-    "Where is train 22225 Vande Bharat? When will it reach Solapur?",
+    "Where is train 12101 currently? How late is it?",
+    "Calculate fare for 12101 from CSMT to PUNE across all classes",
+    "Show coach layout for 12951 Mumbai Rajdhani",
+    "What are the halts and schedule for train 22225 Vande Bharat?",
   ];
 
   const handleSend = async (textToSend?: string) => {
@@ -66,65 +66,66 @@ export function ChatDrawer() {
   };
 
   return (
-    <div className="bg-paper-2 rounded-card border border-rule shadow-none flex flex-col h-[500px] sm:h-[580px] overflow-hidden">
+    <div className="bg-paper-2 rounded-card border border-rule flex flex-col h-[520px] sm:h-[600px] overflow-hidden">
       {/* Header */}
-      <div className="px-3 sm:px-5 py-3 sm:py-3.5 border-b border-rule bg-paper-3 flex items-center justify-between">
-        <div className="flex items-center gap-2.5 sm:gap-3">
-          <div className="w-8 h-8 rounded-pill bg-accent-soft border border-accent/30 flex items-center justify-center shrink-0">
-            <Bot className="w-4 h-4 text-accent" />
-          </div>
+      <div className="px-4 sm:px-6 py-3.5 border-b border-rule bg-paper-3 flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <Bot className="w-4 h-4 text-accent shrink-0" />
           <div>
-            <h3 className="font-display font-bold text-xs sm:text-sm tracking-tight text-ink">
-              Railway Assistant
+            <h3 className="font-display font-bold text-sm tracking-tight text-ink">
+              RailPulse Assistant
             </h3>
-            <p className="text-[10px] sm:text-[11px] text-muted">
-              Live information for Indian trains, halts, and fares
+            <p className="text-[11px] text-muted font-outlier">
+              Live Indian Railways query intelligence
             </p>
           </div>
+        </div>
+
+        <div className="flex items-center gap-2 text-xs font-outlier text-muted">
+          <span className="w-2 h-2 rounded-full bg-ok" />
+          <span>Active</span>
         </div>
       </div>
 
       {/* Suggested Queries */}
-      <div className="px-3 sm:px-4 py-2 bg-paper-3/50 border-b border-rule overflow-x-auto flex items-center gap-2 scrollbar-none">
-        <span className="text-[11px] text-muted flex items-center gap-1 shrink-0 font-medium">
-          <Sparkles className="w-3 h-3 text-accent" /> Sample queries:
+      <div className="px-3 sm:px-4 py-2 bg-paper-3/40 border-b border-rule overflow-x-auto flex items-center gap-2 scrollbar-none">
+        <span className="text-[11px] text-muted flex items-center gap-1 shrink-0 font-medium font-outlier">
+          <Sparkles className="w-3 h-3 text-accent" /> Presets:
         </span>
         {sampleQuestions.map((q, idx) => (
           <button
             key={idx}
             type="button"
             onClick={() => handleSend(q)}
-            className="text-[11px] whitespace-nowrap bg-paper-2 hover:bg-paper active:bg-paper-3 hover:text-ink text-muted font-normal px-2.5 py-1 rounded-pill border border-rule transition-colors shrink-0"
+            className="text-[11px] font-outlier whitespace-nowrap bg-paper hover:bg-paper-3 active:opacity-80 text-muted hover:text-ink px-2.5 py-1 rounded-pill border border-rule transition-colors shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-accent"
           >
-            {q.length > 36 ? q.slice(0, 36) + "…" : q}
+            {q.length > 40 ? q.slice(0, 40) + "…" : q}
           </button>
         ))}
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4">
+      {/* Messages Feed */}
+      <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
         {messages.map((m, idx) => {
           const isUser = m.role === "user";
           return (
             <div
               key={idx}
-              className={`flex items-start gap-2.5 sm:gap-3 ${isUser ? "flex-row-reverse" : "flex-row"}`}
+              className={`flex items-start gap-3 ${isUser ? "flex-row-reverse" : "flex-row"}`}
             >
-              <div
-                className={`w-7 h-7 rounded-pill border flex items-center justify-center shrink-0 text-xs font-medium ${
-                  isUser
-                    ? "bg-accent text-accent-ink border-accent"
-                    : "bg-paper-3 text-ink border-rule"
-                }`}
-              >
-                {isUser ? <User className="w-3.5 h-3.5" /> : <Bot className="w-3.5 h-3.5" />}
+              <div className="shrink-0 pt-0.5">
+                {isUser ? (
+                  <span className="font-outlier font-bold text-[11px] text-accent">YOU</span>
+                ) : (
+                  <Bot className="w-4 h-4 text-accent" />
+                )}
               </div>
 
               <div
-                className={`max-w-[90%] sm:max-w-[85%] px-3.5 py-2.5 text-xs leading-relaxed border ${
+                className={`max-w-[85%] sm:max-w-[78%] p-3.5 rounded-lg text-xs leading-relaxed border ${
                   isUser
-                    ? "bg-paper-3 text-ink border-rule-2 font-medium"
-                    : "bg-paper text-ink-2 border-rule"
+                    ? "bg-accent-soft/40 text-ink border-accent/30 font-medium"
+                    : "bg-paper text-ink border-rule"
                 }`}
               >
                 <div className="whitespace-pre-wrap">{m.content}</div>
@@ -134,32 +135,32 @@ export function ChatDrawer() {
         })}
 
         {isLoading && (
-          <div className="flex items-center gap-2 text-xs text-muted bg-paper-3 p-2.5 rounded-pill border border-rule w-fit">
+          <div className="flex items-center gap-2 text-xs text-muted bg-paper-3 px-3 py-2 rounded-pill border border-rule w-fit font-outlier">
             <Loader2 className="w-3.5 h-3.5 motion-safe:animate-spin motion-reduce:animate-none text-accent" />
-            <span>Checking train schedules and verifying halts…</span>
+            <span>Scanning live train schedules and verifying halts…</span>
           </div>
         )}
       </div>
 
-      {/* Input Form */}
+      {/* Input Console */}
       <form
         onSubmit={(e) => {
           e.preventDefault();
           handleSend();
         }}
-        className="p-2.5 sm:p-3 bg-paper-3 border-t border-rule flex items-center gap-2"
+        className="p-3 bg-paper-3 border-t border-rule flex items-center gap-2"
       >
         <input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask train location, delay, schedule or fare…"
-          className="flex-1 text-xs bg-paper text-ink placeholder:text-muted rounded-pill px-3.5 py-2 border border-rule outline-none transition-colors focus:border-accent"
+          placeholder="Ask train location, delay, station schedule, or fare calculation…"
+          className="flex-1 text-xs bg-paper text-ink placeholder:text-muted rounded-pill px-4 py-2.5 border border-rule outline-none transition-colors focus:border-accent"
         />
         <button
           type="submit"
           disabled={!input.trim() || isLoading}
-          className="bg-accent hover:opacity-90 active:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed text-accent-ink px-3 sm:px-4 py-2 rounded-pill transition-opacity font-medium text-xs flex items-center justify-center gap-1.5 shrink-0"
+          className="bg-accent hover:opacity-90 active:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed text-accent-ink px-4 py-2.5 rounded-pill transition-opacity font-medium text-xs flex items-center justify-center gap-1.5 shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-accent"
         >
           <span className="hidden sm:inline">Send</span>
           <Send className="w-3.5 h-3.5" />

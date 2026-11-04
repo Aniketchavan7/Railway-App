@@ -27,6 +27,11 @@ async def get_live_train_status(train_number: str) -> str:
         "confidence": status.confidence.value,
         "location_type": status.location_type.value,
         "is_simulated": status.is_simulated,
+        "runs_today": status.runs_today,
+        "days_of_run": status.days_of_run,
+        "service_state": status.service_state,
+        "service_notice": status.service_notice,
+        "pairing_train_number": status.pairing_train_number,
     })
 
 
@@ -209,8 +214,17 @@ async def get_mega_blocks_by_zone_or_station(station_or_zone: Optional[str] = No
     return json.dumps([b.model_dump(mode="json") for b in blocks])
 
 
+@tool
+async def check_train_operating_days_and_pair(train_number: str) -> str:
+    """Check authentic operating days (e.g. why 22225 Vande Bharat does NOT run on Wednesdays due to maintenance), current service state (NOT_RUNNING_TODAY, NOT_STARTED, COMPLETED, RUNNING), and pairing train rake sharing relationship (e.g. 12157 and 12158 sharing a single rake between Pune and Solapur)."""
+    from app.services.train_schedule_service import TrainOperationsMetadata
+    res = TrainOperationsMetadata.check_operational_status(train_number)
+    return json.dumps(res)
+
+
 RAILWAY_TOOLS = [
     get_live_train_status,
+    check_train_operating_days_and_pair,
     calculate_train_eta,
     get_train_schedule,
     search_trains_by_name_or_number,

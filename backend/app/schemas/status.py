@@ -75,6 +75,11 @@ class RailwayStatus(BaseModel):
     location_type: LocationType
     is_simulated: bool = False
     halts: List[StationHalt] = Field(default_factory=list)
+    runs_today: bool = True
+    days_of_run: List[str] = Field(default_factory=lambda: ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"])
+    service_state: str = "RUNNING"  # RUNNING, NOT_RUNNING_TODAY, NOT_STARTED, COMPLETED
+    service_notice: Optional[str] = None
+    pairing_train_number: Optional[str] = None
 
 
 class ResponseEnvelope(BaseModel):

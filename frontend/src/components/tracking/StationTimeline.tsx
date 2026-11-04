@@ -110,7 +110,7 @@ export function StationTimeline({
 
                 {/* Station Info Row */}
                 <div
-                  className={`p-2.5 sm:p-3 rounded-pill border transition-colors ${
+                  className={`p-2.5 sm:p-3 rounded-lg border transition-colors ${
                     isSelected
                       ? "bg-paper-3 border-accent ring-1 ring-accent"
                       : isCurrent
@@ -123,11 +123,11 @@ export function StationTimeline({
                       <span className="font-semibold text-xs text-ink group-hover:text-accent transition-colors">
                         {h.station_name}
                       </span>
-                      <span className="text-[10px] font-outlier px-1.5 py-0.2 rounded-pill bg-paper-3 text-muted border border-rule">
+                      <span className="text-[10px] font-outlier px-1.5 py-0.5 rounded-pill bg-paper-3 text-muted border border-rule">
                         {h.station_code}
                       </span>
                       {h.platform && (
-                        <span className="text-[10px] font-outlier px-1.5 py-0.2 rounded-pill bg-cool-soft text-cool border border-cool/30">
+                        <span className="text-[10px] font-outlier px-1.5 py-0.5 rounded-pill bg-cool-soft text-cool border border-cool/30">
                           PF {h.platform}
                         </span>
                       )}

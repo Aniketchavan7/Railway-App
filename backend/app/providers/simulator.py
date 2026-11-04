@@ -6,6 +6,7 @@ from app.schemas.details import CoachComposition, CoachPosition, CoachType, Fare
 from app.schemas.pnr import PassengerStatus, PNRStatus
 from app.schemas.station import Station, StationBoardItem, StationLiveBoard
 from app.schemas.status import ConfidenceLevel, FreshnessState, LocationType, RailwayStatus, StationHalt
+from app.services.train_schedule_service import TrainOperationsMetadata, IST
 
 # High-fidelity reference data for key Indian trains
 REFERENCE_TRAINS: Dict[str, Dict[str, Any]] = {
@@ -286,16 +287,167 @@ class OfflineSimulatorProvider(RailwayProvider):
     async def get_live_status(self, train_number: str) -> Optional[RailwayStatus]:
         train = self._resolve_train(train_number)
         now = datetime.now(timezone.utc)
+        now_ist = datetime.now(IST)
         halts_data = train["halts"]
 
-        # Simulate train being mid-journey at halt index 1
+        # Evaluate authentic operational schedule, running days & temporal time window
+        op_check = TrainOperationsMetadata.check_operational_status(train_number, now)
+        service_state = op_check.get("service_state", "RUNNING")
+        days_of_run = op_check.get("days_of_run", ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"])
+        service_notice = op_check.get("service_notice")
+        pairing_train = op_check.get("pairing_train")
+
+        if service_state == "NOT_RUNNING_TODAY":
+            first_halt = halts_data[0]
+            halts = [
+                StationHalt(
+                    station_code=h["code"],
+                    station_name=h["name"],
+                    arrival_time=h.get("sch_arr"),
+                    departure_time=h.get("sch_dep"),
+                    distance_km=float(h.get("dist", 0.0)),
+                    day_count=1,
+                    platform=h.get("platform", "1"),
+                    delay_minutes=0,
+                    has_arrived=False,
+                    has_departed=False,
+                    latitude=h.get("lat"),
+                    longitude=h.get("lng"),
+                )
+                for h in halts_data
+            ]
+            return RailwayStatus(
+                train_number=train["number"],
+                train_name=train["name"],
+                journey_date=now_ist.strftime("%Y-%m-%d"),
+                running_status=op_check["running_status"],
+                delay_minutes=0,
+                current_station=f"{first_halt['name']} (Depot / Non-Operating Day)",
+                previous_station=None,
+                next_station=None,
+                latitude=first_halt["lat"],
+                longitude=first_halt["lng"],
+                speed_kmph=0.0,
+                source_provider=self.provider_name,
+                observed_at=now,
+                fetched_at=now,
+                age_seconds=0,
+                freshness=FreshnessState.LIVE,
+                confidence=ConfidenceLevel.LOW,
+                location_type=LocationType.SIMULATED,
+                is_simulated=True,
+                halts=halts,
+                runs_today=False,
+                days_of_run=days_of_run,
+                service_state="NOT_RUNNING_TODAY",
+                service_notice=service_notice,
+                pairing_train_number=pairing_train,
+            )
+
+        if service_state == "NOT_STARTED":
+            first_halt = halts_data[0]
+            next_h = halts_data[1] if len(halts_data) > 1 else first_halt
+            halts = [
+                StationHalt(
+                    station_code=h["code"],
+                    station_name=h["name"],
+                    arrival_time=h.get("sch_arr"),
+                    departure_time=h.get("sch_dep"),
+                    distance_km=float(h.get("dist", 0.0)),
+                    day_count=1,
+                    platform=h.get("platform", "1"),
+                    delay_minutes=0,
+                    has_arrived=False,
+                    has_departed=False,
+                    latitude=h.get("lat"),
+                    longitude=h.get("lng"),
+                )
+                for h in halts_data
+            ]
+            return RailwayStatus(
+                train_number=train["number"],
+                train_name=train["name"],
+                journey_date=now_ist.strftime("%Y-%m-%d"),
+                running_status=op_check["running_status"],
+                delay_minutes=0,
+                current_station=f"{first_halt['name']} (Origin Platform {first_halt.get('platform', '1')})",
+                previous_station=None,
+                next_station=f"{next_h['name']} ({next_h['code']})",
+                latitude=first_halt["lat"],
+                longitude=first_halt["lng"],
+                speed_kmph=0.0,
+                source_provider=self.provider_name,
+                observed_at=now,
+                fetched_at=now,
+                age_seconds=0,
+                freshness=FreshnessState.LIVE,
+                confidence=ConfidenceLevel.LOW,
+                location_type=LocationType.SIMULATED,
+                is_simulated=True,
+                halts=halts,
+                runs_today=True,
+                days_of_run=days_of_run,
+                service_state="NOT_STARTED",
+                service_notice=service_notice,
+                pairing_train_number=pairing_train,
+            )
+
+        if service_state == "COMPLETED":
+            last_halt = halts_data[-1]
+            prev_h = halts_data[-2] if len(halts_data) > 1 else last_halt
+            halts = [
+                StationHalt(
+                    station_code=h["code"],
+                    station_name=h["name"],
+                    arrival_time=h.get("sch_arr"),
+                    departure_time=h.get("sch_dep"),
+                    distance_km=float(h.get("dist", 0.0)),
+                    day_count=1,
+                    platform=h.get("platform", "1"),
+                    delay_minutes=0,
+                    has_arrived=True,
+                    has_departed=True,
+                    latitude=h.get("lat"),
+                    longitude=h.get("lng"),
+                )
+                for h in halts_data
+            ]
+            return RailwayStatus(
+                train_number=train["number"],
+                train_name=train["name"],
+                journey_date=now_ist.strftime("%Y-%m-%d"),
+                running_status=op_check["running_status"],
+                delay_minutes=0,
+                current_station=f"{last_halt['name']} (Terminated on Platform {last_halt.get('platform', '1')})",
+                previous_station=f"{prev_h['name']} ({prev_h['code']})",
+                next_station=None,
+                latitude=last_halt["lat"],
+                longitude=last_halt["lng"],
+                speed_kmph=0.0,
+                source_provider=self.provider_name,
+                observed_at=now,
+                fetched_at=now,
+                age_seconds=0,
+                freshness=FreshnessState.LIVE,
+                confidence=ConfidenceLevel.LOW,
+                location_type=LocationType.SIMULATED,
+                is_simulated=True,
+                halts=halts,
+                runs_today=True,
+                days_of_run=days_of_run,
+                service_state="COMPLETED",
+                service_notice=service_notice,
+                pairing_train_number=pairing_train,
+            )
+
+        # Active mid-journey in transit
         curr_idx = min(1, len(halts_data) - 1)
         curr_halt = halts_data[curr_idx]
         prev_halt = halts_data[curr_idx - 1] if curr_idx > 0 else curr_halt
         next_halt = halts_data[curr_idx + 1] if curr_idx < len(halts_data) - 1 else curr_halt
 
         train_delay = 15 if str(train.get("number")) == "12101" else 5
-        halts: List[StationHalt] = []
+        halts = []
         for idx, h in enumerate(halts_data):
             arrived = idx <= curr_idx
             departed = idx < curr_idx
@@ -322,7 +474,7 @@ class OfflineSimulatorProvider(RailwayProvider):
         return RailwayStatus(
             train_number=train["number"],
             train_name=train["name"],
-            journey_date=now.strftime("%Y-%m-%d"),
+            journey_date=now_ist.strftime("%Y-%m-%d"),
             running_status=f"Departed {curr_halt['name']} (Simulated Demo)",
             delay_minutes=train_delay,
             current_station=f"{curr_halt['name']} ({curr_halt['code']})",
@@ -340,6 +492,11 @@ class OfflineSimulatorProvider(RailwayProvider):
             location_type=LocationType.SIMULATED,
             is_simulated=True,
             halts=halts,
+            runs_today=True,
+            days_of_run=days_of_run,
+            service_state="RUNNING",
+            service_notice=service_notice,
+            pairing_train_number=pairing_train,
         )
 
     async def get_schedule(self, train_number: str) -> Optional[Dict[str, Any]]:
