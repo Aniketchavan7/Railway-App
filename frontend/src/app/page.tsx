@@ -365,23 +365,23 @@ export default function HomePage() {
       {/* Featured Train Spotlight Strip - Open Transit Corridor */}
       <section className="border-y border-rule py-4">
         <Link
-          href="/train?number=22225"
+          href="/train?number=12951"
           className="group flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs focus-visible:outline-2 focus-visible:outline-accent"
         >
           <div className="flex items-center gap-3">
             <span className="w-2 h-2 rounded-full bg-ok shrink-0" aria-hidden="true" />
-            <span className="font-outlier font-bold text-ink">#22225</span>
+            <span className="font-outlier font-bold text-ink">#12951</span>
             <span className="font-semibold text-ink group-hover:text-accent transition-colors">
-              Solapur Vande Bharat Express
+              Mumbai Tejas Rajdhani Express
             </span>
             <span className="text-muted hidden sm:inline">
-              CSMT &rarr; SUR
+              MMCT &rarr; NDLS
             </span>
           </div>
 
           <div className="flex items-center gap-4 text-muted font-outlier">
             <span className="text-ok font-semibold">On time</span>
-            <span>118 km/h</span>
+            <span>130 km/h</span>
             <span className="text-accent group-hover:translate-x-0.5 transition-transform flex items-center gap-1 font-sans font-medium">
               <span>Track live</span>
               <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
@@ -548,7 +548,7 @@ export default function HomePage() {
 
       {/* Transit Services - Open Airy Columns, No Box-in-Box */}
       <section className="border-t border-rule pt-8">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8">
           <Link
             href="/stations"
             className="group space-y-1.5 focus-visible:outline-2 focus-visible:outline-accent"
@@ -560,7 +560,7 @@ export default function HomePage() {
               </h3>
             </div>
             <p className="text-xs text-muted leading-relaxed">
-              Live arrival and departure boards across terminals.
+              Live arrival and departure boards across Indian Railways terminals.
             </p>
           </Link>
 
@@ -575,22 +575,7 @@ export default function HomePage() {
               </h3>
             </div>
             <p className="text-xs text-muted leading-relaxed">
-              Ticket booking verification and coach berth position.
-            </p>
-          </Link>
-
-          <Link
-            href="/coach"
-            className="group space-y-1.5 focus-visible:outline-2 focus-visible:outline-accent"
-          >
-            <div className="flex items-center gap-2 text-accent">
-              <LayoutGrid className="w-4 h-4 text-accent" aria-hidden="true" />
-              <h3 className="font-display font-semibold text-sm text-ink group-hover:text-accent transition-colors">
-                Coach guide
-              </h3>
-            </div>
-            <p className="text-xs text-muted leading-relaxed">
-              Rake composition and platform pole alignment.
+              Ticket booking verification and passenger berth allocation.
             </p>
           </Link>
 
@@ -598,8 +583,8 @@ export default function HomePage() {
             href="/fare"
             className="group space-y-1.5 focus-visible:outline-2 focus-visible:outline-accent"
           >
-            <div className="flex items-center gap-2 text-ink">
-              <Calculator className="w-4 h-4 text-ink" aria-hidden="true" />
+            <div className="flex items-center gap-2 text-accent">
+              <Calculator className="w-4 h-4 text-accent" aria-hidden="true" />
               <h3 className="font-display font-semibold text-sm text-ink group-hover:text-accent transition-colors">
                 Fare engine
               </h3>

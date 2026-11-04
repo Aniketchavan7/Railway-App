@@ -11,14 +11,13 @@ import { LocationTypePill } from "@/components/tracking/LocationTypePill";
 import { StationTimeline } from "@/components/tracking/StationTimeline";
 import { CrowdTelemetryReporter } from "@/components/tracking/CrowdTelemetryReporter";
 import { StationWakeupAlarm } from "@/components/tracking/StationWakeupAlarm";
-import { SpeedometerHUD } from "@/components/tracking/SpeedometerHUD";
 import { TripShareModal } from "@/components/tracking/TripShareModal";
 import { TrainMap } from "@/components/map/TrainMap";
 import {
   Train,
   MapPin,
   RefreshCw,
-  AlertTriangle,
+  AlertCircle,
   Calculator,
   Loader2,
   Wifi,
@@ -27,10 +26,8 @@ import {
   ListOrdered,
   Radio,
   Clock,
-  Gauge,
   Bell,
-  Share2,
-  CheckCircle2,
+  ArrowRight,
 } from "lucide-react";
 
 function TrainTrackingContent() {
@@ -50,8 +47,8 @@ function TrainTrackingContent() {
   );
   const [mobileTab, setMobileTab] = useState<"map" | "timeline" | "gps">("map");
   const [showGpsReporter, setShowGpsReporter] = useState(false);
+  const [showWakeupAlarm, setShowWakeupAlarm] = useState(false);
   const [disruptions, setDisruptions] = useState<RailwayAlert[]>([]);
-  const [activePassengerTool, setActivePassengerTool] = useState<"none" | "alarm" | "speed">("none");
   const [isOnline, setIsOnline] = useState<boolean>(true);
 
   useEffect(() => {
@@ -117,8 +114,8 @@ function TrainTrackingContent() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] space-y-3">
-        <Loader2 className="w-6 h-6 text-accent motion-safe:animate-spin motion-reduce:animate-none" />
-        <p className="text-xs text-muted font-outlier">
+        <Loader2 className="w-5 h-5 text-accent motion-safe:animate-spin motion-reduce:animate-none" />
+        <p className="text-xs text-muted font-outlier tabular-nums">
           Checking train {trainNumber} status…
         </p>
       </div>
@@ -127,27 +124,27 @@ function TrainTrackingContent() {
 
   if (error || !status) {
     return (
-      <div className="max-w-xl mx-auto my-12 p-8 bg-paper-2 rounded-card border border-bad text-center space-y-4">
-        <AlertTriangle className="w-10 h-10 text-bad mx-auto" />
-        <h2 className="text-lg font-display font-bold text-ink">
-          Status unavailable
+      <div className="max-w-xl mx-auto my-12 p-8 bg-paper-2 rounded-card border border-rule text-center space-y-4">
+        <AlertCircle className="w-8 h-8 text-accent mx-auto" />
+        <h2 className="text-base font-display font-semibold text-ink">
+          Train Status Unavailable
         </h2>
-        <p className="text-xs text-muted">
+        <p className="text-xs text-muted leading-relaxed">
           {error ||
-            `Unable to fetch status for train ${trainNumber}. Please verify the number.`}
+            `Unable to fetch live telemetry for train ${trainNumber}. Please verify the number.`}
         </p>
         <div className="pt-2 flex justify-center gap-3">
           <button
             type="button"
             onClick={fetchStatus}
             disabled={loading}
-            className="px-4 py-2 bg-accent hover:opacity-90 active:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed text-accent-ink rounded-pill text-xs font-medium cursor-pointer transition-opacity focus-visible:outline-2 focus-visible:outline-accent"
+            className="px-4 py-2 bg-accent hover:opacity-90 active:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed text-accent-ink rounded text-xs font-medium cursor-pointer transition-opacity focus-visible:outline-2 focus-visible:outline-accent"
           >
-            Try again
+            Retry status
           </button>
           <Link
             href="/"
-            className="px-4 py-2 bg-paper-3 hover:bg-paper active:bg-paper-2 text-ink rounded-pill text-xs font-medium border border-rule transition-colors focus-visible:outline-2 focus-visible:outline-accent"
+            className="px-4 py-2 bg-paper-3 hover:bg-paper active:bg-paper-2 text-ink rounded text-xs font-medium border border-rule transition-colors focus-visible:outline-2 focus-visible:outline-accent"
           >
             Back to search
           </Link>
@@ -169,44 +166,42 @@ function TrainTrackingContent() {
 
   return (
     <div className="space-y-6 sm:space-y-8 py-2">
-      {/* Tactical Train Command Console Header */}
+      {/* Editorial Train Tracking Console Header */}
       <section className="space-y-4">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
-              <span className="text-xs font-outlier font-bold px-2 py-0.5 rounded-pill bg-paper-3 text-ink border border-rule">
+              <span className="text-xs font-outlier font-bold px-2 py-0.5 rounded bg-paper-3 text-ink border border-rule tabular-nums">
                 #{status.train_number}
               </span>
 
-              <h1 className="text-lg sm:text-2xl font-display font-bold text-ink tracking-tight">
+              <h1 className="text-xl sm:text-2xl font-display font-bold text-ink tracking-tight">
                 {status.train_name}
               </h1>
 
               {status.service_state === "NOT_RUNNING_TODAY" || status.runs_today === false ? (
-                <span className="text-xs px-2.5 py-0.5 rounded-pill font-outlier font-semibold bg-bad-soft text-bad border border-bad/40 flex items-center gap-1">
-                  <AlertTriangle className="w-3 h-3 text-bad" aria-hidden="true" />
-                  <span>Non-operating day</span>
+                <span className="text-xs px-2.5 py-0.5 rounded font-outlier font-medium bg-paper-3 text-bad border border-bad/30">
+                  Non-operating day · Weekly maintenance
                 </span>
               ) : status.service_state === "NOT_STARTED" ? (
-                <span className="text-xs px-2.5 py-0.5 rounded-pill font-outlier font-semibold bg-accent-soft text-accent border border-accent/40 flex items-center gap-1">
-                  <Clock className="w-3 h-3 text-accent" aria-hidden="true" />
-                  <span>Not started yet</span>
+                <span className="text-xs px-2.5 py-0.5 rounded font-outlier font-medium bg-paper-3 text-accent border border-accent/30">
+                  Scheduled departure pending
                 </span>
               ) : status.service_state === "COMPLETED" ? (
-                <span className="text-xs px-2.5 py-0.5 rounded-pill font-outlier font-semibold bg-ok-soft text-ok border border-ok/40">
-                  Journey completed
+                <span className="text-xs px-2.5 py-0.5 rounded font-outlier font-medium bg-paper-3 text-ok border border-ok/30">
+                  Journey terminated
                 </span>
               ) : (
                 <span
-                  className={`text-xs px-2.5 py-0.5 rounded-pill font-outlier font-semibold ${
+                  className={`text-xs px-2.5 py-0.5 rounded font-outlier font-medium tabular-nums ${
                     status.delay_minutes > 0
-                      ? "bg-accent-soft text-accent border border-accent/40"
-                      : "bg-ok-soft text-ok border border-ok/40"
+                      ? "bg-paper-3 text-accent border border-accent/30"
+                      : "bg-paper-3 text-ok border border-ok/30"
                   }`}
                 >
                   {status.delay_minutes > 0
                     ? `+${status.delay_minutes}m late`
-                    : "On time"}
+                    : "Running on time"}
                 </span>
               )}
 
@@ -218,24 +213,24 @@ function TrainTrackingContent() {
             </div>
           </div>
 
-          {/* Action Tools & WebSocket Light */}
+          {/* Action Controls & Stream Indicator */}
           <div className="flex flex-wrap items-center gap-2">
             <div
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-pill text-xs font-outlier border ${
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-outlier border ${
                 wsStatus === "connected"
-                  ? "bg-ok-soft border-ok/30 text-ok"
+                  ? "bg-ok-soft/30 border-ok/30 text-ok"
                   : "bg-paper-3 border-rule text-muted"
               }`}
             >
               {wsStatus === "connected" ? (
                 <>
                   <Wifi className="w-3.5 h-3.5 text-ok" aria-hidden="true" />
-                  <span>Live stream active</span>
+                  <span>Stream active</span>
                 </>
               ) : (
                 <>
                   <WifiOff className="w-3.5 h-3.5 text-muted" aria-hidden="true" />
-                  <span>Connecting stream…</span>
+                  <span>Connecting…</span>
                 </>
               )}
             </div>
@@ -252,42 +247,21 @@ function TrainTrackingContent() {
 
             <button
               type="button"
-              onClick={() =>
-                setActivePassengerTool((prev) => (prev === "speed" ? "none" : "speed"))
-              }
-              className={`px-3 py-1 rounded-pill text-xs font-medium border transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-accent ${
-                activePassengerTool === "speed"
+              onClick={() => setShowWakeupAlarm((prev) => !prev)}
+              className={`px-3 py-1 rounded text-xs font-medium border transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-accent ${
+                showWakeupAlarm
                   ? "bg-accent text-accent-ink border-accent font-semibold"
                   : "bg-paper-3 hover:bg-paper text-ink border-rule"
               }`}
             >
-              <Gauge className="w-3.5 h-3.5" aria-hidden="true" />
-              <span>
-                {status.service_state && status.service_state !== "RUNNING"
-                  ? "0 km/h"
-                  : `${Math.round(status.speed_kmph || 0)} km/h`}
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() =>
-                setActivePassengerTool((prev) => (prev === "alarm" ? "none" : "alarm"))
-              }
-              className={`px-3 py-1 rounded-pill text-xs font-medium border transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-accent ${
-                activePassengerTool === "alarm"
-                  ? "bg-ok-soft text-ok border-ok/40 font-semibold"
-                  : "bg-paper-3 hover:bg-paper text-ink border-rule"
-              }`}
-            >
               <Bell className="w-3.5 h-3.5" aria-hidden="true" />
-              <span>Wakeup Alarm</span>
+              <span>Wakeup alarm</span>
             </button>
 
             <button
               type="button"
               onClick={() => setShowGpsReporter((prev) => !prev)}
-              className={`px-3 py-1 rounded-pill text-xs font-medium border transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-accent ${
+              className={`px-3 py-1 rounded text-xs font-medium border transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-accent ${
                 showGpsReporter
                   ? "bg-accent text-accent-ink border-accent font-semibold"
                   : "bg-paper-3 hover:bg-paper text-ink border-rule"
@@ -301,31 +275,34 @@ function TrainTrackingContent() {
               type="button"
               onClick={fetchStatus}
               disabled={loading}
-              className="p-1.5 rounded-pill border border-rule bg-paper-3 hover:bg-paper active:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed text-muted hover:text-ink transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-accent"
+              className="p-1.5 rounded border border-rule bg-paper-3 hover:bg-paper active:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed text-muted hover:text-ink transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-accent"
               title="Refresh status"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? "motion-safe:animate-spin" : ""}`} aria-hidden="true" />
+              <RefreshCw
+                className={`w-3.5 h-3.5 ${loading ? "motion-safe:animate-spin" : ""}`}
+                aria-hidden="true"
+              />
             </button>
           </div>
         </div>
 
         {/* Quick Express Switcher Bar */}
-        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-rule/50 text-xs">
-          <span className="text-muted text-[11px] font-medium font-outlier">
-            Live expresses:
+        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-rule text-xs">
+          <span className="text-muted text-[11px] font-outlier uppercase tracking-wider">
+            Expresses:
           </span>
           {[
+            { num: "12951", label: "12951 Rajdhani (Daily)" },
+            { num: "12158", label: "12158 Hutatma Morn" },
+            { num: "12157", label: "12157 Hutatma Eve" },
             { num: "22225", label: "22225 Solapur VB" },
-            { num: "12158", label: "12158 Hutatma (Morn)" },
-            { num: "12157", label: "12157 Hutatma (Eve)" },
             { num: "12101", label: "12101 Jnaneswari" },
-            { num: "12951", label: "12951 Rajdhani" },
             { num: "22436", label: "22436 Vande Bharat" },
           ].map((item) => (
             <Link
               key={item.num}
               href={`/train?number=${item.num}`}
-              className={`px-2.5 py-0.5 rounded-pill text-[11px] font-outlier transition-colors border ${
+              className={`px-2 py-0.5 rounded text-[11px] font-outlier tabular-nums transition-colors border ${
                 trainNumber === item.num
                   ? "bg-accent text-accent-ink border-accent font-semibold"
                   : "bg-paper-3 text-muted hover:text-ink hover:bg-paper border-rule"
@@ -336,210 +313,204 @@ function TrainTrackingContent() {
           ))}
         </div>
 
-        {/* Train Operational Days & Maintenance Notice Banner */}
+        {/* Operational Days & Maintenance Advisory */}
         {(status.service_state === "NOT_RUNNING_TODAY" || status.runs_today === false) && (
-          <div className="p-3 sm:p-4 rounded-lg bg-bad/10 border border-bad/30 flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-bad shrink-0 mt-0.5" aria-hidden="true" />
-            <div className="text-xs space-y-1.5 flex-1">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-bold text-bad text-xs px-2 py-0.5 rounded-pill bg-bad/20 border border-bad/40 font-outlier">
-                  Scheduled maintenance day
-                </span>
-                <strong className="text-ink font-semibold">{status.running_status}</strong>
-              </div>
-              <p className="text-muted leading-relaxed">
-                {status.service_notice || `Train ${status.train_number} does not operate on this day of the week.`}
-              </p>
-              {status.days_of_run && status.days_of_run.length > 0 && (
-                <div className="flex items-center gap-2 pt-1 flex-wrap">
-                  <span className="text-muted text-[11px]">Scheduled days:</span>
-                  <div className="flex gap-1">
-                    {["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"].map((day) => {
-                      const runs = status.days_of_run?.includes(day);
-                      return (
-                        <span
-                          key={day}
-                          className={`px-1.5 py-0.5 rounded text-[10px] font-outlier font-semibold ${
-                            runs
-                              ? "bg-ok-soft text-ok border border-ok/30"
-                              : "bg-paper-3 text-muted/40 border border-rule line-through"
-                          }`}
-                        >
-                          {day}
-                        </span>
-                      );
-                    })}
-                  </div>
+          <div className="p-3.5 bg-paper-2 border border-rule border-l-2 border-l-bad text-xs space-y-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-outlier font-semibold text-bad uppercase tracking-wider text-[10px]">
+                Maintenance Day Advisory
+              </span>
+              <span className="text-muted">·</span>
+              <strong className="text-ink font-semibold">{status.running_status}</strong>
+            </div>
+            <p className="text-muted leading-relaxed">
+              {status.service_notice || `Train ${status.train_number} does not operate on this day of the week.`}
+            </p>
+            {status.days_of_run && status.days_of_run.length > 0 && (
+              <div className="flex items-center gap-2 pt-1 flex-wrap text-[11px]">
+                <span className="text-muted font-outlier">Scheduled service days:</span>
+                <div className="flex gap-1.5 font-outlier">
+                  {["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"].map((day) => {
+                    const runs = status.days_of_run?.includes(day);
+                    return (
+                      <span
+                        key={day}
+                        className={`px-1.5 py-0.2 rounded text-[10px] font-medium border ${
+                          runs
+                            ? "bg-paper-3 text-ink border-rule font-semibold"
+                            : "bg-transparent text-muted/30 border-transparent"
+                        }`}
+                      >
+                        {day}
+                      </span>
+                    );
+                  })}
                 </div>
-              )}
-              {status.pairing_train_number && (
-                <p className="text-accent text-[11px] pt-1">
-                  Turnaround / Reverse service:{" "}
-                  <Link href={`/train?number=${status.pairing_train_number}`} className="underline font-semibold font-outlier">
-                    Train #{status.pairing_train_number}
-                  </Link>
-                </p>
-              )}
-            </div>
+              </div>
+            )}
+            {status.pairing_train_number && (
+              <p className="text-muted text-[11px] pt-0.5">
+                Turnaround pair service:{" "}
+                <Link
+                  href={`/train?number=${status.pairing_train_number}`}
+                  className="text-accent underline font-outlier font-semibold tabular-nums"
+                >
+                  Train #{status.pairing_train_number}
+                </Link>
+              </p>
+            )}
           </div>
         )}
 
-        {/* Upcoming Service / Not Started Yet Banner */}
+        {/* Not Started Yet Advisory */}
         {status.service_state === "NOT_STARTED" && (
-          <div className="p-3 sm:p-4 rounded-lg bg-accent/10 border border-accent/30 flex items-start gap-3">
-            <Clock className="w-5 h-5 text-accent shrink-0 mt-0.5" aria-hidden="true" />
-            <div className="text-xs space-y-1.5 flex-1">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-bold text-accent text-xs px-2 py-0.5 rounded-pill bg-accent/20 border border-accent/40 font-outlier">
-                  Not departed yet
-                </span>
-                <strong className="text-ink font-semibold">{status.running_status}</strong>
-              </div>
-              <p className="text-muted leading-relaxed">
-                {status.service_notice || `Train ${status.train_number} has not departed its origin station yet.`}
-              </p>
-              {status.pairing_train_number && (
-                <p className="text-accent text-[11px] pt-1">
-                  Shared rake pair: Incoming service was{" "}
-                  <Link href={`/train?number=${status.pairing_train_number}`} className="underline font-semibold font-outlier">
-                    Train #{status.pairing_train_number}
-                  </Link>
-                </p>
-              )}
+          <div className="p-3.5 bg-paper-2 border border-rule border-l-2 border-l-accent text-xs space-y-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-outlier font-semibold text-accent uppercase tracking-wider text-[10px]">
+                Scheduled Origin Halt
+              </span>
+              <span className="text-muted">·</span>
+              <strong className="text-ink font-semibold">{status.running_status}</strong>
             </div>
+            <p className="text-muted leading-relaxed">
+              {status.service_notice || `Train ${status.train_number} has not departed its origin station yet.`}
+            </p>
+            {status.pairing_train_number && (
+              <p className="text-muted text-[11px] pt-0.5">
+                Shared rake pair: Incoming service was{" "}
+                <Link
+                  href={`/train?number=${status.pairing_train_number}`}
+                  className="text-accent underline font-outlier font-semibold tabular-nums"
+                >
+                  Train #{status.pairing_train_number}
+                </Link>
+              </p>
+            )}
           </div>
         )}
 
-        {/* Service Completed / Terminated Banner */}
+        {/* Journey Completed Advisory */}
         {status.service_state === "COMPLETED" && (
-          <div className="p-3 sm:p-4 rounded-lg bg-ok-soft border border-ok/40 flex items-start gap-3">
-            <CheckCircle2 className="w-5 h-5 text-ok shrink-0 mt-0.5" aria-hidden="true" />
-            <div className="text-xs space-y-1.5 flex-1">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-bold text-ok text-xs px-2 py-0.5 rounded-pill bg-ok/20 border border-ok/40 font-outlier">
-                  Journey completed
-                </span>
-                <strong className="text-ink font-semibold">{status.running_status}</strong>
-              </div>
-              <p className="text-muted leading-relaxed">
-                {status.service_notice || `Train ${status.train_number} has completed its scheduled journey.`}
-              </p>
-              {status.pairing_train_number && (
-                <p className="text-accent text-[11px] pt-1">
-                  Turnaround rake next operates as:{" "}
-                  <Link href={`/train?number=${status.pairing_train_number}`} className="underline font-semibold font-outlier">
-                    Train #{status.pairing_train_number}
-                  </Link>
-                </p>
-              )}
+          <div className="p-3.5 bg-paper-2 border border-rule border-l-2 border-l-ok text-xs space-y-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-outlier font-semibold text-ok uppercase tracking-wider text-[10px]">
+                Destination Reached
+              </span>
+              <span className="text-muted">·</span>
+              <strong className="text-ink font-semibold">{status.running_status}</strong>
             </div>
+            <p className="text-muted leading-relaxed">
+              {status.service_notice || `Train ${status.train_number} has completed its scheduled journey.`}
+            </p>
+            {status.pairing_train_number && (
+              <p className="text-muted text-[11px] pt-0.5">
+                Turnaround rake next operates as:{" "}
+                <Link
+                  href={`/train?number=${status.pairing_train_number}`}
+                  className="text-accent underline font-outlier font-semibold tabular-nums"
+                >
+                  Train #{status.pairing_train_number}
+                </Link>
+              </p>
+            )}
           </div>
         )}
 
-        {/* Active Disruption / Route Change / Mega Block Banner */}
+        {/* Route Disruption / Mega Block Notice */}
         {disruptions.length > 0 && (
-          <div className="p-3 sm:p-4 rounded-lg bg-accent/5 border border-accent/25 flex items-start gap-3">
-            <AlertTriangle className="w-4 h-4 text-accent shrink-0 mt-0.5" />
-            <div className="text-xs space-y-1">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-semibold text-accent text-xs px-1.5 py-0.5 rounded bg-accent/15 border border-accent/30 font-outlier">
-                  {disruptions[0].alert_type.replace(/_/g, " ")}
-                </span>
-                <strong className="text-ink font-semibold">{disruptions[0].title}</strong>
-              </div>
-              <p className="text-muted leading-relaxed">{disruptions[0].impact_description}</p>
-              {disruptions[0].diverted_via && (
-                <p className="text-ink font-medium">
-                  <span className="text-muted font-normal">Diverted via:</span> {disruptions[0].diverted_via}
-                </p>
-              )}
-              {disruptions[0].skipped_halts && disruptions[0].skipped_halts.length > 0 && (
-                <p className="text-accent font-medium">
-                  <span className="text-muted font-normal">Skipped halts:</span> {disruptions[0].skipped_halts.join(", ")}
-                </p>
-              )}
-              <p className="text-ok font-medium">
-                <span className="text-muted font-normal">Advisory:</span> {disruptions[0].action_advised}
+          <div className="p-3.5 bg-paper-2 border border-rule border-l-2 border-l-accent text-xs space-y-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-outlier font-semibold text-accent uppercase tracking-wider text-[10px]">
+                {disruptions[0].alert_type.replace(/_/g, " ")}
+              </span>
+              <span className="text-muted">·</span>
+              <strong className="text-ink font-semibold">{disruptions[0].title}</strong>
+            </div>
+            <p className="text-muted leading-relaxed">{disruptions[0].impact_description}</p>
+            {disruptions[0].diverted_via && (
+              <p className="text-ink">
+                <span className="text-muted">Diverted via:</span> {disruptions[0].diverted_via}
               </p>
-            </div>
+            )}
+            {disruptions[0].skipped_halts && disruptions[0].skipped_halts.length > 0 && (
+              <p className="text-accent">
+                <span className="text-muted">Skipped halts:</span> {disruptions[0].skipped_halts.join(", ")}
+              </p>
+            )}
+            <p className="text-ok">
+              <span className="text-muted">Advisory:</span> {disruptions[0].action_advised}
+            </p>
           </div>
         )}
 
-        {/* Offline Satellite GPS Mode Banner */}
+        {/* Offline Satellite GPS Mode Notice */}
         {!isOnline && (
-          <div className="p-3 sm:p-4 rounded-lg bg-ok-soft border border-ok/40 text-ok text-xs flex items-center gap-2.5">
-            <Radio className="w-4 h-4 text-ok shrink-0" aria-hidden="true" />
-            <div>
-              <span className="font-bold">Offline satellite GPS active:</span> Cellular data is offline. RailPulse is actively tracking your train using device hardware satellite GPS fixes snapped to cached timetables with zero cellular data required.
+          <div className="p-3 bg-paper-2 border border-rule border-l-2 border-l-cool text-xs space-y-1">
+            <div className="font-semibold text-cool font-outlier uppercase tracking-wider text-[10px]">
+              Offline Satellite GPS Tracking
             </div>
+            <p className="text-muted leading-relaxed">
+              Cellular data connection is offline. RailPulse is actively tracking your train using device hardware satellite GPS fixes snapped to cached timetables with zero cellular data required.
+            </p>
           </div>
         )}
 
-        {/* Active Passenger Tool Drawers */}
-        {activePassengerTool === "speed" && (
-          <SpeedometerHUD
-            speedKmH={status.speed_kmph ?? 0}
-            trainName={status.train_name}
-            trainNumber={status.train_number}
-            maxPermissibleSpeedKmH={130}
-          />
-        )}
-
-        {activePassengerTool === "alarm" && (
-          <StationWakeupAlarm
-            trainNumber={status.train_number}
-            trainName={status.train_name}
-            halts={(status.halts || []).map((h) => ({
-              stationCode: h.station_code,
-              stationName: h.station_name,
-              distanceKm: h.distance_km,
-              platform: h.platform,
-              scheduledArrival: h.arrival_time,
-              actualArrival: h.actual_arrival,
-            }))}
-            currentKm={currentKm}
-            currentStationCode={status.current_station || ""}
-            currentSpeedKmH={status.speed_kmph ?? 0}
-          />
+        {/* Wakeup Alarm Drawer */}
+        {showWakeupAlarm && (
+          <div className="animate-in fade-in duration-150">
+            <StationWakeupAlarm
+              trainNumber={status.train_number}
+              trainName={status.train_name}
+              halts={(status.halts || []).map((h) => ({
+                stationCode: h.station_code,
+                stationName: h.station_name,
+                distanceKm: h.distance_km,
+                platform: h.platform,
+                scheduledArrival: h.arrival_time,
+                actualArrival: h.actual_arrival,
+              }))}
+              currentKm={currentKm}
+              currentStationCode={status.current_station || ""}
+              currentSpeedKmH={status.speed_kmph ?? 0}
+            />
+          </div>
         )}
 
         {/* Visual Route Corridor Bar */}
         {originHalt && destHalt && (
-          <div className="py-2.5 px-3 sm:px-4 rounded-pill bg-paper-3/50 border border-rule/60 flex items-center justify-between text-xs font-outlier">
+          <div className="py-2.5 px-3 border-y border-rule flex items-center justify-between text-xs font-outlier">
             <div className="flex items-center gap-1.5">
-              <span className="font-bold text-ink">{originHalt.station_code}</span>
+              <span className="font-bold text-ink tabular-nums">{originHalt.station_code}</span>
               <span className="text-[11px] text-muted hidden sm:inline">
                 ({originHalt.station_name})
               </span>
             </div>
 
-            <div className="flex-1 mx-3 sm:mx-6 flex items-center gap-1 opacity-70">
-              <span className="h-0.5 bg-rule-2 flex-1" />
-              <div className="w-2.5 h-2.5 rounded-full bg-accent ring-2 ring-accent/30 flex items-center justify-center shrink-0">
-                <span className="w-1 h-1 rounded-full bg-paper" />
-              </div>
-              <span className="h-0.5 bg-rule-2 flex-1" />
+            <div className="flex-1 mx-4 sm:mx-8 flex items-center gap-1">
+              <span className="h-px bg-rule flex-1" />
+              <div className="w-2 h-2 rounded-full bg-accent flex items-center justify-center shrink-0" />
+              <span className="h-px bg-rule flex-1" />
             </div>
 
             <div className="flex items-center gap-1.5 text-right">
               <span className="text-[11px] text-muted hidden sm:inline">
                 ({destHalt.station_name})
               </span>
-              <span className="font-bold text-ink">{destHalt.station_code}</span>
+              <span className="font-bold text-ink tabular-nums">{destHalt.station_code}</span>
             </div>
           </div>
         )}
 
-        {/* Typographic KPI Telemetry Strip */}
-        <div className="pt-3 border-t border-rule/70 grid grid-cols-2 md:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-rule text-xs">
+        {/* Typographic KPI Telemetry Strip (Hairline Columns, Tabular Numbers) */}
+        <div className="grid grid-cols-2 md:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-rule border-b border-rule pb-3 text-xs">
           {/* Current Delay */}
-          <div className="p-3 sm:px-4">
-            <span className="text-[10px] text-muted block font-outlier">
-              Delay
+          <div className="py-2 md:px-4">
+            <span className="text-[10px] text-muted uppercase tracking-wider block font-outlier">
+              Delay status
             </span>
             <div className="mt-1 flex items-baseline gap-1.5">
               <span
-                className={`text-lg sm:text-xl font-outlier font-bold tracking-tight ${
+                className={`text-xl font-outlier font-bold tracking-tight tabular-nums ${
                   status.delay_minutes > 0 ? "text-accent" : "text-ok"
                 }`}
               >
@@ -551,8 +522,8 @@ function TrainTrackingContent() {
           </div>
 
           {/* Current Location */}
-          <div className="p-3 sm:px-4 pt-3 md:pt-3">
-            <span className="text-[10px] text-muted block font-outlier">
+          <div className="py-2 md:px-4">
+            <span className="text-[10px] text-muted uppercase tracking-wider block font-outlier">
               Position
             </span>
             <div className="mt-1 text-sm sm:text-base font-semibold text-ink truncate">
@@ -560,9 +531,9 @@ function TrainTrackingContent() {
             </div>
           </div>
 
-          {/* Next Station */}
-          <div className="p-3 sm:px-4 pt-3 md:pt-3">
-            <span className="text-[10px] text-muted block font-outlier">
+          {/* Next Halt */}
+          <div className="py-2 md:px-4">
+            <span className="text-[10px] text-muted uppercase tracking-wider block font-outlier">
               Next halt
             </span>
             <div className="mt-1 text-sm sm:text-base font-semibold text-ink truncate">
@@ -571,12 +542,12 @@ function TrainTrackingContent() {
           </div>
 
           {/* Speed */}
-          <div className="p-3 sm:px-4 pt-3 md:pt-3">
-            <span className="text-[10px] text-muted block font-outlier">
-              Speed
+          <div className="py-2 md:px-4">
+            <span className="text-[10px] text-muted uppercase tracking-wider block font-outlier">
+              Telemetry speed
             </span>
             <div className="mt-1 flex items-baseline gap-1">
-              <span className="text-lg sm:text-xl font-outlier font-bold text-ink tracking-tight">
+              <span className="text-xl font-outlier font-bold text-ink tracking-tight tabular-nums">
                 {status.speed_kmph ?? 0}
               </span>
               <span className="text-xs text-muted font-outlier">km/h</span>
@@ -585,7 +556,7 @@ function TrainTrackingContent() {
         </div>
 
         {/* Freshness & Navigation Links */}
-        <div className="pt-3 flex flex-wrap items-center justify-between gap-3 text-xs border-t border-rule/50">
+        <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
           <FreshnessBadge
             freshness={status.freshness}
             observedAt={status.observed_at}
@@ -607,7 +578,7 @@ function TrainTrackingContent() {
 
       {/* Onboard GPS Reporter Collapsible Drawer */}
       {showGpsReporter && (
-        <div className="animate-in fade-in duration-200">
+        <div className="animate-in fade-in duration-150">
           <CrowdTelemetryReporter
             trainNumber={status.train_number}
             trainName={status.train_name}
@@ -617,13 +588,13 @@ function TrainTrackingContent() {
       )}
 
       {/* Mobile Segmented View Switcher (<1024px) */}
-      <div className="flex items-center gap-1 bg-paper-2 p-1 rounded-pill border border-rule lg:hidden text-xs">
+      <div className="flex items-center gap-1 bg-paper-2 p-1 rounded border border-rule lg:hidden text-xs">
         <button
           type="button"
           onClick={() => setMobileTab("map")}
-          className={`flex-1 py-1.5 px-3 rounded-pill font-medium transition-colors flex items-center justify-center gap-1.5 ${
+          className={`flex-1 py-1 px-3 rounded font-medium transition-colors flex items-center justify-center gap-1.5 cursor-pointer ${
             mobileTab === "map"
-              ? "bg-accent text-accent-ink font-semibold"
+              ? "bg-paper-3 text-ink font-semibold"
               : "text-muted hover:text-ink"
           }`}
         >
@@ -634,9 +605,9 @@ function TrainTrackingContent() {
         <button
           type="button"
           onClick={() => setMobileTab("timeline")}
-          className={`flex-1 py-1.5 px-3 rounded-pill font-medium transition-colors flex items-center justify-center gap-1.5 ${
+          className={`flex-1 py-1 px-3 rounded font-medium transition-colors flex items-center justify-center gap-1.5 cursor-pointer ${
             mobileTab === "timeline"
-              ? "bg-accent text-accent-ink font-semibold"
+              ? "bg-paper-3 text-ink font-semibold"
               : "text-muted hover:text-ink"
           }`}
         >
@@ -647,9 +618,9 @@ function TrainTrackingContent() {
         <button
           type="button"
           onClick={() => setMobileTab("gps")}
-          className={`flex-1 py-1.5 px-3 rounded-pill font-medium transition-colors flex items-center justify-center gap-1.5 ${
+          className={`flex-1 py-1 px-3 rounded font-medium transition-colors flex items-center justify-center gap-1.5 cursor-pointer ${
             mobileTab === "gps"
-              ? "bg-accent text-accent-ink font-semibold"
+              ? "bg-paper-3 text-ink font-semibold"
               : "text-muted hover:text-ink"
           }`}
         >
@@ -669,7 +640,7 @@ function TrainTrackingContent() {
         </div>
       )}
 
-      {/* Main Map & Timeline Grid */}
+      {/* Main Map & Timetable Ledger Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 items-start">
         {/* Map View */}
         <div
@@ -685,7 +656,7 @@ function TrainTrackingContent() {
           />
         </div>
 
-        {/* Station Timeline Itinerary */}
+        {/* Station Timetable Ledger */}
         <div
           className={`lg:col-span-5 ${
             mobileTab === "timeline" ? "block" : "hidden lg:block"
@@ -708,7 +679,7 @@ export default function TrainTrackingPage() {
     <Suspense
       fallback={
         <div className="flex flex-col items-center justify-center min-h-[400px] space-y-3">
-          <Loader2 className="w-6 h-6 text-accent motion-safe:animate-spin motion-reduce:animate-none" />
+          <Loader2 className="w-5 h-5 text-accent motion-safe:animate-spin motion-reduce:animate-none" />
           <p className="text-xs text-muted font-outlier">Loading train status…</p>
         </div>
       }
