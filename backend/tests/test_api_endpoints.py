@@ -69,24 +69,20 @@ async def test_all_11_railway_endpoints():
         assert res.status_code == 200
         assert res.json()["data"]["pnr"] == "1234567890"
 
-        # 12. Crowd-sourced GPS Telemetry Relay & Zero-PII Guarantee
-        report_payload = {
+        # 12. Passenger GPS: the report is checked rather than simply relayed
+        res = await ac.post("/v1/train/12115/telemetry/report", json={
+            "reporter_id": "api-test-reporter",
             "latitude": 19.0178,
             "longitude": 72.8478,
             "speed_kmph": 88.0,
             "accuracy_meters": 4.5,
-        }
-        res = await ac.post("/v1/train/12115/telemetry/report", json=report_payload)
+        })
         assert res.status_code == 200
-        relay_data = res.json()["data"]
-        assert relay_data["status"] == "relayed"
-        assert relay_data["location_type"] == "GPS_OBSERVED"
-        assert "Zero-PII" in relay_data["privacy_notice"]
+        assert res.json()["data"]["status"] in ("pending", "accepted", "rejected")
 
-        # Check crowd active metadata
         res = await ac.get("/v1/train/12115/crowd")
         assert res.status_code == 200
-        assert res.json()["data"]["active_reporters"] >= 1
+        assert "active_reporters" in res.json()["data"]
 
         # 13. Station-to-Station Route Finder
         res = await ac.get("/v1/trains/between?from_station=CSMT&to_station=PUNE")

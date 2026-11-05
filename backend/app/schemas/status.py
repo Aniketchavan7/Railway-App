@@ -45,11 +45,14 @@ class StationHalt(BaseModel):
 
 
 class PassengerTelemetryReport(BaseModel):
-    latitude: float
-    longitude: float
-    speed_kmph: Optional[float] = None
-    accuracy_meters: Optional[float] = None
-    heading: Optional[float] = None
+    # Random per-trip value generated in the browser. Not tied to a person or device.
+    reporter_id: str = Field(min_length=8, max_length=64)
+    # Bounds also reject NaN and infinity, which would break formatting for every viewer.
+    latitude: float = Field(ge=-90, le=90)
+    longitude: float = Field(ge=-180, le=180)
+    speed_kmph: Optional[float] = Field(default=None, ge=0, le=400)
+    accuracy_meters: Optional[float] = Field(default=None, ge=0, le=100000)
+    heading: Optional[float] = Field(default=None, ge=0, le=360)
 
 
 class RailwayStatus(BaseModel):
@@ -75,11 +78,31 @@ class RailwayStatus(BaseModel):
     location_type: LocationType
     is_simulated: bool = False
     halts: List[StationHalt] = Field(default_factory=list)
-    runs_today: bool = True
-    days_of_run: List[str] = Field(default_factory=lambda: ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"])
-    service_state: str = "RUNNING"  # RUNNING, NOT_RUNNING_TODAY, NOT_STARTED, COMPLETED
+    # None means we do not know, rather than assuming the train runs daily.
+    runs_today: Optional[bool] = None
+    days_of_run: List[str] = Field(default_factory=list)
+    # RUNNING, NOT_STARTED, COMPLETED, NOT_RUNNING_TODAY, CANCELLED, UNKNOWN
+    service_state: str = "RUNNING"
     service_notice: Optional[str] = None
     pairing_train_number: Optional[str] = None
+    # Journey being reported, e.g. "Wed 4 Nov" for a train that started yesterday
+    journey_date_label: Optional[str] = None
+    also_running_note: Optional[str] = None
+    next_run_date: Optional[str] = None
+    origin_code: Optional[str] = None
+    origin_name: Optional[str] = None
+    destination_code: Optional[str] = None
+    destination_name: Optional[str] = None
+    previous_station_code: Optional[str] = None
+    current_station_code: Optional[str] = None
+    next_station_code: Optional[str] = None
+    next_eta: Optional[datetime] = None
+    route_progress_percent: Optional[float] = None
+    # PASSENGER_GPS, PROVIDER_GPS, ESTIMATED, STATION, SCHEDULED, NONE
+    position_basis: str = "NONE"
+    position_label: Optional[str] = None
+    crowd_reporters: int = 0
+    exceptions: List[Dict[str, Any]] = Field(default_factory=list)
 
 
 class ResponseEnvelope(BaseModel):

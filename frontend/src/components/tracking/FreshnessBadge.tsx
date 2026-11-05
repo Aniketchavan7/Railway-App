@@ -4,18 +4,24 @@ import { useEffect, useState } from "react";
 import { FreshnessState } from "@/lib/types";
 import { Clock } from "lucide-react";
 
+const SOURCE_NAMES: Record<string, string> = {
+  railway_engine: "Railway Engine",
+  rail_radar: "RailRadar",
+  whereismytrain: "WhereIsMyTrain",
+  reference_timetable: "Timetable",
+  offline_simulator: "Simulator",
+};
+
 interface FreshnessBadgeProps {
   freshness: FreshnessState;
   observedAt: string;
   sourceProvider: string;
-  lastReportedStation?: string | null;
 }
 
 export function FreshnessBadge({
   freshness,
   observedAt,
   sourceProvider,
-  lastReportedStation,
 }: FreshnessBadgeProps) {
   const [elapsedSec, setElapsedSec] = useState<number>(0);
 
@@ -50,25 +56,25 @@ export function FreshnessBadge({
         return {
           bg: "bg-ok-soft border-ok/30 text-ok",
           dot: "bg-ok",
-          label: "Live location",
+          label: "Live data",
         };
       case "RECENT":
         return {
           bg: "bg-cool-soft border-cool/30 text-cool",
           dot: "bg-cool",
-          label: "Recent observation",
+          label: "Recent data",
         };
       case "STALE":
         return {
           bg: "bg-accent-soft border-accent/30 text-accent",
           dot: "bg-accent",
-          label: "Delayed update",
+          label: "Out of date",
         };
       default:
         return {
           bg: "bg-paper-3 border-rule text-muted",
           dot: "bg-muted",
-          label: "Recorded log",
+          label: "Timetable only",
         };
     }
   };
@@ -87,13 +93,12 @@ export function FreshnessBadge({
       <div className="flex items-center gap-1 text-muted bg-paper-3 border border-rule px-2.5 py-0.5 rounded-pill font-outlier">
         <Clock className="w-3 h-3 text-muted" />
         <span>
-          {formatElapsed(elapsedSec)}
-          {lastReportedStation ? ` at ${lastReportedStation}` : ""}
+          Updated {formatElapsed(elapsedSec)}
         </span>
       </div>
 
       <div className="text-[11px] text-muted font-outlier">
-        Source: <span className="text-ink">{sourceProvider}</span>
+        Source: <span className="text-ink">{SOURCE_NAMES[sourceProvider] ?? sourceProvider}</span>
       </div>
     </div>
   );

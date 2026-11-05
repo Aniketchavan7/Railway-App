@@ -30,52 +30,31 @@ export function BentoMetrics() {
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-ok animate-pulse" />
               <span className="text-xs font-outlier font-semibold uppercase tracking-wider text-muted">
-                GNSS Network Telemetry
+                Live train status
               </span>
             </div>
-            <span className="text-xs font-outlier px-2.5 py-0.5 rounded-pill bg-ok/10 text-ok border border-ok/20 font-medium">
-              11 Trains Active Now
-            </span>
           </div>
 
           <div>
             <h3 className="text-xl sm:text-2xl font-display font-bold text-ink">
-              Multi-Provider Telemetry Engine
+              Running, reached or not running today
             </h3>
             <p className="text-xs sm:text-sm text-muted mt-1 max-w-lg leading-relaxed">
-              Real-time synchronization across CRIS APIs, GPS transponders, and verified crowd telemetry with sub-second websocket streaming.
+              Enter a train number to see what it's doing now, including trains that started yesterday. Position comes from live running data, sharpened by passengers on board who choose to share their GPS.
             </p>
           </div>
 
-          {/* Quick Metrics Strip */}
-          <div className="grid grid-cols-3 gap-3 pt-2">
-            <div className="p-3 rounded-xl bg-paper border border-rule">
-              <span className="text-[11px] text-muted font-outlier block">Verified Speed</span>
-              <span className="text-lg font-bold font-outlier text-ink">130 km/h</span>
-              <span className="text-[10px] text-ok block mt-0.5 font-outlier">MPS Certified</span>
-            </div>
-            <div className="p-3 rounded-xl bg-paper border border-rule">
-              <span className="text-[11px] text-muted font-outlier block">Sync Latency</span>
-              <span className="text-lg font-bold font-outlier text-ink">&lt; 450 ms</span>
-              <span className="text-[10px] text-cool block mt-0.5 font-outlier">Direct WebSocket</span>
-            </div>
-            <div className="p-3 rounded-xl bg-paper border border-rule">
-              <span className="text-[11px] text-muted font-outlier block">On-Time Index</span>
-              <span className="text-lg font-bold font-outlier text-ink">94.2%</span>
-              <span className="text-[10px] text-ok block mt-0.5 font-outlier">Today&apos;s Run</span>
-            </div>
-          </div>
         </div>
 
         <div className="pt-5 mt-4 border-t border-rule/60 flex items-center justify-between">
           <span className="text-[11px] font-outlier text-muted">
-            Tracking Solapur VB #22226, Rajdhani #12951, Deccan Queen #12124
+            Try Rajdhani #12951 or Deccan Queen #12124
           </span>
           <Link
-            href="/train?number=22226"
+            href="/train?number=12951"
             className="text-accent text-xs font-semibold inline-flex items-center gap-1 group-hover:translate-x-0.5 transition-transform"
           >
-            <span>Launch Live Radar</span>
+            <span>Track a train</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
@@ -98,18 +77,18 @@ export function BentoMetrics() {
 
           <div>
             <h3 className="text-base sm:text-lg font-display font-bold text-ink">
-              Concourse Live Boards
+              Station boards
             </h3>
             <p className="text-xs text-muted mt-1 leading-relaxed">
-              Track platform assignments and arrivals for CSMT, Pune, New Delhi, and Howrah.
+              Arrivals, departures and platforms for stations such as CSMT, Pune and New Delhi.
             </p>
           </div>
 
           <div className="space-y-2 pt-2">
             {[
-              { code: "CSMT", name: "Mumbai CSMT", pf: "18 Platforms", state: "Active" },
-              { code: "PUNE", name: "Pune Jn", pf: "6 Platforms", state: "Active" },
-              { code: "NDLS", name: "New Delhi", pf: "16 Platforms", state: "Active" },
+              { code: "CSMT", name: "Mumbai CSMT" },
+              { code: "PUNE", name: "Pune Jn" },
+              { code: "NDLS", name: "New Delhi" },
             ].map((st) => (
               <div
                 key={st.code}
@@ -119,7 +98,6 @@ export function BentoMetrics() {
                   <span className="font-bold font-outlier text-accent">{st.code}</span>
                   <span className="text-muted text-[11px]">{st.name}</span>
                 </div>
-                <span className="text-[10px] font-outlier text-muted">{st.pf}</span>
               </div>
             ))}
           </div>
@@ -136,7 +114,7 @@ export function BentoMetrics() {
         </div>
       </motion.div>
 
-      {/* Bento Item 3: Zero-Fake Telemetry Guarantee */}
+      {/* Bento Item 3: We label what we know Guarantee */}
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
@@ -147,31 +125,31 @@ export function BentoMetrics() {
           <div className="flex items-center justify-between">
             <ShieldCheck className="w-5 h-5 text-ok" />
             <span className="text-[11px] font-outlier text-ok bg-ok/10 border border-ok/20 px-2 py-0.5 rounded-pill">
-              Guaranteed
+              Our rule
             </span>
           </div>
 
           <div>
             <h3 className="text-base sm:text-lg font-display font-bold text-ink">
-              Zero-Fake Telemetry
+              We label what we know
             </h3>
             <p className="text-xs text-muted mt-1 leading-relaxed">
-              Every coordinate is authentic. When offline, we clearly state the last physical halt instead of hallucinating movement.
+              Every position says whether it's passenger GPS, a reported station or an estimate. If we don't know, we say so.
             </p>
           </div>
 
           <div className="p-3 rounded-xl bg-paper border border-rule space-y-1.5">
             <div className="flex items-center gap-2 text-xs font-medium text-ink">
               <CheckCircle2 className="w-3.5 h-3.5 text-ok shrink-0" />
-              <span>Authentic GPS Coordinates</span>
+              <span>Estimates are labelled as estimates</span>
             </div>
             <div className="flex items-center gap-2 text-xs font-medium text-ink">
               <CheckCircle2 className="w-3.5 h-3.5 text-ok shrink-0" />
-              <span>Direct Circuit-Breaker Resilience</span>
+              <span>No made-up trains or bookings</span>
             </div>
             <div className="flex items-center gap-2 text-xs font-medium text-ink">
               <CheckCircle2 className="w-3.5 h-3.5 text-ok shrink-0" />
-              <span>Offline Transparency Fallback</span>
+              <span>Outages are shown as outages</span>
             </div>
           </div>
         </div>
@@ -181,7 +159,7 @@ export function BentoMetrics() {
             href="/admin"
             className="text-accent text-xs font-semibold inline-flex items-center gap-1 group-hover:translate-x-0.5 transition-transform"
           >
-            <span>Telemetry Health</span>
+            <span>Service status</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
@@ -199,46 +177,40 @@ export function BentoMetrics() {
             <div className="flex items-center gap-2">
               <Bot className="w-5 h-5 text-accent" />
               <span className="text-xs font-outlier font-semibold uppercase tracking-wider text-muted">
-                Operations AI Copilot
+                Assistant
               </span>
             </div>
             <span className="text-[11px] font-outlier px-2 py-0.5 rounded-pill bg-paper-3 text-muted border border-rule">
-              Grounded on Timetable Engine
+              Answers from live data
             </span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <h3 className="text-lg font-display font-bold text-ink">
-                Timetable Intelligence & Queries
+                Just ask
               </h3>
               <p className="text-xs text-muted mt-1 leading-relaxed">
-                Ask about train punctuality, platform assignments, turnaround rakes, and route disruptions with zero hallucination.
+                Ask where a train is, how late it is, or what it costs. Status answers come straight from live data.
               </p>
             </div>
 
-            <div className="space-y-2">
-              <div className="p-2.5 rounded-xl bg-paper border border-rule text-xs text-ink">
-                <span className="text-muted block text-[10px] font-outlier">Prompt</span>
-                &ldquo;Where is Solapur Vande Bharat #22226 right now?&rdquo;
-              </div>
-              <div className="p-2.5 rounded-xl bg-accent/5 border border-accent/20 text-xs text-accent">
-                <span className="text-accent/70 block text-[10px] font-outlier">Copilot response</span>
-                &ldquo;Train 22226 is approaching Karjat Jn on time at 118 km/h. Expected CSMT arrival 12:35 IST.&rdquo;
-              </div>
+            <div className="p-2.5 rounded-xl bg-paper border border-rule text-xs text-ink self-start">
+              <span className="text-muted block text-[10px] font-outlier">For example</span>
+              &ldquo;Where is 12951 right now?&rdquo;
             </div>
           </div>
         </div>
 
         <div className="pt-4 mt-3 border-t border-rule/60 flex items-center justify-between">
           <span className="text-[11px] font-outlier text-muted">
-            Integrated with Gemini 2.5 Flash & RailPulse Registry
+            Enter just a train number to get started
           </span>
           <Link
             href="/ai-assistant"
             className="text-accent text-xs font-semibold inline-flex items-center gap-1 group-hover:translate-x-0.5 transition-transform"
           >
-            <span>Ask AI Copilot</span>
+            <span>Open assistant</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>

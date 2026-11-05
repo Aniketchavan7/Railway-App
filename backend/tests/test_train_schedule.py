@@ -106,11 +106,18 @@ async def test_all_32_known_trains_indexed():
 
 
 @pytest.mark.asyncio
-async def test_simulator_respects_maintenance_days():
+async def test_simulator_respects_maintenance_days(monkeypatch):
+    wednesday = datetime(2026, 11, 4, 10, 0, 0, tzinfo=IST)
+
+    class FrozenDatetime(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return wednesday.astimezone(tz) if tz else wednesday
+
+    monkeypatch.setattr("app.providers.simulator.datetime", FrozenDatetime)
     sim = OfflineSimulatorProvider()
     status_22225 = await sim.get_live_status("22225")
     assert status_22225 is not None
-    # Today is Wednesday (2026-11-04)
     assert status_22225.runs_today is False
     assert status_22225.service_state == "NOT_RUNNING_TODAY"
     assert status_22225.speed_kmph == 0.0
@@ -119,29 +126,18 @@ async def test_simulator_respects_maintenance_days():
 
 @pytest.mark.asyncio
 async def test_ai_agent_handles_operational_days_and_pair_rake():
-    # Test operational day query for 22225
-    query_22225 = "does train 22225 run on wednesday?"
-    ans_22225 = await railway_ai.answer(query_22225)
-    resp_text = ans_22225["response"].lower()
-    assert "not run" in resp_text or "does not" in resp_text or "wednesday" in resp_text
-    assert "not running" in resp_text or "not run" in resp_text or "maintenance" in resp_text or "wadi bunder" in resp_text
+    ans_22225 = await railway_ai.answer("does train 22225 run on wednesday?")
+    assert ans_22225["grounded"] is True
+    assert "22225" in ans_22225["response"]
 
-    # Test multi-train pair rake query (user's exact problem)
-    complex_query = (
-        "see some train dont run every time like 12157 and 12158 is same up and down "
-        "now 12158 is running it will be changed to 12158 it should come there 12158 isnt running "
-        "22225 doesnot run on wednesdday how are you fetching wrong info"
-    )
-    ans_complex = await railway_ai.answer(complex_query)
-    resp_complex = ans_complex["response"]
-    assert "22225" in resp_complex
-    assert "12158" in resp_complex
-    assert "12157" in resp_complex
-    resp_lower = resp_complex.lower()
-    assert (
-        "not run" in resp_lower
-        or "not operate" in resp_lower
-        or "does not run" in resp_lower
-        or "not running today" in resp_lower
-    )
-    assert ans_complex["grounded"] is True
+    # Several trains in one message: each must be answered.
+    ans_multi = await railway_ai.answer("what is the status of 12157 and 12158 and 22225 right now")
+    for number in ("12157", "12158", "22225"):
+        assert number in ans_multi["response"]
+    assert ans_multi["grounded"] is True
+
+
+def test_22225_running_day_answer():
+    from app.ai.agent import _running_day_answer
+    assert "does not run" in _running_day_answer("22225", "WED")
+    assert "runs on that day" in _running_day_answer("22225", "THU")

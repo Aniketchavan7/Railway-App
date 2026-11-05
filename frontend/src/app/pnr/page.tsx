@@ -22,7 +22,7 @@ function PNRContent() {
   const searchParams = useSearchParams();
   const urlPnr = searchParams.get("pnr") || "";
 
-  const [pnrInput, setPnrInput] = useState(urlPnr || "1234567890");
+  const [pnrInput, setPnrInput] = useState(urlPnr);
   const [pnrData, setPnrData] = useState<PNRStatus | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,6 +40,7 @@ function PNRContent() {
       const data = await api.getPNRStatus(clean);
       setPnrData(data);
     } catch (err: any) {
+      setPnrData(null);
       setError(err.message || "PNR record not found or expired");
     } finally {
       setLoading(false);
@@ -51,8 +52,6 @@ function PNRContent() {
     if (urlPnr && urlPnr.replace(/\D/g, "").length === 10) {
       setPnrInput(urlPnr);
       fetchPNR(urlPnr);
-    } else {
-      fetchPNR("1234567890");
     }
   }, [urlPnr]);
 
@@ -103,34 +102,9 @@ function PNRContent() {
           </button>
         </form>
 
-        {/* Quick Demo Test Records */}
-        <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
-          <span className="text-muted text-[11px] font-medium font-outlier">
-            Verified samples:
-          </span>
-          {[
-            { pnr: "1234567890", label: "Sample record 1234567890" },
-            { pnr: "9876543210", label: "Sample record 9876543210" },
-          ].map((item) => (
-            <button
-              key={item.pnr}
-              type="button"
-              disabled={loading}
-              onClick={() => {
-                setPnrInput(item.pnr);
-                fetchPNR(item.pnr);
-              }}
-              className="px-2.5 py-1 rounded-pill bg-paper-2 hover:bg-paper-3 active:opacity-80 disabled:opacity-40 text-muted hover:text-ink border border-rule text-xs font-outlier transition-colors cursor-pointer"
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Privacy Note */}
         <p className="text-[11px] text-muted flex items-center gap-1.5 pt-1">
           <ShieldCheck className="w-3.5 h-3.5 text-ok shrink-0" aria-hidden="true" />
-          <span>Queries are verified directly against Indian Railways reservation records.</span>
+          <span>Your PNR is looked up once and never stored.</span>
         </p>
       </section>
 
@@ -227,7 +201,7 @@ function PNRContent() {
               <h2 className="text-xs font-semibold text-muted font-outlier">
                 Passenger Manifest ({pnrData.passengers.length})
               </h2>
-              <span className="text-[11px] text-muted font-outlier">Railway Board Records</span>
+              <span className="text-[11px] text-muted font-outlier">{pnrData.is_simulated ? "Simulated demo data" : "From data provider"}</span>
             </div>
 
             <div className="divide-y divide-rule/70 border border-rule/80 rounded-2xl overflow-hidden bg-paper shadow-xs">

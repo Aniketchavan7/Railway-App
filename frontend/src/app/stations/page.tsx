@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { api } from "@/lib/api";
-import { StationLiveBoard } from "@/lib/types";
+import { StationBoardItem, StationLiveBoard } from "@/lib/types";
 import { Search, ArrowRight, Loader2, Building2, Clock, Train, ArrowUpDown } from "lucide-react";
 
 function formatTime(timeStr?: string | null): string {
@@ -15,6 +15,20 @@ function formatTime(timeStr?: string | null): string {
     return `${parts[1].slice(0, 5)} IST`;
   }
   return timeStr;
+}
+
+const BOARD_REFRESH_MS = 60_000;
+
+/** At the station now, or due within the window. Unparseable times stay visible. */
+function isWithinMinutes(train: StationBoardItem, minutes: number): boolean {
+  const status = (train.status || "").toLowerCase().replace("_", "-");
+  if (status === "at-station") return true;
+  const expected = train.expected_arrival || train.expected_departure;
+  if (!expected || !expected.includes("T")) return true;
+  const due = new Date(expected).getTime();
+  if (Number.isNaN(due)) return true;
+  const now = Date.now();
+  return due >= now - 60_000 && due <= now + minutes * 60_000;
 }
 
 const POPULAR_STATIONS = [
@@ -38,35 +52,44 @@ function StationsBoardContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchBoard = async (code: string, hours: number) => {
-    setLoading(true);
-    setError(null);
+  const fetchBoard = async (code: string, hours: number, silent = false) => {
+    if (!silent) setLoading(true);
+    if (!silent) setError(null);
     try {
-      const queryHours = hours < 1 ? 2 : Math.ceil(hours);
+      const queryHours = hours < 1 ? 1 : Math.ceil(hours);
       const data = await api.getStationLiveBoard(code, queryHours);
-      if (hours === 0.5 && data.trains) {
-        const filtered = data.trains.filter((t) => {
-          const st = (t.status || "").toLowerCase();
-          return st === "at-station" || st === "at_station" || true;
-        });
-        setBoard({
-          ...data,
-          window_hours: 0.5,
-          trains: filtered.slice(0, 6),
-        });
-      } else {
-        setBoard(data);
-      }
+      setBoard(
+        hours < 1 && data.trains
+          ? {
+              ...data,
+              window_hours: hours,
+              trains: data.trains.filter((t) => isWithinMinutes(t, hours * 60)),
+            }
+          : data
+      );
+      setError(null);
     } catch (err: any) {
-      setError(err.message || "Failed to load station live board");
+      // A failed background refresh keeps the board on screen.
+      if (!silent) {
+        setBoard(null);
+        setError(err.message || "Failed to load station live board");
+      }
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchBoard(stationCode, windowHours);
   }, []);
+
+  // The board is live data, so keep it current while it's on screen.
+  useEffect(() => {
+    if (!board) return;
+    const code = board.station_code;
+    const timer = setInterval(() => fetchBoard(code, windowHours, true), BOARD_REFRESH_MS);
+    return () => clearInterval(timer);
+  }, [board?.station_code, windowHours]);
 
   // When url query param changes
   useEffect(() => {
@@ -167,7 +190,7 @@ function StationsBoardContent() {
           {/* Quick Station Selection Chips */}
           <div className="flex flex-wrap items-center gap-1.5 pt-1 text-xs">
             <span className="text-muted text-[11px] font-medium font-outlier mr-1">
-              Major Concourses:
+              Popular stations:
             </span>
             {POPULAR_STATIONS.map((st) => (
               <button
@@ -212,7 +235,7 @@ function StationsBoardContent() {
                 {board.trains.length} trains
               </span>
               <span className="text-muted font-outlier">
-                next {board.window_hours}h window
+                next {board.window_hours < 1 ? `${board.window_hours * 60} min` : `${board.window_hours}h`} window
               </span>
             </div>
             <div className="flex items-center gap-3 text-[11px] font-outlier">
@@ -221,7 +244,7 @@ function StationsBoardContent() {
                 <span>Live Feed</span>
               </span>
               <span className="text-muted hidden sm:inline">
-                Telemetry: {board.source_provider}
+                {board.is_simulated ? "⚠️ Simulated demo data" : `Source: ${board.source_provider === "railway_engine" ? "Railway Engine" : board.source_provider}`}
               </span>
             </div>
           </div>

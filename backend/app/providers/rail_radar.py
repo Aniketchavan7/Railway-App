@@ -3,7 +3,8 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 import httpx
 from app.config import settings
-from app.providers.base import RailwayProvider
+from app.providers.base import ProviderUnavailable, RailwayProvider
+from app.providers.railway_engine import _service_state
 from app.schemas.details import CoachComposition, FareEnquiryResult, PlatformInfo
 from app.schemas.pnr import PNRStatus
 from app.schemas.station import Station, StationBoardItem, StationLiveBoard
@@ -45,20 +46,21 @@ class RailRadarProvider(RailwayProvider):
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
                 res = await client.get(url, headers=self.headers, params=params)
-                if res.status_code == 200:
-                    payload = res.json()
-                    return payload.get("data") if "data" in payload else payload
-                elif res.status_code == 429:
-                    logger.warning("RailRadar rate limit reached (HTTP 429)")
-                elif res.status_code in (401, 403):
-                    logger.warning("RailRadar auth failed or plan expired (%s)", res.status_code)
-                return None
-        except Exception as e:
-            logger.error("RailRadar request error for %s: %s", path, e)
-            return None
+        except httpx.HTTPError as e:
+            raise ProviderUnavailable(f"RailRadar request failed for {path}: {e}") from e
 
-    async def get_live_status(self, train_number: str) -> Optional[RailwayStatus]:
-        data = await self._get(f"/trains/{train_number}/running-status")
+        if res.status_code == 200:
+            payload = res.json()
+            return payload.get("data") if "data" in payload else payload
+        if res.status_code in (400, 404):
+            return None
+        raise ProviderUnavailable(f"RailRadar returned HTTP {res.status_code} for {path}")
+
+    async def get_live_status(
+        self, train_number: str, journey_date: Optional[str] = None
+    ) -> Optional[RailwayStatus]:
+        params = {"date": journey_date} if journey_date else None
+        data = await self._get(f"/trains/{train_number}/running-status", params=params)
         if not data:
             return None
 
@@ -118,6 +120,7 @@ class RailRadarProvider(RailwayProvider):
             location_type=loc_type,
             is_simulated=False,
             halts=halts,
+            service_state=_service_state(data.get("status"), []),
         )
 
     async def get_schedule(self, train_number: str) -> Optional[Dict[str, Any]]:

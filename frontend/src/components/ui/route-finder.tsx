@@ -85,7 +85,7 @@ export function RouteFinder() {
             </span>
           </div>
           <p className="text-xs text-muted mt-0.5 font-outlier">
-            Find all express services operating between two terminals with verified live status
+            Trains between two stations, from the timetable. Tap Track for live status.
           </p>
         </div>
 
@@ -239,7 +239,7 @@ export function RouteFinder() {
                         {isNotRunningToday
                           ? "No run today"
                           : isRunning
-                          ? "En route"
+                          ? "Due en route"
                           : isCompleted
                           ? "Arrived"
                           : "Scheduled"}

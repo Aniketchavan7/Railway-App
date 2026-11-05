@@ -73,7 +73,7 @@ export function FareMatrixTable({
             </span>
           </div>
           <p className="text-xs text-muted mt-0.5 font-outlier">
-            Official Indian Railways distance slab tariffs between {originCode} and {destCode}
+            Estimated from distance tariffs between {originCode} and {destCode}
           </p>
         </div>
 
@@ -140,7 +140,7 @@ export function FareMatrixTable({
 
       <div className="flex items-center gap-2 text-[11px] text-muted font-outlier pt-1">
         <ShieldCheck className="w-3.5 h-3.5 text-ok shrink-0" />
-        <span>Grounded on Ministry of Railways Telescopic Fare Slab rules with standard Superfast charges.</span>
+        <span>Calculated from distance tariff rules with standard Superfast charges. Check the actual fare when booking.</span>
       </div>
     </div>
   );

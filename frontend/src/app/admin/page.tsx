@@ -44,7 +44,7 @@ export default function AdminPage() {
     }
   };
 
-  const providerCount = Object.keys(providerStatus).length || 3;
+  const providerCount = Object.keys(providerStatus).length;
 
   return (
     <div className="space-y-8 py-2">

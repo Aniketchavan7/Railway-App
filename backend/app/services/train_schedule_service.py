@@ -871,10 +871,32 @@ class TrainOperationsMetadata:
 
         days_of_run = profile["days_of_run"]
         runs_today = day_str in days_of_run
+        is_overnight_service = profile["arr_time"] < profile["dep_time"]
+        yesterday_str = DAY_NAMES[(now_ist.weekday() - 1) % 7]
+        # An overnight train that left yesterday is still running this morning.
+        still_running_from_yesterday = (
+            is_overnight_service
+            and yesterday_str in days_of_run
+            and current_time_str < profile["arr_time"]
+        )
+
+        if still_running_from_yesterday:
+            return {
+                "train_number": profile["number"],
+                "train_name": profile["name"],
+                "runs_today": runs_today,
+                "days_of_run": days_of_run,
+                "service_state": "RUNNING",
+                "running_status": f"En Route ({profile['origin_name']} to {profile['destination_name']})",
+                "service_notice": f"Left {profile['origin_name']} yesterday at {profile['dep_time']} IST. Due at {profile['destination_name']} at {profile['arr_time']} IST.",
+                "pairing_train": profile.get("pairing_train"),
+                "rake_share_description": profile.get("rake_share_description"),
+            }
 
         # Case 1: Train does NOT operate on this day
         if not runs_today:
             day_full = now_ist.strftime("%A")
+            reason = profile.get("non_running_reason")
             return {
                 "train_number": profile["number"],
                 "train_name": profile["name"],
@@ -882,7 +904,7 @@ class TrainOperationsMetadata:
                 "days_of_run": days_of_run,
                 "service_state": "NOT_RUNNING_TODAY",
                 "running_status": f"Does Not Run on {day_full}s",
-                "service_notice": f"Train {profile['number']} ({profile['name']}) operates on {', '.join(days_of_run)}. No service on {day_full} ({profile.get('non_running_reason') or 'Weekly Maintenance'}).",
+                "service_notice": f"Train {profile['number']} ({profile['name']}) operates on {', '.join(days_of_run)}. No service on {day_full}" + (f" ({reason})." if reason else "."),
                 "pairing_train": profile.get("pairing_train"),
                 "rake_share_description": profile.get("rake_share_description"),
             }
@@ -890,11 +912,9 @@ class TrainOperationsMetadata:
         # Case 2: Train runs today. Evaluate temporal time window against schedule.
         dep_time = profile["dep_time"]
         arr_time = profile["arr_time"]
-        is_overnight = arr_time < dep_time  # e.g., 22:40 to 06:45
 
-        # Check if train has NOT started yet
-        # If departure is in the future today
-        if not is_overnight and current_time_str < dep_time:
+        # Departure is still ahead today (an overnight train from yesterday returned above).
+        if current_time_str < dep_time:
             # Has not started yet
             return {
                 "train_number": profile["number"],
@@ -908,9 +928,8 @@ class TrainOperationsMetadata:
                 "rake_share_description": profile.get("rake_share_description"),
             }
 
-        # Check if train has already COMPLETED its run today
-        # For daytime train: if current time is after arrival + 30 mins
-        if not is_overnight and current_time_str > arr_time:
+        # Same-day service that has passed its arrival time
+        if not is_overnight_service and current_time_str > arr_time:
             return {
                 "train_number": profile["number"],
                 "train_name": profile["name"],
@@ -978,37 +997,34 @@ class TrainOperationsMetadata:
             ["NDLS", "NZM", "FDB", "MTJ", "AGC", "DHO", "MRA", "GWL", "VGLJ", "BINA", "BPL", "ET", "KNW", "BSL", "MMR", "DD", "SUR", "KLBG", "WADI", "YG", "RC", "GTL", "ATP", "DMM", "HUP", "YPR", "SBC"],
         ]
 
-        def stations_in_order(c_list: List[str], s1: str, s2: str) -> bool:
-            try:
-                i1 = c_list.index(s1)
-                i2 = c_list.index(s2)
-                return i1 < i2
-            except ValueError:
-                return False
+        def covers_section(stops: List[str]) -> bool:
+            return f in stops and t in stops and stops.index(f) < stops.index(t)
+
+        def corridor_covers(origin: str, dest: str) -> bool:
+            """The whole journey runs along a known corridor, passing both stations in order."""
+            for corridor in CORRIDORS:
+                if origin in corridor and dest in corridor and corridor.index(origin) < corridor.index(dest):
+                    if covers_section(corridor[corridor.index(origin): corridor.index(dest) + 1]):
+                        return True
+            return False
+
+        # Imported here because the simulator module imports this one.
+        from app.providers.simulator import REFERENCE_TRAINS
 
         matching_trains = []
         now_dt = datetime.now(IST)
 
         for train_num, p in cls.TRAIN_PROFILES.items():
-            is_match = False
             origin = p.get("origin", "")
             dest = p.get("destination", "")
-
-            # Direct match
+            reference = REFERENCE_TRAINS.get(train_num)
             if origin == f and dest == t:
                 is_match = True
-            # Station corridor match
-            elif (origin == f or dest == t or any(f in c and t in c for c in CORRIDORS)):
-                for corridor in CORRIDORS:
-                    if stations_in_order(corridor, f, t):
-                        # Verify train moves in matching direction
-                        if origin in corridor and dest in corridor:
-                            if stations_in_order(corridor, origin, dest):
-                                is_match = True
-                                break
-                        elif origin == f or dest == t:
-                            is_match = True
-                            break
+            elif reference:
+                # Real stops are better evidence than a corridor.
+                is_match = covers_section([h["code"] for h in reference["halts"]])
+            else:
+                is_match = corridor_covers(origin, dest)
 
             if is_match:
                 status_info = cls.check_operational_status(train_num, now_dt)

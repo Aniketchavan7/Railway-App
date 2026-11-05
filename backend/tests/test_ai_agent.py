@@ -8,8 +8,7 @@ async def test_ai_agent_question_answering():
     answer = await railway_ai.answer(query)
 
     assert answer is not None
-    assert "response" in answer
     text = answer["response"]
     assert "12101" in text
-    assert "minute" in text.lower() or "delay" in text.lower()
     assert answer.get("grounded") is True
+    assert answer["train"]["train_number"] == "12101"

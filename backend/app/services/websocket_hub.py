@@ -1,13 +1,16 @@
 import asyncio
 import json
 import logging
+import time
 from datetime import datetime, timezone
-from typing import Dict, Set
+from typing import Dict, Optional, Set
 from fastapi import WebSocket
 from app.cache.redis_client import cache
 from app.services.orchestrator import orchestrator
 
 logger = logging.getLogger("railpulse.services.websocket_hub")
+
+HEARTBEAT_SECONDS = 5.0
 
 
 class WebSocketHub:
@@ -23,21 +26,29 @@ class WebSocketHub:
                 self.active_connections[train_number] = set()
             self.active_connections[train_number].add(websocket)
 
-            # Start subscriber background task if not already running
-            if train_number not in self.active_tasks:
+            # Start the broadcaster if there is none, or if the last one died.
+            existing = self.active_tasks.get(train_number)
+            if existing is None or existing.done():
                 task = asyncio.create_task(self._train_broadcaster(train_number))
                 self.active_tasks[train_number] = task
 
         logger.info("Client connected to WS for train %s (total: %d)", train_number, len(self.active_connections[train_number]))
 
         # Send initial status immediately upon connection
+        telemetry = await self._current_telemetry(train_number)
+        if telemetry:
+            try:
+                await websocket.send_text(json.dumps(self._build_packet(train_number, telemetry)))
+            except Exception as e:
+                logger.warning("Error sending initial WS packet: %s", e)
+
+    async def _current_telemetry(self, train_number: str) -> Optional[dict]:
         try:
             status = await orchestrator.get_live_status(train_number)
-            if status:
-                packet = self._build_packet(train_number, status.model_dump(mode="json"))
-                await websocket.send_text(json.dumps(packet))
         except Exception as e:
-            logger.warning("Error sending initial WS packet: %s", e)
+            logger.warning("Could not read status for train %s: %s", train_number, e)
+            return None
+        return status.model_dump(mode="json") if status else None
 
     async def disconnect(self, train_number: str, websocket: WebSocket):
         async with self._lock:
@@ -74,31 +85,46 @@ class WebSocketHub:
             },
         }
 
+    async def _next_message(self, sub_queue) -> Optional[str]:
+        try:
+            if hasattr(sub_queue, "get_message"):
+                started = time.monotonic()
+                msg = await sub_queue.get_message(ignore_subscribe_messages=True, timeout=HEARTBEAT_SECONDS)
+                if msg and msg.get("data"):
+                    return msg["data"]
+                # Hold the tick rate even if Redis returns early, so this cannot spin.
+                remaining = HEARTBEAT_SECONDS - (time.monotonic() - started)
+                if remaining > 0:
+                    await asyncio.sleep(remaining)
+                return None
+            return await asyncio.wait_for(sub_queue.get(), timeout=HEARTBEAT_SECONDS)
+        except asyncio.TimeoutError:
+            return None
+        except asyncio.CancelledError:
+            raise
+        except Exception as e:
+            logger.debug("Broadcaster message error: %s", e)
+            # Avoid a tight loop if the subscription has broken.
+            await asyncio.sleep(HEARTBEAT_SECONDS)
+            return None
+
     async def _train_broadcaster(self, train_number: str):
         """Background loop reading from Redis/Memory PubSub and emitting periodic heartbeats."""
-        sub_queue = await cache.subscribe_channel(f"train_telemetry:{train_number}")
+        channel = f"train_telemetry:{train_number}"
+        sub_queue = None
         try:
+            sub_queue = await cache.subscribe_channel(channel)
             while True:
-                # Wait for pubsub message or timeout every 5 seconds for heartbeat
-                try:
-                    raw_msg = None
-                    if hasattr(sub_queue, "get_message"):
-                        # Redis pubsub
-                        msg = await sub_queue.get_message(ignore_subscribe_messages=True, timeout=5.0)
-                        if msg and msg.get("data"):
-                            raw_msg = msg["data"]
-                    else:
-                        # Memory queue
-                        raw_msg = await asyncio.wait_for(sub_queue.get(), timeout=5.0)
-
-                    telemetry_data = json.loads(raw_msg) if raw_msg else None
-                except asyncio.TimeoutError:
-                    # 5-second transport heartbeat tick
-                    status = await orchestrator.get_live_status(train_number)
-                    telemetry_data = status.model_dump(mode="json") if status else None
-                except Exception as e:
-                    logger.debug("Broadcaster message error: %s", e)
-                    telemetry_data = None
+                raw_msg = await self._next_message(sub_queue)
+                # No message within 5 seconds is the heartbeat tick. Redis reports that by
+                # returning None and the memory queue by timing out; both must refresh.
+                if raw_msg:
+                    try:
+                        telemetry_data = json.loads(raw_msg)
+                    except ValueError:
+                        telemetry_data = None
+                else:
+                    telemetry_data = await self._current_telemetry(train_number)
 
                 if telemetry_data:
                     packet = self._build_packet(train_number, telemetry_data)
@@ -118,6 +144,13 @@ class WebSocketHub:
             pass
         except Exception as e:
             logger.error("Fatal error in WS broadcaster for %s: %s", train_number, e)
+        finally:
+            # Otherwise every viewer who leaves costs a Redis connection or a growing queue.
+            if sub_queue is not None:
+                try:
+                    await asyncio.shield(cache.unsubscribe_channel(channel, sub_queue))
+                except Exception as e:
+                    logger.debug("Could not close subscription for %s: %s", train_number, e)
 
 
 ws_hub = WebSocketHub()

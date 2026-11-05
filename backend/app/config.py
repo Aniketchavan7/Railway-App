@@ -23,7 +23,8 @@ class Settings(BaseSettings):
     # NTES / Reference Mode
     NTES_REFERENCE_URL: str = "https://enquiry.indianrail.gov.in/mntes"
 
-    # Offline Simulator (Disabled in production by default)
+    # Offline Simulator: local demos only. It invents data, so it never runs in
+    # production, whatever ENABLE_SIMULATOR says. Use simulator_enabled to check.
     ENABLE_SIMULATOR: bool = True
 
     # xKiro AI Integration (100% Free Tier on api.xkiro.com/v1)
@@ -48,6 +49,10 @@ class Settings(BaseSettings):
         case_sensitive=True,
         extra="ignore",
     )
+
+    @property
+    def simulator_enabled(self) -> bool:
+        return self.ENABLE_SIMULATOR and self.ENVIRONMENT.lower() != "production"
 
 
 settings = Settings()

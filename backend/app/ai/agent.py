@@ -1,562 +1,272 @@
 import json
 import logging
 import re
-from typing import Annotated, Any, Dict, List, Optional
-from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage, ToolMessage
-from langgraph.graph import StateGraph, START, END
-from langgraph.graph.message import add_messages
-from typing_extensions import TypedDict
-from app.ai.tools import (
-    RAILWAY_TOOLS,
-    calculate_train_eta,
-    check_train_operating_days_and_pair,
-    check_train_route_diversion_or_cancellation,
-    get_live_train_status,
-    get_mega_blocks_by_zone_or_station,
-    get_railway_disruptions_and_mega_blocks,
-)
+from datetime import datetime
+from typing import Any, Dict, List, Optional, Sequence
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
+from app.ai.status_format import format_status_reply
+from app.ai.tools import RAILWAY_TOOLS, get_fare_enquiry, get_railway_disruptions_and_mega_blocks
 from app.config import settings
+from app.schemas.ai import ChatMessage
+from app.schemas.status import RailwayStatus
 from app.services.disruption_service import DisruptionService
-from app.services.train_schedule_service import TrainOperationsMetadata
+from app.services.orchestrator import LiveDataUnavailable, orchestrator
+from app.services.train_schedule_service import IST, TrainOperationsMetadata
 
 logger = logging.getLogger("railpulse.ai.agent")
 
-SYSTEM_PROMPT = """You are RailPulse AI, an intelligent, honest, and grounded Indian Railways travel assistant.
-You have access to live railway tools to check train status, schedules, ETAs, fares, coach layouts, PNR status, and Railway Disruptions / Mega Blocks / Route Changes.
+MAX_HISTORY_MESSAGES = 10
 
-CRITICAL OPERATIONAL RULES:
-1. NEVER fabricate or guess train positions, delays, or arrival times. Always retrieve actual data using tools.
-2. If the user asks about train location, delay, or arrival (e.g. "Where is train 12101 currently? How late is it, and when will it reach Pune?"):
-   - Extract the train number and destination station.
-   - Call `calculate_train_eta` and `get_live_train_status`.
-   - Explain the current location, current delay in minutes, and estimated arrival clearly.
-3. If the user asks about route changes, diversions, mega blocks, jumbo maintenance blocks, cancellations, rescheduled trains, or heavy delays:
-   - Call `get_railway_disruptions_and_mega_blocks` or `check_train_route_diversion_or_cancellation`.
-   - Provide full structured details: Affected Corridor/Section, Train Number & Name, Reason (e.g. electronic interlocking, track renewal, boulder netting), Diverted Route or Skipped Halts, Delay Minutes, and Passenger Travel Advisory.
-4. If the user asks what trains are coming at a station (e.g. Pune) in the next 30 minutes, where they are heading, and which platform they are arriving on:
-   - Call `get_station_live_arrivals_departures` with the station code (e.g. `PUNE`).
-   - Group and present the upcoming and at-station trains clearly in an all-at-one-place concourse table with: Train # & Name, Where Heading (Destination), Platform #, Expected Time, and Live Status.
-5. TRAIN OPERATING DAYS & WEEKLY MAINTENANCE RULES:
-   - Some Indian trains do NOT run 7 days a week. Always check `check_train_operating_days_and_pair` or verify `days_of_run` before declaring a train running.
-   - Train 22225 / 22226 (Solapur Vande Bharat Express) does NOT RUN ON WEDNESDAYS (mandated weekly primary rake maintenance at Wadi Bunder / Mumbai CSMT yard). If asked about Wednesday or if today is Wednesday, unequivocally confirm it does not operate on Wednesdays.
-   - Train 12101 (Jnaneswari Superfast) runs only MON, TUE, FRI, SAT (does not run Wed, Thu, Sun).
-   - Train 22436 (Vande Bharat NDLS-BSB) runs TUE, WED, FRI, SAT, SUN (does not run Mon, Thu).
-6. PAIR RAKES & UP/DOWN TURNS:
-   - Trains 12158 and 12157 (Hutatma Express) share a single dedicated LHB rake.
-   - 12158 (Solapur to Pune) runs exclusively in the morning from 06:30 to 10:30 IST. After 10:30 IST, its journey is COMPLETED at Pune Jn.
-   - The rake rests at Pune and turns around as 12157 (Pune to Solapur) in the evening departing at 18:00 IST.
-   - During daytime (10:30 to 18:00 IST), 12157 is NOT STARTED yet, and 12158 is COMPLETED. Never claim either is actively running midday!
-7. If data is marked `is_simulated: true`, clearly inform the user: "⚠️ Note: This is simulated demo data as live upstream data is currently offline."
-8. If the data observation is several minutes old, mention the data freshness and last observed station.
-9. Keep explanations polite, concise, structured with bullet points and bold highlights.
+SYSTEM_PROMPT = """You are RailPulse Assistant, an honest Indian Railways travel assistant.
+
+Current date and time: {now} (Indian Standard Time). All times you give must be in IST.
+{train_context}
+Rules:
+1. Never guess a train's position, delay, running days or arrival time. Always call a tool, and answer only from its result. Do not rely on anything you remember about a train.
+2. Lead with what the train is doing, from `service_state`: RUNNING, NOT_STARTED, COMPLETED (has reached its destination), NOT_RUNNING_TODAY, CANCELLED, or UNKNOWN (say live data is unavailable).
+3. `position_label` says how the position is known. If it says "Estimated", say it is an estimate. Only call it exact when `position_basis` is PASSENGER_GPS or PROVIDER_GPS.
+4. A train that started yesterday can still be running today. `journey_date_label` says which journey is being described, so mention it.
+5. If `is_simulated` is true, say clearly that it is simulated demo data. If `freshness` is STALE, say when it was last updated.
+6. If a tool has no information, say so plainly. Never invent cancellations, diversions, mega blocks or platform numbers. There is currently no verified network-wide disruption feed.
+7. Be brief and structured. Use short bullet points and bold for the key fact.
 """
 
+# Whole words only: as substrings, "latest" would match "late" and "address" would match "dr".
+STATUS_WORDS = {
+    "where", "status", "running", "run", "runs", "location", "late", "delay", "delayed", "reach", "reached",
+    "arrive", "arrived", "arrival", "live", "latest", "update", "updates", "now", "today", "current",
+    "currently", "started", "departed", "left", "eta", "position", "track", "tracking", "cancelled", "canceled",
+}
+OTHER_TOPIC_WORDS = {
+    "fare", "fares", "price", "cost", "ticket", "tariff", "coach", "coaches", "bogie", "pnr", "platform", "halts",
+    "stops", "schedule", "timetable", "route", "mega", "block", "blocks", "diversion", "diverted",
+}
+GENERAL_QUESTION_WORDS = {"which", "trains"}
+DISRUPTION_WORDS = {"mega", "jumbo", "block", "blocks", "diversion", "diversions", "diverted", "disruption", "disruptions"}
+FARE_WORDS = {"fare", "fares", "price", "cost", "tariff"}
+WEEKDAYS = {
+    "monday": "MON", "tuesday": "TUE", "wednesday": "WED", "thursday": "THU",
+    "friday": "FRI", "saturday": "SAT", "sunday": "SUN",
+}
+STATION_WORDS = {
+    "pune": "PUNE", "mumbai": "CSMT", "csmt": "CSMT", "delhi": "NDLS", "ndls": "NDLS", "solapur": "SUR", "sur": "SUR",
+    "howrah": "HWH", "hwh": "HWH", "kalyan": "KYN", "kyn": "KYN", "dadar": "DR", "kurduvadi": "KWV", "kwv": "KWV",
+    "nagpur": "NGP", "ngp": "NGP", "bhusawal": "BSL", "bsl": "BSL", "chennai": "MAS", "mas": "MAS",
+    "bangalore": "SBC", "bengaluru": "SBC", "sbc": "SBC", "hyderabad": "HYB", "ltt": "LTT",
+}
 
-class AgentState(TypedDict):
-    messages: Annotated[List[BaseMessage], add_messages]
+
+def _words(text: str) -> List[str]:
+    return re.findall(r"[a-z0-9]+", text.lower())
+
+
+def _train_numbers(text: str) -> List[str]:
+    seen: List[str] = []
+    for number in re.findall(r"(?<!\d)\d{5}(?!\d)", text):
+        if number not in seen:
+            seen.append(number)
+    return seen
+
+
+def _is_status_question(query: str) -> bool:
+    words = set(_words(query))
+    if words & OTHER_TOPIC_WORDS:
+        return False
+    # "Which trains run to Delhi?" is not about the train in the conversation.
+    if words & GENERAL_QUESTION_WORDS and not _train_numbers(query):
+        return False
+    # A train number on its own is the most common question of all.
+    is_bare_number = bool(_train_numbers(query)) and len(words) <= 3
+    return is_bare_number or bool(words & STATUS_WORDS)
+
+
+def _last_mentioned_train(history: Sequence[ChatMessage]) -> Optional[str]:
+    # User messages only: the assistant's own examples must not become "the user's train".
+    for message in reversed(history):
+        if message.role != "user":
+            continue
+        numbers = _train_numbers(message.content)
+        if numbers:
+            return numbers[-1]
+    return None
+
+
+def _build_system_prompt(train_number: Optional[str]) -> str:
+    now = datetime.now(IST).strftime("%A, %d %B %Y, %H:%M")
+    context = f"The conversation is about train {train_number} unless the user names another.\n" if train_number else ""
+    return SYSTEM_PROMPT.format(now=now, train_context=context)
+
+
+def _to_langchain(history: Sequence[ChatMessage], query: str) -> List[BaseMessage]:
+    messages: List[BaseMessage] = []
+    for message in list(history)[-MAX_HISTORY_MESSAGES:]:
+        if message.role == "user":
+            messages.append(HumanMessage(content=message.content))
+        elif message.role == "assistant":
+            messages.append(AIMessage(content=message.content))
+    messages.append(HumanMessage(content=query))
+    return messages
+
+
+def _text_of(content: Any) -> str:
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        return "".join(part.get("text", "") if isinstance(part, dict) else str(part) for part in content)
+    return str(content)
+
+
+async def _status_for(train_number: str) -> Optional[RailwayStatus]:
+    try:
+        return await orchestrator.get_live_status(train_number)
+    except LiveDataUnavailable:
+        return None
+
+
+def _reply(text: str, model: str, train: Optional[RailwayStatus] = None, **extra: Any) -> Dict[str, Any]:
+    return {
+        "response": text,
+        "model": model,
+        "grounded": True,
+        "train": train.model_dump(mode="json") if train else None,
+        **extra,
+    }
+
+
+DIRECT = "live_status_direct"
+FALLBACK = "deterministic_grounded_agent"
 
 
 class RailwayAIAgent:
-    def __init__(self):
-        self.app = None
-        self._init_graph()
+    async def answer(
+        self,
+        user_query: str,
+        history: Optional[Sequence[ChatMessage]] = None,
+        context_train: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Answer from live data. Status questions skip the model, so they stay exact."""
+        history = list(history or [])
+        numbers = _train_numbers(user_query)
+        train_number = numbers[0] if numbers else (_last_mentioned_train(history) or context_train)
 
-    def _init_graph(self):
-        # Fallback if no xKiro API key is configured
-        if not settings.XKIRO_API_KEY:
-            logger.info("XKIRO_API_KEY not configured. Using deterministic grounded railway agent fallback.")
-            return
+        # A named day is about the timetable, not about what the train is doing now.
+        words = set(_words(user_query))
+        day = next((WEEKDAYS[w] for w in words if w in WEEKDAYS), None)
+        if day and train_number and (numbers or not words & GENERAL_QUESTION_WORDS):
+            return _reply(_running_day_answer(train_number, day), DIRECT, await _status_for(train_number))
 
-        try:
-            from langchain_openai import ChatOpenAI
-            from langgraph.prebuilt import ToolNode
+        if train_number and _is_status_question(user_query):
+            return await self._status_answer(numbers or [train_number], user_query)
 
-            llm = ChatOpenAI(
-                base_url=settings.XKIRO_BASE_URL,
-                api_key=settings.XKIRO_API_KEY,
-                model=settings.XKIRO_MODEL,
-                temperature=0.2,
-            )
-            llm_with_tools = llm.bind_tools(RAILWAY_TOOLS)
-
-            async def call_model(state: AgentState):
-                messages = state["messages"]
-                if not any(isinstance(m, SystemMessage) for m in messages):
-                    messages = [SystemMessage(content=SYSTEM_PROMPT)] + messages
-                response = await llm_with_tools.ainvoke(messages)
-                return {"messages": [response]}
-
-            tool_node = ToolNode(RAILWAY_TOOLS)
-
-            def should_continue(state: AgentState):
-                messages = state["messages"]
-                last_message = messages[-1]
-                if getattr(last_message, "tool_calls", None):
-                    return "tools"
-                return END
-
-            workflow = StateGraph(AgentState)
-            workflow.add_node("agent", call_model)
-            workflow.add_node("tools", tool_node)
-
-            workflow.add_edge(START, "agent")
-            workflow.add_conditional_edges("agent", should_continue, ["tools", END])
-            workflow.add_edge("tools", "agent")
-
-            self.app = workflow.compile()
-            logger.info("LangGraph Railway Agent compiled successfully with model %s", settings.XKIRO_MODEL)
-        except Exception as e:
-            logger.error("Failed to compile LangGraph agent: %s. Using deterministic fallback.", e)
-            self.app = None
-
-    async def answer(self, user_query: str, model: Optional[str] = None) -> Dict[str, Any]:
-        """Processes user natural language query and returns grounded explanation."""
-        selected_model = model or settings.XKIRO_MODEL
-
-        # Check if LangGraph with xKiro is active
         if settings.XKIRO_API_KEY:
             try:
-                from langchain_openai import ChatOpenAI
-                from langgraph.prebuilt import create_react_agent
-
-                llm = ChatOpenAI(
-                    base_url=settings.XKIRO_BASE_URL,
-                    api_key=settings.XKIRO_API_KEY,
-                    model=selected_model,
-                    temperature=0.2,
-                )
-                agent_executor = create_react_agent(llm, RAILWAY_TOOLS, prompt=SYSTEM_PROMPT)
-                inputs = {"messages": [HumanMessage(content=user_query)]}
-                result = await agent_executor.ainvoke(inputs)
-                last_msg = result["messages"][-1]
-                return {
-                    "response": last_msg.content,
-                    "model": selected_model,
-                    "grounded": True,
-                }
+                return await self._model_answer(user_query, history, train_number)
             except Exception as e:
-                logger.warning("xKiro LLM invocation with model %s failed (%s), using deterministic handler", selected_model, e)
+                logger.warning("Model call failed (%s), using the deterministic handler", e)
+        return await self._deterministic_answer(user_query, train_number)
 
-        # Deterministic grounded handler (100% offline & test-ready)
-        return await self._deterministic_answer(user_query)
+    async def _model_answer(
+        self, query: str, history: Sequence[ChatMessage], train_number: Optional[str]
+    ) -> Dict[str, Any]:
+        from langchain_openai import ChatOpenAI
+        from langgraph.prebuilt import create_react_agent
 
-    async def _deterministic_answer(self, query: str) -> Dict[str, Any]:
-        q_lower = query.lower()
+        llm = ChatOpenAI(
+            base_url=settings.XKIRO_BASE_URL,
+            api_key=settings.XKIRO_API_KEY,
+            model=settings.XKIRO_MODEL,
+            temperature=0.2,
+        )
+        agent = create_react_agent(llm, RAILWAY_TOOLS, prompt=_build_system_prompt(train_number))
+        result = await agent.ainvoke({"messages": _to_langchain(history, query)})
+        train = await _status_for(train_number) if train_number else None
+        return _reply(_text_of(result["messages"][-1].content), settings.XKIRO_MODEL, train)
 
-        # Check for disruption / mega block / delay / diversion / cancellation keywords
-        disruption_keywords = [
-            "mega block", "megablock", "jumbo block", "block", "divert", "diverted",
-            "diversion", "route change", "change route", "cancel", "cancelled",
-            "cancellation", "short terminat", "delay", "delayed", "running late",
-            "late", "issue", "problem", "disrupt"
-        ]
-        is_disruption_query = any(k in q_lower for k in disruption_keywords)
+    async def _status_answer(self, numbers: List[str], query: str) -> Dict[str, Any]:
+        sections: List[str] = []
+        first_status: Optional[RailwayStatus] = None
+        for number in numbers:
+            try:
+                status = await orchestrator.get_live_status(number)
+            except LiveDataUnavailable:
+                sections.append(f"**Train {number}:** live railway data is temporarily unavailable, and we have no timetable for it. Please try again shortly.")
+                continue
+            if not status:
+                sections.append(f"**Train {number}:** no running record for today or yesterday. It may not run on these days, or the number may be wrong.")
+                continue
+            first_status = first_status or status
+            section = format_status_reply(status)
+            arrival = _arrival_detail(status, query)
+            sections.append(f"{section}\n{arrival}" if arrival else section)
+        return _reply("\n\n".join(sections), DIRECT, first_status)
 
-        # Check for Station Concourse / Upcoming Trains query
-        # (e.g. "what train are coming in next 30 min where heading and whihc platform going all at one place")
-        station_concourse_keywords = [
-            "coming in", "next 30 min", "next 30", "next hour", "where heading",
-            "which platform", "platform going", "trains arriving", "trains coming",
-            "at one location", "at one place", "arrivals", "departures", "station board", "live board"
-        ]
-        is_station_concourse_query = any(k in q_lower for k in station_concourse_keywords)
+    async def _deterministic_answer(self, query: str, train_number: Optional[str]) -> Dict[str, Any]:
+        """Used when no model is available. Limited, but never invents an answer."""
+        words = set(_words(query))
+        train = await _status_for(train_number) if train_number else None
 
-        STATION_CITY_MAP = {
-            "pune": "PUNE", "mumbai": "CSMT", "csmt": "CSMT", "delhi": "NDLS", "ndls": "NDLS",
-            "solapur": "SUR", "sur": "SUR", "howrah": "HWH", "hwh": "HWH", "kalyan": "KYN",
-            "kyn": "KYN", "dadar": "DR", "dr": "DR", "kurduvadi": "KWV", "kwv": "KWV",
-            "nagpur": "NGP", "ngp": "NGP", "bhusawal": "BSL", "bsl": "BSL", "agra": "AGC",
-            "chennai": "MAS", "bangalore": "SBC", "hyderabad": "HYB",
-        }
-        detected_station = None
-        for city, code in STATION_CITY_MAP.items():
-            if city in q_lower:
-                detected_station = code
-                break
-        if not detected_station and any(w in q_lower for w in ["pune", "location"]):
-            detected_station = "PUNE"
+        day = next((WEEKDAYS[w] for w in words if w in WEEKDAYS), None)
+        if day and train_number:
+            return _reply(_running_day_answer(train_number, day), FALLBACK, train)
 
-        # Handle Station Concourse (Next 30 min / platform / where heading) query
-        if is_station_concourse_query and detected_station:
-            board = await orchestrator.get_station_board(detected_station, hours=2)
-            if board and board.trains:
-                DESTINATION_LOOKUP = {
-                    "CSMT": "Mumbai CSMT", "PUNE": "Pune Junction", "SUR": "Solapur Junction",
-                    "DR": "Mumbai Dadar", "HWH": "Kolkata Howrah", "NDLS": "New Delhi",
-                    "KYN": "Kalyan Junction", "MS": "Chennai Egmore", "NZM": "Delhi Hazrat Nizamuddin",
-                    "HTE": "Hatia (Ranchi)", "UBL": "Hubballi Junction", "KOP": "Kolhapur CSMT",
-                    "G": "Gondia Junction", "SNSI": "Sainagar Shirdi", "SOU": "Station of Unity (Kevadiya)",
-                    "VSG": "Vasco da Gama (Goa)", "BEED": "Beed", "NED": "Nanded",
-                    "PNVL": "Panvel Junction", "LUR": "Latur", "DNR": "Danapur (Patna)",
-                    "MFP": "Muzaffarpur Junction", "ERS": "Ernakulam South (Kochi)",
-                    "MAS": "Chennai Central", "SBC": "Bengaluru City", "HYB": "Hyderabad Deccan",
-                }
-
-                active_trains = []
-                for t in board.trains:
-                    status_norm = (t.status or "").lower()
-                    if status_norm in ("at-station", "at_station", "upcoming", "scheduled"):
-                        active_trains.append(t)
-
-                selected = active_trains[:8] if active_trains else board.trains[:6]
-
-                lines = [
-                    f"🚉 **All-in-One Live Station Board for {board.station_name} ({detected_station})**",
-                    f"*Live Passenger Concourse View: Showing upcoming trains in the next 30 minutes, where they are heading, and platform assignments all in one place:*\n",
-                    "| Train Number & Name | 🎯 Where Heading | 🚉 Platform | ⏱️ Expected Time | Status & Running Delay |",
-                    "| :--- | :--- | :---: | :---: | :--- |"
-                ]
-
-                for t in selected:
-                    dest_city = DESTINATION_LOOKUP.get(t.destination, t.destination)
-                    dest_display = f"**{dest_city}** (`{t.destination}`)"
-                    pf_str = f"**Platform {t.platform}**" if t.platform else "Platform TBD *(Announced on Arrival)*"
-                    exp_time = t.expected_arrival or t.scheduled_arrival or "--"
-                    if "T" in exp_time:
-                        parts = exp_time.split("T")
-                        time_part = parts[1][:5]
-                        exp_time = f"{time_part} IST"
-
-                    st_lower = (t.status or "").lower()
-                    if "at-station" in st_lower or "at_station" in st_lower:
-                        status_badge = "🟢 At Station"
-                    elif "upcoming" in st_lower:
-                        status_badge = "🟡 Approaching / Upcoming"
-                    else:
-                        status_badge = f"⚪ {t.status}"
-
-                    delay_info = f"(+{t.delay_arrival_minutes}m late)" if t.delay_arrival_minutes > 0 else "(On time)"
-
-                    lines.append(
-                        f"| **{t.train_name}** (`#{t.train_number}`) | {dest_display} | {pf_str} | `{exp_time}` | {status_badge} {delay_info} |"
-                    )
-
-                lines.append(f"\n💡 **Passenger Advice**: Platform numbers are confirmed by the station master's automated display. Please verify audio concourse announcements before boarding.")
-                return {
-                    "response": "\n".join(lines),
-                    "model": "deterministic_grounded_agent",
-                    "grounded": True,
-                    "telemetry_context": board.model_dump(mode="json"),
-                }
-
-        # Extract all 5-digit train numbers
-        all_train_nums = re.findall(r"\b\d{5}\b", query)
-        train_num = all_train_nums[0] if all_train_nums else None
-
-        # Check for operational days, maintenance, and pair rake turnaround keywords
-        schedule_pair_keywords = [
-            "run every time", "dont run", "doesn't run", "does not run", "doesnt run",
-            "not run", "wednesday", "maintenance", "days of run", "operating day", "running days",
-            "pair", "same up and down", "up and down", "turnaround", "turn around",
-            "shared rake", "rake", "isnt running", "isn't running", "wrong info",
-            "why is it running", "why running"
-        ]
-        is_schedule_pair_query = any(k in q_lower for k in schedule_pair_keywords)
-
-        # Check if query references known pair trains or specific maintenance trains
-        has_specific_interest_train = any(t in query for t in ["12157", "12158", "22225", "22226"])
-
-        if (is_schedule_pair_query and (all_train_nums or has_specific_interest_train)) or len(all_train_nums) > 1:
-            train_targets = all_train_nums if all_train_nums else ["22225", "12158", "12157"]
-            seen_trains: List[str] = []
-            for t in train_targets:
-                if t not in seen_trains:
-                    seen_trains.append(t)
-
-            lines = [
-                "🔍 **Authentic Train Operational Schedule & Rake Turnaround Audit**:\n",
-                "You are 100% correct. Indian Railways operations follow strict weekly maintenance schedules and physical rake sharing rotations:\n"
-            ]
-
-            for t_num in seen_trains:
-                op = TrainOperationsMetadata.check_operational_status(t_num)
-                prof = TrainOperationsMetadata.get_profile(t_num)
-                name = op.get("train_name", f"Train {t_num}")
-                days = ", ".join(op.get("days_of_run", []))
-                state = op.get("service_state", "RUNNING")
-
-                if state == "NOT_RUNNING_TODAY":
-                    lines.append(f"### 🚫 Train {t_num} — {name}")
-                    lines.append(f"- **Operating Days**: `{days}` (Does NOT run on Wednesdays/Maintenance Days)")
-                    lines.append(f"- **Current Service State**: **NOT RUNNING TODAY** (Speed: 0 km/h)")
-                    lines.append(f"- **Reason**: {(prof or {}).get('non_running_reason') or op.get('service_notice')}")
-                    if op.get("rake_share_description"):
-                        lines.append(f"- **Rake Sharing**: {op['rake_share_description']}")
-                    lines.append("")
-                elif state == "NOT_STARTED":
-                    lines.append(f"### ⏰ Train {t_num} — {name} (Upcoming Evening Service)")
-                    lines.append(f"- **Operating Days**: `{days}`")
-                    lines.append(f"- **Current Service State**: **NOT STARTED YET** (Speed: 0 km/h)")
-                    if prof:
-                        lines.append(f"- **Departure Window**: Scheduled to depart {prof.get('origin_name')} at **{prof.get('dep_time')} IST** (Destination: {prof.get('destination_name')} at {prof.get('arr_time')} IST).")
-                    if op.get("rake_share_description"):
-                        lines.append(f"- **Pair Rake Turnaround**: {op['rake_share_description']}")
-                    lines.append("")
-                elif state == "COMPLETED":
-                    lines.append(f"### 🏁 Train {t_num} — {name} (Completed Morning Service)")
-                    lines.append(f"- **Operating Days**: `{days}`")
-                    lines.append(f"- **Current Service State**: **JOURNEY COMPLETED** (Speed: 0 km/h)")
-                    if prof:
-                        lines.append(f"- **Arrival**: Arrived at destination {prof.get('destination_name')} at **{prof.get('arr_time')} IST**.")
-                    if op.get("rake_share_description"):
-                        lines.append(f"- **Turnaround Next Run**: {op['rake_share_description']}")
-                    lines.append("")
-                else:
-                    lines.append(f"### 🟢 Train {t_num} — {name}")
-                    lines.append(f"- **Operating Days**: `{days}`")
-                    lines.append(f"- **Current Service State**: **EN ROUTE / RUNNING**")
-                    lines.append(f"- **Status Notice**: {op.get('service_notice')}")
-                    lines.append("")
-
-            lines.append("💡 **Verification Guarantee**: RailPulse grounds WhereIsMyTrain upstream data with Central Railway's official timetable rules to ensure non-operating maintenance days (like 22225 on Wednesdays) and turnaround rakes (12158 arriving at 10:30 and 12157 departing at 18:00) are never reported as moving phantom trains.")
-            return {
-                "response": "\n".join(lines),
-                "model": "deterministic_grounded_agent",
-                "grounded": True,
-                "telemetry_context": {"trains": seen_trains},
-            }
-
-        # Check for destination/target station mentions
-        target_station = None
-        for code in ["PUNE", "HWH", "NDLS", "CSMT", "KYN", "NGP", "BSL", "IGP"]:
-            if code.lower() in q_lower:
-                target_station = code
-                break
-
-        # If it's a disruption/mega block query
-        if is_disruption_query:
-            if train_num:
-                # Specific train disruption check
-                alerts = DisruptionService.get_train_disruptions(train_num)
-                status_json = await get_live_train_status.ainvoke({"train_number": train_num})
-                status_data = json.loads(status_json) if status_json and "{" in status_json else {}
-                train_name = status_data.get("train_name", f"Train {train_num}")
-                delay = status_data.get("current_delay_minutes", 0)
-
-                lines = [f"🚨 **Railway Disruption & Operations Audit for {train_name} ({train_num})**:"]
-                if alerts:
-                    for a in alerts:
-                        lines.append(f"\n- **Alert Type**: {a.alert_type.value}")
-                        lines.append(f"- **Title**: {a.title}")
-                        lines.append(f"- **Section / Corridor**: {a.section_or_corridor} ({a.zone})")
-                        if a.diverted_via:
-                            lines.append(f"- **Diverted Route**: {a.diverted_via}")
-                        if a.skipped_halts:
-                            lines.append(f"- **Skipped Halts**: {', '.join(a.skipped_halts)}")
-                        if a.delay_minutes:
-                            lines.append(f"- **Estimated Regulation/Delay**: {a.delay_minutes} mins")
-                        lines.append(f"- **Reason**: {a.reason}")
-                        lines.append(f"- **Impact**: {a.impact_description}")
-                        lines.append(f"- **Passenger Advisory**: {a.action_advised}")
-                        lines.append(f"- **Source**: {a.source_bulletin}")
-                else:
-                    lines.append(f"- **Route Status**: Operating on normal scheduled path (No active route diversion).")
-                    lines.append(f"- **Current Running Delay**: {delay} minute{'s' if delay != 1 else ''} late.")
-                    lines.append(f"- **Cancellation Status**: Not cancelled (Running as per schedule).")
-
-                return {
-                    "response": "\n".join(lines),
-                    "model": "deterministic_grounded_agent",
-                    "grounded": True,
-                    "telemetry_context": {"alerts": [a.model_dump(mode="json") for a in alerts], "status": status_data},
-                }
-            else:
-                # Corridor / Network wide disruption summary
-                summary = DisruptionService.get_disruption_summary()
-                lines = [
-                    f"🚨 **Active Indian Railways Disruption & Mega Block Intelligence Report**:\n",
-                    f"Summary: **{summary.total_active_alerts} active alerts** across network ({summary.mega_blocks_count} Mega Blocks, {summary.diverted_trains_count} Diverted Trains, {summary.cancelled_trains_count} Cancelled/Short-Terminated, {summary.delayed_trains_count} Heavily Delayed).\n"
-                ]
-
-                mb_alerts = [a for a in summary.alerts if a.alert_type.value == "MEGA_BLOCK"]
-                div_alerts = [a for a in summary.alerts if a.alert_type.value == "ROUTE_DIVERSION"]
-                can_alerts = [a for a in summary.alerts if a.alert_type.value in ("CANCELLATION", "SHORT_TERMINATION")]
-                del_alerts = [a for a in summary.alerts if a.alert_type.value in ("RUNNING_LATE", "RESCHEDULED")]
-
-                if mb_alerts:
-                    lines.append("### 🚧 Mega Blocks & Maintenance Blocks:")
-                    for a in mb_alerts:
-                        lines.append(f"- **{a.title}** ({a.zone})")
-                        lines.append(f"  • **Corridor**: {a.section_or_corridor}")
-                        lines.append(f"  • **Reason**: {a.reason}")
-                        lines.append(f"  • **Impact**: {a.impact_description}")
-                        lines.append(f"  • **Passenger Advisory**: {a.action_advised}\n")
-
-                if div_alerts:
-                    lines.append("### 🔄 Route Diversions (Diverted Trains):")
-                    for a in div_alerts:
-                        lines.append(f"- **{a.title}** (#{a.train_number})")
-                        lines.append(f"  • **Diverted Via**: {a.diverted_via}")
-                        if a.skipped_halts:
-                            lines.append(f"  • **Skipped Halts**: {', '.join(a.skipped_halts)}")
-                        lines.append(f"  • **Reason**: {a.reason}")
-                        lines.append(f"  • **Advisory**: {a.action_advised}\n")
-
-                if can_alerts:
-                    lines.append("### ❌ Cancelled & Short-Terminated Services:")
-                    for a in can_alerts:
-                        lines.append(f"- **{a.title}**")
-                        lines.append(f"  • **Corridor**: {a.section_or_corridor}")
-                        lines.append(f"  • **Reason**: {a.reason}")
-                        lines.append(f"  • **Refund/Action**: {a.action_advised}\n")
-
-                if del_alerts:
-                    lines.append("### ⏳ Heavily Delayed & Rescheduled Services:")
-                    for a in del_alerts:
-                        lines.append(f"- **{a.title}**")
-                        if a.rescheduled_time:
-                            lines.append(f"  • **Revised Departure**: {a.rescheduled_time}")
-                        elif a.delay_minutes:
-                            lines.append(f"  • **Running Delay**: {a.delay_minutes} minutes")
-                        lines.append(f"  • **Reason**: {a.reason}\n")
-
-                return {
-                    "response": "\n".join(lines),
-                    "model": "deterministic_grounded_agent",
-                    "grounded": True,
-                    "telemetry_context": summary.model_dump(mode="json"),
-                }
-
-        # Check for Coach Platform Position query
-        # e.g., "where will coach B4 stop on train 12115", "coach position for S2", "platform pole for coach B1"
-        coach_keywords = ["coach", "bogie", "bogey", "rake", "platform pole", "where will coach", "coach position", "coach location", "where does coach"]
-        is_coach_query = any(k in q_lower for k in coach_keywords)
-        coach_match = re.search(r"\b([A-Z]{1,2}\d{1,2}|LOCO|SLR|GS|GEN|PC|EV)\b", query, re.IGNORECASE)
-        target_coach = coach_match.group(0).upper() if coach_match else None
-
-        if is_coach_query and train_num:
-            comp = await orchestrator.get_coach_composition(train_num)
-            if comp and comp.coaches:
-                if target_coach:
-                    matched_coach = next((c for c in comp.coaches if c.coach_code.upper() == target_coach), None)
-                    if matched_coach:
-                        response_text = (
-                            f"🚉 **Platform Coach Location for {comp.train_name} ({comp.train_number})**:\n"
-                            f"- **Coach**: `{matched_coach.coach_code}` ({matched_coach.coach_type.value})\n"
-                            f"- **Position from Locomotive**: Coach #{matched_coach.position_number} of {comp.total_coaches}\n"
-                            f"- **Platform Stopping Pole**: **Pole #{matched_coach.platform_pole_number}**\n"
-                            f"- **Distance from Engine**: ~{matched_coach.distance_from_engine_m} meters\n"
-                            f"- **Nearest Foot Overbridge (FOB)**: **{matched_coach.nearest_fob}**\n"
-                            f"- **Platform Walking Tip**: Board near **{matched_coach.nearest_fob}** for direct access to Coach {matched_coach.coach_code}."
-                        )
-                        return {
-                            "response": response_text,
-                            "model": "deterministic_grounded_agent",
-                            "grounded": True,
-                            "telemetry_context": matched_coach.model_dump(mode="json"),
-                        }
-                coach_sequence = " → ".join([c.coach_code for c in comp.coaches])
-                return {
-                    "response": (
-                        f"🚉 **Coach Layout & Platform Sequence for {comp.train_name} ({comp.train_number})**:\n"
-                        f"- **Total Rake Length**: {comp.total_coaches} coaches (~{comp.total_length_meters} meters)\n"
-                        f"- **Engine Direction**: {comp.engine_direction}\n"
-                        f"- **Coach Sequence**: {coach_sequence}\n\n"
-                        f"*Tip: Specify your coach code (e.g., B4, S2, H1) to get the exact platform pole number and nearest foot-overbridge.*"
-                    ),
-                    "model": "deterministic_grounded_agent",
-                    "grounded": True,
-                    "telemetry_context": comp.model_dump(mode="json"),
-                }
-
-        # Default: Train tracking query
-        target_train = train_num or "12101"
-        status_json = await get_live_train_status.ainvoke({"train_number": target_train})
-        status_data = json.loads(status_json) if status_json and "{" in status_json else None
-
-        if not status_data:
-            return {
-                "response": f"I couldn't locate active data for train {target_train}. Please verify the 5-digit train number.",
-                "model": "deterministic_grounded_agent",
-                "grounded": True,
-            }
-
-        train_name = status_data.get("train_name", f"Train {target_train}")
-        delay = status_data.get("current_delay_minutes", 0)
-        curr_station = status_data.get("current_station", "En route")
-        source = status_data.get("source_provider", "Railway Engine")
-        is_sim = status_data.get("is_simulated", False)
-        service_state = status_data.get("service_state", "RUNNING")
-        runs_today = status_data.get("runs_today", True)
-        days_of_run = status_data.get("days_of_run", [])
-        service_notice = status_data.get("service_notice")
-        pairing_train = status_data.get("pairing_train_number")
-
-        if service_state == "NOT_RUNNING_TODAY" or not runs_today:
-            days_str = ", ".join(days_of_run)
-            reply = (
-                f"🚫 **SERVICE ALERT: {train_name} ({target_train}) DOES NOT OPERATE TODAY**\n\n"
-                f"- **Status**: Non-Operating Day ({status_data.get('running_status')})\n"
-                f"- **Operating Days**: `{days_str}`\n"
-                f"- **Current Location**: Resting in Maintenance Yard / Depot (Speed: 0 km/h)\n"
-                f"- **Operational Details**: {service_notice or 'Train does not operate on this day of the week.'}\n"
+        if words & DISRUPTION_WORDS:
+            summary = DisruptionService.get_disruption_summary(train_number=train_number)
+            if train and train.exceptions:
+                return _reply(format_status_reply(train), FALLBACK, train)
+            return _reply(
+                "I don't have a verified source for mega blocks or diversions, so I can't list them. "
+                "Please check the National Train Enquiry System or station announcements."
+                + (" Live data shows no notices for this train." if train else ""),
+                FALLBACK, train, telemetry_context=summary.model_dump(mode="json"),
             )
-            if pairing_train:
-                reply += f"- **Pairing Service**: Reverse pairing train is #{pairing_train}.\n"
-            return {
-                "response": reply,
-                "model": "deterministic_grounded_agent",
-                "grounded": True,
-                "telemetry_context": status_data,
-            }
 
-        if service_state == "NOT_STARTED":
-            reply = (
-                f"⏰ **UPCOMING SERVICE: {train_name} ({target_train}) HAS NOT DEPARTED YET**\n\n"
-                f"- **Status**: Scheduled Departure ({status_data.get('running_status')})\n"
-                f"- **Origin Station**: {curr_station} (Speed: 0 km/h)\n"
-                f"- **Notice**: {service_notice}\n"
-            )
-            if pairing_train:
-                reply += f"- **Rake Sharing**: Single rake turnaround with incoming Train #{pairing_train}.\n"
-            return {
-                "response": reply,
-                "model": "deterministic_grounded_agent",
-                "grounded": True,
-                "telemetry_context": status_data,
-            }
+        if words & FARE_WORDS:
+            return await self._fare_answer(query, train_number, train)
 
-        if service_state == "COMPLETED":
-            reply = (
-                f"🏁 **JOURNEY COMPLETED: {train_name} ({target_train}) HAS REACHED DESTINATION**\n\n"
-                f"- **Status**: {status_data.get('running_status')}\n"
-                f"- **Final Station**: {curr_station} (Speed: 0 km/h)\n"
-                f"- **Notice**: {service_notice}\n"
-            )
-            if pairing_train:
-                reply += f"- **Turnaround Next Run**: Turnaround rake will operate as Train #{pairing_train}.\n"
-            return {
-                "response": reply,
-                "model": "deterministic_grounded_agent",
-                "grounded": True,
-                "telemetry_context": status_data,
-            }
-
-        eta_explanation = ""
-        if target_station:
-            eta_raw = await calculate_train_eta.ainvoke({"train_number": target_train, "target_station": target_station})
-            eta_data = json.loads(eta_raw) if eta_raw and "{" in eta_raw else {}
-            expected_arr = eta_data.get("expected_arrival")
-            platform = eta_data.get("platform", "1")
-            status_msg = eta_data.get("status_message", "")
-            eta_explanation = f"\n\n**Destination Details for {target_station}**:\n- **Expected Arrival**: {expected_arr or 'Scheduled'}\n- **Platform**: {platform}\n- **Status**: {status_msg}"
-
-        sim_warning = "\n\n*(⚠️ Note: Showing verified simulation reference data because upstream live provider is offline.)*" if is_sim else ""
-
-        reply = (
-            f"**{train_name} ({target_train}) Tracking Update**:\n"
-            f"- **Current Location**: {curr_station}\n"
-            f"- **Running Delay**: {delay} minute{'s' if delay != 1 else ''} late\n"
-            f"- **Data Source**: {source} (Freshness: {status_data.get('freshness', 'LIVE')})"
-            f"{eta_explanation}{sim_warning}"
+        if train:
+            return _reply(format_status_reply(train), FALLBACK, train)
+        return _reply(
+            "Please give me a 5-digit train number, such as 12951, and I'll tell you whether it is running, has reached, or isn't running today.",
+            FALLBACK,
         )
 
-        return {
-            "response": reply,
-            "model": "deterministic_grounded_agent",
-            "grounded": True,
-            "telemetry_context": status_data,
-        }
+    async def _fare_answer(self, query: str, train_number: Optional[str], train: Optional[RailwayStatus]) -> Dict[str, Any]:
+        stations = [STATION_WORDS[w] for w in _words(query) if w in STATION_WORDS]
+        if not train_number or len(stations) < 2:
+            return _reply("To work out a fare, please give me the train number and both stations, for example: fare for 12101 from CSMT to PUNE.", FALLBACK, train)
+        raw = await get_fare_enquiry.ainvoke({"train_number": train_number, "origin_station": stations[0], "destination_station": stations[1]})
+        fare = json.loads(raw)
+        rows = "\n".join(f"- **{c['class_name']}:** ₹{round(c['total_fare'])}" for c in fare.get("classes", []))
+        return _reply(
+            f"**Estimated fare for {train_number}, {stations[0]} to {stations[1]}** ({round(fare.get('distance_km', 0))} km):\n{rows}\n\n"
+            "These are calculated from the distance tariff. Check the actual fare when booking.",
+            FALLBACK, train,
+        )
+
+
+def _arrival_detail(status: RailwayStatus, query: str) -> Optional[str]:
+    """If the question names a stop on this train, say what is known about reaching it."""
+    words = set(_words(query))
+    for halt in status.halts:
+        name_words = set(_words(halt.station_name))
+        if halt.station_code.lower() not in words and not (name_words & words - {"jn", "junction", "central"}):
+            continue
+        if halt.has_arrived:
+            return f"- **{halt.station_name}:** already reached."
+        if status.service_state == "RUNNING" and halt.arrival_time:
+            delay = f", plus {status.delay_minutes} min running delay" if status.delay_minutes > 0 else ""
+            return f"- **{halt.station_name}:** timetable arrival {halt.arrival_time} IST{delay}."
+    return None
+
+
+def _running_day_answer(train_number: str, day: str) -> str:
+    profile = TrainOperationsMetadata.get_profile(train_number)
+    if not profile:
+        return f"I don't have running days for train {train_number}."
+    days = profile["days_of_run"]
+    answer = "runs" if day in days else "does not run"
+    reason = f" ({profile['non_running_reason']})" if day not in days and profile.get("non_running_reason") else ""
+    return f"**{train_number} {profile['name']} {answer} on that day{reason}.** It runs on {', '.join(days)}."
 
 
 railway_ai = RailwayAIAgent()

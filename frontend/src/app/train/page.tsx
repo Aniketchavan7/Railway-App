@@ -1,12 +1,15 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { FormEvent, Suspense, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import { useRouter, useSearchParams } from "next/navigation";
+import { motion } from "framer-motion";
 import { api } from "@/lib/api";
 import { createTrainWebSocket } from "@/lib/ws";
-import { CoachComposition, RailwayAlert, RailwayStatus, TelemetryPacket } from "@/lib/types";
+import { CoachComposition, RailwayStatus, TelemetryPacket } from "@/lib/types";
+import { useLocationShare } from "@/lib/useLocationShare";
+import { OnTrainPrompt } from "@/components/tracking/OnTrainPrompt";
+import { TrainStateBanner } from "@/components/tracking/TrainStateBanner";
 import { FreshnessBadge } from "@/components/tracking/FreshnessBadge";
 import { LocationTypePill } from "@/components/tracking/LocationTypePill";
 import { StationTimeline } from "@/components/tracking/StationTimeline";
@@ -21,31 +24,72 @@ import { TurnaroundRakeCard } from "@/components/tracking/TurnaroundRakeCard";
 import { FareMatrixTable } from "@/components/tracking/FareMatrixTable";
 import {
   Train,
-  MapPin,
   RefreshCw,
   AlertCircle,
+  Bot,
   Calculator,
   Loader2,
+  Search,
   Wifi,
   WifiOff,
   Map,
   ListOrdered,
   Radio,
-  Clock,
   Bell,
-  ArrowRight,
-  LayoutGrid,
 } from "lucide-react";
+
+function TrainNumberPrompt({ message }: { message?: string }) {
+  const router = useRouter();
+  const [value, setValue] = useState("");
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    if (/^\d{5}$/.test(value)) router.push(`/train?number=${value}`);
+  };
+  return (
+    <div className="max-w-md mx-auto my-12 space-y-4 text-center">
+      <h1 className="text-2xl font-display font-bold text-ink">Track a train</h1>
+      <p className="text-xs text-muted">{message || "Enter a 5-digit train number to see what it's doing right now."}</p>
+      <form onSubmit={submit} className="flex gap-2">
+        <div className="relative flex-1">
+          <Search className="w-4 h-4 text-muted absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true" />
+          <input
+            type="text"
+            inputMode="numeric"
+            maxLength={5}
+            autoFocus
+            value={value}
+            onChange={(event) => setValue(event.target.value.replace(/\D/g, ""))}
+            placeholder="e.g. 12951"
+            aria-label="Train number"
+            className="w-full bg-paper-2 focus:bg-paper text-sm font-outlier font-bold pl-9 pr-3 py-2.5 rounded-pill border border-rule focus:border-accent outline-none text-ink placeholder:text-muted transition-colors"
+          />
+        </div>
+        <button
+          type="submit"
+          disabled={value.length !== 5}
+          className="bg-accent hover:opacity-90 active:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed text-accent-ink font-medium text-xs px-5 py-2.5 rounded-pill transition-opacity cursor-pointer focus-visible:outline-2 focus-visible:outline-accent"
+        >
+          Track
+        </button>
+      </form>
+    </div>
+  );
+}
 
 function TrainTrackingContent() {
   const searchParams = useSearchParams();
-  const trainNumber =
-    searchParams.get("number") || searchParams.get("train") || "12101";
+  const trainNumber = searchParams.get("number") || searchParams.get("train");
+  if (!trainNumber) return <TrainNumberPrompt />;
+  return <TrainTracker key={trainNumber} trainNumber={trainNumber} />;
+}
 
+function TrainTracker({ trainNumber }: { trainNumber: string }) {
   const [status, setStatus] = useState<RailwayStatus | null>(null);
   const [routeData, setRouteData] = useState<any>(null);
   const [coachData, setCoachData] = useState<CoachComposition | null>(null);
+  const [coachesLoaded, setCoachesLoaded] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [wsStatus, setWsStatus] = useState<
     "connecting" | "connected" | "disconnected"
@@ -57,69 +101,42 @@ function TrainTrackingContent() {
   const [mobileTab, setMobileTab] = useState<"map" | "timeline" | "gps">("map");
   const [showGpsReporter, setShowGpsReporter] = useState(false);
   const [showWakeupAlarm, setShowWakeupAlarm] = useState(false);
-  const [disruptions, setDisruptions] = useState<RailwayAlert[]>([]);
-  const [isOnline, setIsOnline] = useState<boolean>(true);
+  // Held here so that refreshes and tab changes cannot interrupt a passenger's sharing.
+  const share = useLocationShare(trainNumber);
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      setIsOnline(navigator.onLine);
-      const handleOnline = () => setIsOnline(true);
-      const handleOffline = () => setIsOnline(false);
-      window.addEventListener("online", handleOnline);
-      window.addEventListener("offline", handleOffline);
-      return () => {
-        window.removeEventListener("online", handleOnline);
-        window.removeEventListener("offline", handleOffline);
-      };
-    }
-  }, []);
-
-  const fetchStatus = async () => {
+  const refreshStatus = useCallback(async () => {
+    setRefreshing(true);
     try {
-      setLoading(true);
+      setStatus(await api.getTrainStatus(trainNumber));
       setError(null);
-      const data = await api.getTrainStatus(trainNumber);
-      setStatus(data);
-
-      try {
-        const [route, alerts, coaches] = await Promise.all([
-          api.getTrainRoute(trainNumber).catch(() => null),
-          api.getTrainDisruptions(trainNumber).catch(() => []),
-          api.getCoachComposition(trainNumber).catch(() => null),
-        ]);
-        if (route) setRouteData(route);
-        if (alerts) setDisruptions(alerts);
-        if (coaches) setCoachData(coaches);
-      } catch {
-        // Non-critical supplementary data error
-      }
-    } catch (err: any) {
-      setError(err.message || "Failed to load train status");
+    } catch (err) {
+      // Keep showing what we have; only the first load needs a full error page.
+      setError(err instanceof Error ? err.message : "Failed to load train status");
     } finally {
+      setRefreshing(false);
       setLoading(false);
     }
-  };
+  }, [trainNumber]);
 
   useEffect(() => {
-    fetchStatus();
-  }, [trainNumber]);
+    void refreshStatus();
+    api.getTrainRoute(trainNumber).then(setRouteData).catch(() => setRouteData(null));
+    api
+      .getCoachComposition(trainNumber)
+      .then(setCoachData)
+      .catch(() => setCoachData(null))
+      .finally(() => setCoachesLoaded(true));
+  }, [trainNumber, refreshStatus]);
 
   useEffect(() => {
     const ws = createTrainWebSocket(
       trainNumber,
       (packet: TelemetryPacket) => {
-        if (packet.telemetry) {
-          setStatus(packet.telemetry);
-        }
+        if (packet.telemetry) setStatus(packet.telemetry);
       },
-      (newStatus) => {
-        setWsStatus(newStatus);
-      }
+      setWsStatus
     );
-
-    return () => {
-      ws.disconnect();
-    };
+    return () => ws.disconnect();
   }, [trainNumber]);
 
   if (loading) {
@@ -133,47 +150,45 @@ function TrainTrackingContent() {
     );
   }
 
-  if (error || !status) {
+  if (!status) {
     return (
       <div className="max-w-xl mx-auto my-12 p-8 bg-paper-2 rounded-2xl border border-rule text-center space-y-4 shadow-sm">
         <AlertCircle className="w-8 h-8 text-accent mx-auto" />
         <h2 className="text-base font-display font-semibold text-ink">
-          Train Telemetry Unavailable
+          No information for train {trainNumber}
         </h2>
-        <p className="text-xs text-muted leading-relaxed">
-          {error ||
-            `Unable to fetch live telemetry for train ${trainNumber}. Please verify the number.`}
-        </p>
+        <p className="text-xs text-muted leading-relaxed">{error}</p>
         <div className="pt-2 flex justify-center gap-3">
           <button
             type="button"
-            onClick={fetchStatus}
-            disabled={loading}
+            onClick={refreshStatus}
+            disabled={refreshing}
             className="px-4 py-2 bg-accent hover:opacity-90 active:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed text-accent-ink rounded-pill text-xs font-semibold cursor-pointer transition-opacity"
           >
-            Retry status
+            Try again
           </button>
           <Link
-            href="/"
+            href="/train"
             className="px-4 py-2 bg-paper-3 hover:bg-paper active:bg-paper-2 text-ink rounded-pill text-xs font-medium border border-rule transition-colors"
           >
-            Back to search
+            Try another number
           </Link>
         </div>
       </div>
     );
   }
 
-  const originHalt = status.halts && status.halts.length > 0 ? status.halts[0] : null;
-  const destHalt =
-    status.halts && status.halts.length > 0
-      ? status.halts[status.halts.length - 1]
-      : null;
-  const currentHalt =
-    status.halts?.find((h) => h.station_code === status.current_station) ||
-    status.halts?.find((h) => h.has_arrived && !h.has_departed) ||
-    originHalt;
-  const currentKm = currentHalt?.distance_km ?? 0;
+  const originHalt = status.halts?.[0] ?? null;
+  const destHalt = status.halts?.length ? status.halts[status.halts.length - 1] : null;
+  const nextHalt =
+    status.halts?.find((h) => h.station_code === status.next_station_code) ??
+    status.halts?.find((h) => !h.has_arrived) ??
+    null;
+  const lastArrivedHalt = status.halts ? [...status.halts].reverse().find((h) => h.has_arrived) : undefined;
+  const currentKm = lastArrivedHalt?.distance_km ?? 0;
+  const isRunning = status.service_state === "RUNNING";
+  // Passengers can also help when live data can't see the train at all.
+  const canShare = isRunning || status.service_state === "UNKNOWN";
 
   return (
     <div className="space-y-6 sm:space-y-8 py-2">
@@ -190,36 +205,12 @@ function TrainTrackingContent() {
                 {status.train_name}
               </h1>
 
-              {status.service_state === "NOT_RUNNING_TODAY" || status.runs_today === false ? (
-                <span className="text-xs px-2.5 py-0.5 rounded-pill font-outlier font-medium bg-paper-3 text-bad border border-bad/30">
-                  Non-operating day · Weekly maintenance
-                </span>
-              ) : status.service_state === "NOT_STARTED" ? (
-                <span className="text-xs px-2.5 py-0.5 rounded-pill font-outlier font-medium bg-paper-3 text-accent border border-accent/30">
-                  Scheduled departure pending
-                </span>
-              ) : status.service_state === "COMPLETED" ? (
-                <span className="text-xs px-2.5 py-0.5 rounded-pill font-outlier font-medium bg-paper-3 text-ok border border-ok/30">
-                  Journey terminated
-                </span>
-              ) : (
-                <span
-                  className={`text-xs px-2.5 py-0.5 rounded-pill font-outlier font-medium tabular-nums ${
-                    status.delay_minutes > 0
-                      ? "bg-paper-3 text-accent border border-accent/30"
-                      : "bg-paper-3 text-ok border border-ok/30"
-                  }`}
-                >
-                  {status.delay_minutes > 0
-                    ? `+${status.delay_minutes}m late`
-                    : "Running on time"}
-                </span>
-              )}
-
               <LocationTypePill
                 locationType={status.location_type}
                 isSimulated={status.is_simulated}
-                sourceProvider={status.source_provider}
+                positionBasis={status.position_basis}
+                crowdReporters={status.crowd_reporters}
+                hasPosition={status.latitude != null}
               />
             </div>
           </div>
@@ -250,21 +241,24 @@ function TrainTrackingContent() {
             <ConcourseAudioAnnouncement
               trainNumber={status.train_number}
               trainName={status.train_name}
-              origin={originHalt?.station_name}
-              dest={destHalt?.station_name}
+              origin={status.origin_name ?? originHalt?.station_name}
+              dest={status.destination_name ?? destHalt?.station_name}
               currentStation={status.current_station}
-              platform={destHalt?.platform}
+              platform={nextHalt?.platform}
               delayMinutes={status.delay_minutes}
             />
 
             <TripShareModal
               trainNumber={status.train_number}
               trainName={status.train_name}
-              currentStationName={status.current_station}
-              nextStationName={destHalt?.station_name}
-              nextStationPlatform={destHalt?.platform}
-              speedKmH={status.speed_kmph ?? 0}
+              currentStationName={status.position_label ?? status.current_station}
+              origin={status.origin_name ?? originHalt?.station_name}
+              destination={status.destination_name ?? destHalt?.station_name}
+              nextStationName={status.next_station}
+              nextStationPlatform={nextHalt?.platform}
+              speedKmH={status.speed_kmph}
               delayMinutes={status.delay_minutes}
+              serviceState={status.service_state}
             />
 
             <button
@@ -290,18 +284,19 @@ function TrainTrackingContent() {
               }`}
             >
               <Radio className="w-3.5 h-3.5" aria-hidden="true" />
-              <span>Share location</span>
+              <span>{share.phase === "idle" ? "Share location" : "Sharing location"}</span>
             </button>
 
             <button
               type="button"
-              onClick={fetchStatus}
-              disabled={loading}
+              onClick={refreshStatus}
+              disabled={refreshing}
+              aria-label="Refresh status"
               className="p-1.5 rounded-pill border border-rule bg-paper-3 hover:bg-paper active:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed text-muted hover:text-ink transition-colors cursor-pointer"
               title="Refresh status"
             >
               <RefreshCw
-                className={`w-3.5 h-3.5 ${loading ? "motion-safe:animate-spin" : ""}`}
+                className={`w-3.5 h-3.5 ${refreshing ? "motion-safe:animate-spin" : ""}`}
                 aria-hidden="true"
               />
             </button>
@@ -336,83 +331,19 @@ function TrainTrackingContent() {
           ))}
         </div>
 
-        {/* Operational Days & Maintenance Advisory Banner */}
-        {(status.service_state === "NOT_RUNNING_TODAY" || status.runs_today === false) && (
-          <div className="p-3.5 bg-paper-2 border border-rule border-l-2 border-l-bad text-xs space-y-2 rounded-r-xl">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-outlier font-semibold text-bad text-xs">
-                Maintenance Day Advisory
-              </span>
-              <span className="text-muted">·</span>
-              <span className="text-ink font-medium">
-                Train #{status.train_number} {status.train_name} has scheduled depot maintenance today.
-              </span>
-            </div>
-            {status.service_notice && (
-              <p className="text-muted text-[11px] leading-relaxed">
-                {status.service_notice}
-              </p>
-            )}
-            {status.days_of_run && (
-              <div className="flex items-center gap-1.5 text-[11px] font-outlier">
-                <span className="text-muted">Operating Days:</span>
-                <span className="font-semibold text-ink">{status.days_of_run.join(", ")}</span>
-              </div>
-            )}
-          </div>
+        {error && (
+          <p className="text-[11px] text-accent">
+            Couldn&apos;t refresh just now, so this may be out of date. {error}
+          </p>
         )}
 
-        {/* Pending Departure Notice */}
-        {status.service_state === "NOT_STARTED" && (
-          <div className="p-3.5 bg-paper-2 border border-rule border-l-2 border-l-accent text-xs space-y-2 rounded-r-xl">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-outlier font-semibold text-accent text-xs">
-                Scheduled Origin Halt
-              </span>
-              <span className="text-muted">·</span>
-              <span className="text-ink font-medium">
-                Rake stationed at {originHalt?.station_name || "Origin"}. Departure scheduled for{" "}
-                {originHalt?.departure_time || originHalt?.actual_departure || "today"}.
-              </span>
-            </div>
-            {status.service_notice && (
-              <p className="text-muted text-[11px] leading-relaxed">
-                {status.service_notice}
-              </p>
-            )}
-          </div>
+        <TrainStateBanner status={status} />
+
+        {canShare && (
+          <OnTrainPrompt trainNumber={status.train_number} trainName={status.train_name} share={share} />
         )}
 
-        {/* Journey Completed Notice */}
-        {status.service_state === "COMPLETED" && (
-          <div className="p-3.5 bg-paper-2 border border-rule border-l-2 border-l-ok text-xs space-y-2 rounded-r-xl">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-outlier font-semibold text-ok text-xs">
-                Destination Reached
-              </span>
-              <span className="text-muted">·</span>
-              <span className="text-ink font-medium">
-                Train #{status.train_number} has completed its schedule at {destHalt?.station_name || "Destination"}.
-              </span>
-            </div>
-            {status.service_notice && (
-              <p className="text-muted text-[11px] leading-relaxed">
-                {status.service_notice}
-              </p>
-            )}
-          </div>
-        )}
-
-        {/* High-Precision Trip Progress & Speedometer HUD */}
-        <TripProgressHUD
-          speedKmH={status.speed_kmph ?? 0}
-          delayMinutes={status.delay_minutes}
-          halts={status.halts}
-          currentStationCode={status.current_station}
-          originStationName={originHalt?.station_name}
-          destStationName={destHalt?.station_name}
-          trainType={status.train_name}
-        />
+        {isRunning && <TripProgressHUD status={status} />}
 
         {/* Single Rake Turnaround Link Card */}
         {status.pairing_train_number && (
@@ -429,10 +360,16 @@ function TrainTrackingContent() {
             freshness={status.freshness}
             observedAt={status.observed_at}
             sourceProvider={status.source_provider}
-            lastReportedStation={status.current_station}
           />
 
           <div className="flex items-center gap-3">
+            <Link
+              href={`/ai-assistant?train=${status.train_number}`}
+              className="inline-flex items-center gap-1 text-xs font-semibold text-accent hover:underline"
+            >
+              <Bot className="w-3.5 h-3.5" aria-hidden="true" />
+              <span>Ask assistant</span>
+            </Link>
             <Link
               href={`/fare?train=${status.train_number}`}
               className="inline-flex items-center gap-1 text-xs font-semibold text-accent hover:underline"
@@ -444,13 +381,15 @@ function TrainTrackingContent() {
         </div>
       </section>
 
-      {/* Onboard GPS Reporter Drawer */}
-      {showGpsReporter && (
-        <div className="animate-in fade-in duration-150">
+      {/* Always visible while sharing, so "stop" is never hidden */}
+      {(showGpsReporter || share.phase !== "idle" || share.error) && (
+        <div className="hidden lg:block animate-in fade-in duration-150">
           <CrowdTelemetryReporter
             trainNumber={status.train_number}
             trainName={status.train_name}
-            onTelemetryRelayed={fetchStatus}
+            share={share}
+            activeReporters={status.crowd_reporters}
+            canShare={canShare}
           />
         </div>
       )}
@@ -472,7 +411,7 @@ function TrainTrackingContent() {
               })) || []
             }
             currentKm={currentKm}
-            currentStationCode={status.current_station || ""}
+            currentStationCode={status.current_station_code || ""}
             currentSpeedKmH={status.speed_kmph ?? 0}
           />
         </div>
@@ -582,7 +521,7 @@ function TrainTrackingContent() {
               }`}
             >
               <Radio className="w-3.5 h-3.5" />
-              <span>Crowd GPS</span>
+              <span>Share location</span>
             </button>
           </div>
 
@@ -608,9 +547,19 @@ function TrainTrackingContent() {
             >
               <StationTimeline
                 halts={status.halts}
-                currentStation={status.current_station}
                 selectedStationCode={selectedStationCode}
                 onSelectStation={(code) => setSelectedStationCode(code)}
+                showDelays={isRunning}
+              />
+            </div>
+
+            <div className={`lg:hidden ${mobileTab === "gps" ? "block" : "hidden"}`}>
+              <CrowdTelemetryReporter
+                trainNumber={status.train_number}
+                trainName={status.train_name}
+                share={share}
+                activeReporters={status.crowd_reporters}
+                canShare={canShare}
               />
             </div>
           </div>
@@ -623,8 +572,12 @@ function TrainTrackingContent() {
           {coachData ? (
             <CoachPositionVisualizer
               composition={coachData}
-              currentPlatform={destHalt?.platform}
+              currentPlatform={nextHalt?.platform}
             />
+          ) : coachesLoaded ? (
+            <div className="p-8 rounded-2xl bg-paper-2 border border-rule text-center">
+              <p className="text-xs text-muted">Coach layout isn&apos;t available for this train right now.</p>
+            </div>
           ) : (
             <div className="p-8 rounded-2xl bg-paper-2 border border-rule text-center space-y-2">
               <Loader2 className="w-5 h-5 text-accent motion-safe:animate-spin mx-auto" />

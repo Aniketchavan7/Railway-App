@@ -237,7 +237,7 @@ export function CoachPositionVisualizer({
             <div className="p-3 rounded-lg bg-paper-2 border border-rule/70 space-y-0.5">
               <span className="text-[11px] text-muted font-outlier block flex items-center gap-1">
                 <MapPin className="w-3 h-3 text-accent" />
-                <span>Platform Pole Indicator</span>
+                <span>Approximate pole (estimated)</span>
               </span>
               <div className="font-bold text-ink text-sm font-outlier">
                 Pole #{selectedCoach.platform_pole_number || selectedCoach.position_number}

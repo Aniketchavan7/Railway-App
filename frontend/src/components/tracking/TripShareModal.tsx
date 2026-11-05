@@ -16,9 +16,10 @@ interface TripShareModalProps {
   currentStation?: string | null;
   currentStationName?: string | null;
   delayMinutes?: number;
-  speedKmH?: number;
-  origin?: string;
-  destination?: string;
+  speedKmH?: number | null;
+  origin?: string | null;
+  destination?: string | null;
+  serviceState?: string;
   nextStationName?: string | null;
   nextStationPlatform?: string | null;
   platform?: string | null;
@@ -30,9 +31,10 @@ export function TripShareModal({
   currentStation,
   currentStationName,
   delayMinutes = 0,
-  speedKmH = 0,
+  speedKmH,
   origin,
   destination,
+  serviceState = "RUNNING",
   nextStationName,
   nextStationPlatform,
   platform,
@@ -41,7 +43,6 @@ export function TripShareModal({
   const [copied, setCopied] = useState(false);
 
   const activeStation = currentStation || currentStationName;
-  const activeDest = destination || nextStationName;
   const activePlatform = platform || nextStationPlatform;
 
   const trackingUrl =
@@ -50,21 +51,30 @@ export function TripShareModal({
       : `https://railpulse.app/train?number=${trainNumber}`;
 
   const delayText =
-    delayMinutes === 0
-      ? "Running on time"
-      : delayMinutes > 0
-      ? `${delayMinutes} mins behind schedule`
-      : `${Math.abs(delayMinutes)} mins ahead of schedule`;
+    delayMinutes > 0 ? `${delayMinutes} mins behind schedule` : "Running on time";
 
-  const shareText = `Live Train Status: #${trainNumber} ${trainName}
-Route: ${origin || "Origin"} to ${activeDest || "Destination"}
-Location: ${activeStation || "In transit"}
-Status: ${delayText}
-Speed: ${Math.round(speedKmH)} km/h
-${activePlatform ? `Platform: ${activePlatform}` : ""}
+  const stateText: Record<string, string> = {
+    RUNNING: delayText,
+    COMPLETED: `Reached ${destination || "destination"}`,
+    NOT_STARTED: "Not started yet",
+    NOT_RUNNING_TODAY: "Not running today",
+    CANCELLED: "Reported as cancelled",
+  };
 
-Track live radar:
-${trackingUrl}`;
+  const shareText = [
+    `Train status: #${trainNumber} ${trainName}`,
+    `Route: ${origin || "Origin"} to ${destination || "Destination"}`,
+    `Status: ${stateText[serviceState] ?? "Live data unavailable"}`,
+    serviceState === "RUNNING" && activeStation ? `Location: ${activeStation}` : null,
+    serviceState === "RUNNING" && nextStationName ? `Next stop: ${nextStationName}` : null,
+    serviceState === "RUNNING" && speedKmH != null ? `Speed: ${Math.round(speedKmH)} km/h` : null,
+    serviceState === "RUNNING" && activePlatform ? `Platform: ${activePlatform} (may change)` : null,
+    "",
+    "Track live:",
+    trackingUrl,
+  ]
+    .filter((line) => line !== null)
+    .join("\n");
 
   const handleCopy = async () => {
     try {

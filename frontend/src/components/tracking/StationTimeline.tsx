@@ -5,17 +5,18 @@ import { Check, Train, AlertCircle } from "lucide-react";
 
 interface StationTimelineProps {
   halts: StationHalt[];
-  currentStation?: string | null;
   selectedStationCode?: string | null;
   onSelectStation?: (stationCode: string) => void;
+  /** Delays only mean something while the train is running. */
+  showDelays?: boolean;
   className?: string;
 }
 
 export function StationTimeline({
   halts,
-  currentStation,
   selectedStationCode,
   onSelectStation,
+  showDelays = false,
   className = "",
 }: StationTimelineProps) {
   if (!halts || halts.length === 0) {
@@ -81,13 +82,7 @@ export function StationTimeline({
       <div className="flex-1 overflow-y-auto divide-y divide-rule/40 scrollbar-thin">
         {halts.map((h, idx) => {
           const isPassed = h.has_departed;
-          const isCurrent =
-            (h.has_arrived && !h.has_departed) ||
-            Boolean(
-              currentStation &&
-                (currentStation.includes(h.station_code) ||
-                  currentStation.includes(h.station_name))
-            );
+          const isCurrent = h.has_arrived && !h.has_departed;
           const isSelected = selectedStationCode === h.station_code;
 
           return (
@@ -155,7 +150,7 @@ export function StationTimeline({
 
               {/* Distance */}
               <div className="col-span-2 text-right hidden sm:block font-outlier text-[11px] text-muted tabular-nums">
-                {h.distance_km} km
+                {h.distance_km > 0 ? `${h.distance_km} km` : ""}
               </div>
 
               {/* Schedule (Arr / Dep / Delay) */}
@@ -163,19 +158,20 @@ export function StationTimeline({
                 <div className="text-[11px] text-ink">
                   {h.departure_time || h.arrival_time || "--:--"}
                 </div>
-                {h.delay_minutes > 0 ? (
+                {showDelays && !h.has_departed && h.delay_minutes > 0 && (
                   <div className="text-[10px] text-accent flex items-center justify-end gap-1">
                     <AlertCircle className="w-2.5 h-2.5 shrink-0" />
                     <span>+{h.delay_minutes}m</span>
                   </div>
-                ) : (
-                  <div className="text-[10px] text-ok">On time</div>
                 )}
               </div>
             </div>
           );
         })}
       </div>
+      <p className="px-3.5 sm:px-4 py-1.5 border-t border-rule text-[10px] text-muted shrink-0">
+        Platforms can change. Check station announcements.
+      </p>
     </div>
   );
 }

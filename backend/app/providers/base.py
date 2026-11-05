@@ -6,6 +6,14 @@ from app.schemas.station import Station, StationLiveBoard
 from app.schemas.status import RailwayStatus
 
 
+class ProviderUnavailable(Exception):
+    """The provider could not answer (rate limit, auth, outage, timeout).
+
+    Returning None means the provider answered and has no record. Those are
+    different facts: a rate limit must never read as "this train is not running".
+    """
+
+
 class RailwayProvider(ABC):
     @property
     @abstractmethod
@@ -20,7 +28,10 @@ class RailwayProvider(ABC):
         pass
 
     @abstractmethod
-    async def get_live_status(self, train_number: str) -> Optional[RailwayStatus]:
+    async def get_live_status(
+        self, train_number: str, journey_date: Optional[str] = None
+    ) -> Optional[RailwayStatus]:
+        """journey_date is the IST start date (YYYY-MM-DD); None means today."""
         pass
 
     @abstractmethod

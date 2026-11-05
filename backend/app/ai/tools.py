@@ -3,34 +3,61 @@ from typing import Optional
 from langchain_core.tools import tool
 from app.services.disruption_service import DisruptionService
 from app.services.eta_service import ETACalculator
-from app.services.orchestrator import orchestrator
+from app.services.orchestrator import LiveDataUnavailable, orchestrator
+from app.services.train_schedule_service import IST
+
+
+def _ist(value) -> Optional[str]:
+    return value.astimezone(IST).strftime("%d %b %Y, %H:%M IST") if value else None
+
+
+async def _status_or_message(train_number: str):
+    """Returns (status, None), or (None, a message saying plainly why there is none)."""
+    try:
+        status = await orchestrator.get_live_status(train_number)
+    except LiveDataUnavailable:
+        return None, f"Live railway data is temporarily unavailable for train {train_number}. Do not guess its status."
+    if not status:
+        return None, f"No running record for train {train_number} today or yesterday. It may not run on these days, or the number may be wrong."
+    return status, None
 
 
 @tool
 async def get_live_train_status(train_number: str) -> str:
-    """Retrieve the real-time running status, current delay, and location for a given 5-digit Indian train number."""
-    status = await orchestrator.get_live_status(train_number)
+    """Get a train's current state: whether it is running, has reached, has not started or is not running today, plus position, next stop and delay. Always use this before saying anything about a train's status."""
+    status, message = await _status_or_message(train_number)
     if not status:
-        return f"No live status found for train {train_number}."
+        return message
     return json.dumps({
         "train_number": status.train_number,
         "train_name": status.train_name,
+        "service_state": status.service_state,
         "running_status": status.running_status,
+        "service_notice": status.service_notice,
+        "journey_date_label": status.journey_date_label,
+        "also_running_note": status.also_running_note,
+        "runs_today": status.runs_today,
+        "days_of_run": status.days_of_run,
+        "next_run_date": status.next_run_date,
+        "origin": status.origin_name,
+        "destination": status.destination_name,
         "current_delay_minutes": status.delay_minutes,
         "current_station": status.current_station,
         "previous_station": status.previous_station,
         "next_station": status.next_station,
+        "next_stop_expected_at": _ist(status.next_eta),
         "speed_kmph": status.speed_kmph,
-        "observed_at": status.observed_at.isoformat(),
+        "position_label": status.position_label,
+        "position_basis": status.position_basis,
+        "passengers_sharing_location": status.crowd_reporters,
+        "route_progress_percent": status.route_progress_percent,
+        "provider_notices": status.exceptions,
+        "observed_at": _ist(status.observed_at),
         "data_age_seconds": status.age_seconds,
         "freshness": status.freshness.value,
         "confidence": status.confidence.value,
         "location_type": status.location_type.value,
         "is_simulated": status.is_simulated,
-        "runs_today": status.runs_today,
-        "days_of_run": status.days_of_run,
-        "service_state": status.service_state,
-        "service_notice": status.service_notice,
         "pairing_train_number": status.pairing_train_number,
     })
 
@@ -38,17 +65,18 @@ async def get_live_train_status(train_number: str) -> str:
 @tool
 async def calculate_train_eta(train_number: str, target_station: str) -> str:
     """Calculate the estimated arrival time (ETA), delay, and arrival platform of a train at a specific destination station."""
-    status = await orchestrator.get_live_status(train_number)
+    status, message = await _status_or_message(train_number)
     if not status:
-        return f"Unable to fetch train {train_number} to calculate ETA for {target_station}."
+        return message
     res = ETACalculator.calculate_eta(status, target_station)
+    res["service_state"] = status.service_state
     return json.dumps(res)
 
 
 @tool
 async def get_train_schedule(train_number: str) -> str:
     """Get the complete official timetable and halting sequence of an Indian train."""
-    schedule = await orchestrator.get_schedule(train_number)
+    schedule = await orchestrator.get_timetable(train_number)
     if not schedule:
         return f"No schedule found for train {train_number}."
     return json.dumps(schedule)
@@ -163,7 +191,10 @@ async def get_fare_enquiry(
 @tool
 async def get_pnr_status(pnr: str) -> str:
     """Check PNR booking status, confirmed/waitlist status, and chart preparation status for a 10-digit PNR."""
-    res = await orchestrator.get_pnr_status(pnr)
+    try:
+        res = await orchestrator.get_pnr_status(pnr)
+    except LiveDataUnavailable:
+        return "The PNR service is temporarily unavailable. Do not guess this booking's status."
     if not res:
         return f"No PNR status record found for {pnr}."
     return json.dumps(res.model_dump(mode="json"))
@@ -176,50 +207,47 @@ async def get_railway_disruptions_and_mega_blocks(
     train_number: Optional[str] = None,
     station: Optional[str] = None,
 ) -> str:
-    """Fetch active Indian Railways disruptions, including Mega Blocks, Jumbo Blocks, Route Diversions, Cancelled Trains, Rescheduled Services, and Heavy Delays.
-    Arguments:
-    - category: Filter by disruption type (MEGA_BLOCK, ROUTE_DIVERSION, CANCELLATION, RESCHEDULED, RUNNING_LATE)
-    - zone: Railway Zone code (CR, WR, NR, SCR, ECR, etc.)
-    - train_number: Optional 5-digit train number (e.g. 12115, 22225)
-    - station: Station code or name (e.g. CSMT, PUNE, NDLS, Kalyan)
-    """
+    """Network-wide disruptions and mega blocks. There is currently no verified feed, so an empty result means unknown, not that there are none. Say so to the user."""
     summary = DisruptionService.get_disruption_summary(
         alert_type=category, zone=zone, train_number=train_number, station=station
     )
-    return json.dumps(summary.model_dump(mode="json"))
+    payload = summary.model_dump(mode="json")
+    payload["note"] = "No verified disruption feed is connected. An empty list means unknown, not that there are no disruptions."
+    return json.dumps(payload)
 
 
 @tool
 async def check_train_route_diversion_or_cancellation(train_number: str) -> str:
-    """Check if a specific train (e.g. 12115, 22225, 12158) is running on a diverted route, cancelled, short-terminated, or heavily delayed due to track work or mega blocks."""
-    alerts = DisruptionService.get_train_disruptions(train_number)
-    if not alerts:
-        return json.dumps({
-            "train_number": train_number,
-            "is_diverted": False,
-            "is_cancelled": False,
-            "active_disruptions": [],
-            "message": f"No route diversions or cancellations reported for train {train_number}. Operating on normal route."
-        })
+    """Check whether the data provider reports a cancellation, diversion or other notice for this train's current journey."""
+    status, message = await _status_or_message(train_number)
+    if not status:
+        return message
     return json.dumps({
         "train_number": train_number,
-        "active_disruptions": [a.model_dump(mode="json") for a in alerts]
+        "service_state": status.service_state,
+        "is_cancelled": status.service_state == "CANCELLED",
+        "provider_notices": status.exceptions,
+        "note": "provider_notices is the only source. An empty list means the provider reports nothing, not a guarantee.",
     })
 
 
 @tool
-async def get_mega_blocks_by_zone_or_station(station_or_zone: Optional[str] = None) -> str:
-    """Fetch active Sunday mega blocks, jumbo maintenance blocks, and speed restrictions affecting suburban lines and long-distance corridors for a station (e.g. CSMT, PUNE, NDLS, Kalyan) or zone (CR, WR)."""
-    blocks = DisruptionService.get_corridor_mega_blocks(station_or_zone)
-    return json.dumps([b.model_dump(mode="json") for b in blocks])
-
-
-@tool
 async def check_train_operating_days_and_pair(train_number: str) -> str:
-    """Check authentic operating days (e.g. why 22225 Vande Bharat does NOT run on Wednesdays due to maintenance), current service state (NOT_RUNNING_TODAY, NOT_STARTED, COMPLETED, RUNNING), and pairing train rake sharing relationship (e.g. 12157 and 12158 sharing a single rake between Pune and Solapur)."""
+    """Get the timetable's running days and any paired return train that shares the same rake. For whether the train is actually running now, use get_live_train_status."""
     from app.services.train_schedule_service import TrainOperationsMetadata
-    res = TrainOperationsMetadata.check_operational_status(train_number)
-    return json.dumps(res)
+    profile = TrainOperationsMetadata.get_profile(train_number)
+    if not profile:
+        return f"No timetable record for train {train_number}."
+    return json.dumps({
+        "train_number": profile["number"],
+        "train_name": profile["name"],
+        "days_of_run": profile["days_of_run"],
+        "non_running_reason": profile.get("non_running_reason"),
+        "departure_time_ist": profile.get("dep_time"),
+        "arrival_time_ist": profile.get("arr_time"),
+        "pairing_train": profile.get("pairing_train"),
+        "rake_share_description": profile.get("rake_share_description"),
+    })
 
 
 RAILWAY_TOOLS = [
@@ -235,5 +263,4 @@ RAILWAY_TOOLS = [
     get_pnr_status,
     get_railway_disruptions_and_mega_blocks,
     check_train_route_diversion_or_cancellation,
-    get_mega_blocks_by_zone_or_station,
 ]

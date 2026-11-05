@@ -46,14 +46,14 @@ A production-oriented Indian Railway tracking platform built with **Next.js 15+*
 ## 2. Core Technical Standards
 
 1. **Zero-Fake Telemetry Guarantee**:
-   - Missing GPS coordinates remain `null`. Coordinates are never fabricated.
+   - The data provider reports stations, not coordinates. Between stations the position is an estimate and is labelled as one, and passenger GPS replaces it when available. Unknown positions remain `null`.
    - Location types are strictly categorized: `GPS_OBSERVED`, `STATION_OBSERVED`, `PROVIDER_ESTIMATED`, `APPLICATION_ESTIMATED`, `SIMULATED`.
-   - The offline simulator is clearly isolated and watermarked with an unambiguous warning: `⚠️ SIMULATED DEMO DATA`.
+   - The offline simulator is for local demos and never runs in production.
 2. **Honest WebSocket Freshness**:
    - Upstream data ingestion is decoupled from the 5-second WebSocket transport heartbeat.
    - The UI shows the exact observation timestamp in Indian Standard Time (IST) and a real-time counter of elapsed seconds since the physical event occurred.
 3. **Capability-Aware Fallback & Circuit Breakers**:
-   - Primary: **Railway Engine** (60 req/min).
+   - Primary: **Railway Engine** (60 req/min). Yesterday's and today's journeys are both checked, because a train that started yesterday can still be running.
    - Secondary: **RailRadar** (Developer API).
    - Reference: **NTES** (Official reference stub without brittle unauthorized scraping).
    - Each provider has a circuit breaker with failure thresholds, recovery timeouts, and exponential backoff.
@@ -162,6 +162,12 @@ docker-compose up --build -d
 
 ---
 
-## 7. License
+## 7. Data Sources
+
+Station coordinates in `backend/app/data/stations.json` are derived from [DataMeet's Indian Railways data](https://github.com/datameet/railways) (CC0).
+
+---
+
+## 8. License
 
 This project is licensed under the [MIT License](LICENSE) - see the [LICENSE](LICENSE) file for details.

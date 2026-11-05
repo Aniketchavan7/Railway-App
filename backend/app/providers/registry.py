@@ -46,7 +46,7 @@ class CapabilityRegistry:
         provider_names = self.capability_routing.get(capability, [])
         selected: List[RailwayProvider] = []
         for name in provider_names:
-            if name == "offline_simulator" and not settings.ENABLE_SIMULATOR:
+            if name == "offline_simulator" and not settings.simulator_enabled:
                 continue
 
             provider = self.providers.get(name)

@@ -8,6 +8,8 @@ from app.schemas.station import Station, StationBoardItem, StationLiveBoard
 from app.schemas.status import ConfidenceLevel, FreshnessState, LocationType, RailwayStatus, StationHalt
 from app.services.train_schedule_service import TrainOperationsMetadata, IST
 
+DEMO_PNR = "1234567890"
+
 # High-fidelity reference data for key Indian trains
 REFERENCE_TRAINS: Dict[str, Dict[str, Any]] = {
     # 22225 Mumbai CSMT - Solapur Vande Bharat Express
@@ -242,11 +244,8 @@ class OfflineSimulatorProvider(RailwayProvider):
             "HEALTH",
         ]
 
-    def _resolve_train(self, train_number: str) -> Dict[str, Any]:
-        """
-        Lookup in indexed reference trains, or dynamically synthesize a realistic
-        train for any other train number without overwriting the requested number.
-        """
+    def _resolve_train(self, train_number: str) -> Optional[Dict[str, Any]]:
+        """Look up a known train. Returns None for any other number."""
         clean_num = str(train_number).strip()
         if clean_num in REFERENCE_TRAINS:
             return REFERENCE_TRAINS[clean_num]
@@ -263,14 +262,14 @@ class OfflineSimulatorProvider(RailwayProvider):
             orig_stn = next((s for s in REFERENCE_STATIONS if s["code"] == orig_code), None)
             dest_stn = next((s for s in REFERENCE_STATIONS if s["code"] == dest_code), None)
 
-            orig_lat = orig_stn["lat"] if orig_stn else 18.9402
-            orig_lng = orig_stn["lng"] if orig_stn else 72.8358
-            dest_lat = dest_stn["lat"] if dest_stn else 18.5289
-            dest_lng = dest_stn["lng"] if dest_stn else 73.8744
+            orig_lat = orig_stn["lat"] if orig_stn else None
+            orig_lng = orig_stn["lng"] if orig_stn else None
+            dest_lat = dest_stn["lat"] if dest_stn else None
+            dest_lng = dest_stn["lng"] if dest_stn else None
 
             halts = [
                 {"code": orig_code, "name": orig_name, "sch_arr": None, "sch_dep": dep, "dist": 0, "lat": orig_lat, "lng": orig_lng, "platform": "1"},
-                {"code": dest_code, "name": dest_name, "sch_arr": arr, "sch_dep": None, "dist": 500, "lat": dest_lat, "lng": dest_lng, "platform": "1"},
+                {"code": dest_code, "name": dest_name, "sch_arr": arr, "sch_dep": None, "dist": 0, "lat": dest_lat, "lng": dest_lng, "platform": "1"},
             ]
             return {
                 "number": clean_num,
@@ -280,51 +279,16 @@ class OfflineSimulatorProvider(RailwayProvider):
                 "halts": halts,
             }
 
-        # Dynamic Corridor Synthesis for unindexed trains
-        corridors = [
-            # Mumbai - Solapur Corridor
-            [
-                {"code": "CSMT", "name": "Mumbai CSMT", "sch_arr": None, "sch_dep": "06:00", "dist": 0, "lat": 18.9402, "lng": 72.8358, "platform": "8"},
-                {"code": "DR", "name": "Dadar Central", "sch_arr": "06:12", "sch_dep": "06:15", "dist": 9, "lat": 19.0178, "lng": 72.8478, "platform": "5"},
-                {"code": "KYN", "name": "Kalyan Jn", "sch_arr": "06:55", "sch_dep": "06:58", "dist": 54, "lat": 19.2364, "lng": 73.1302, "platform": "5"},
-                {"code": "PUNE", "name": "Pune Jn", "sch_arr": "09:20", "sch_dep": "09:25", "dist": 192, "lat": 18.5289, "lng": 73.8744, "platform": "2"},
-                {"code": "DD", "name": "Daund Jn", "sch_arr": "10:35", "sch_dep": "10:40", "dist": 268, "lat": 18.4639, "lng": 74.5786, "platform": "4"},
-                {"code": "KWV", "name": "Kurduvadi Jn", "sch_arr": "11:55", "sch_dep": "11:58", "dist": 377, "lat": 18.0858, "lng": 75.4344, "platform": "3"},
-                {"code": "SUR", "name": "Solapur Jn", "sch_arr": "13:15", "sch_dep": None, "dist": 455, "lat": 17.6599, "lng": 75.9064, "platform": "1"},
-            ],
-            # Mumbai - Delhi Corridor
-            [
-                {"code": "MMCT", "name": "Mumbai Central", "sch_arr": None, "sch_dep": "16:00", "dist": 0, "lat": 18.9696, "lng": 72.8193, "platform": "1"},
-                {"code": "ST", "name": "Surat", "sch_arr": "19:00", "sch_dep": "19:05", "dist": 263, "lat": 21.2049, "lng": 72.8411, "platform": "1"},
-                {"code": "BRC", "name": "Vadodara Jn", "sch_arr": "20:30", "sch_dep": "20:35", "dist": 393, "lat": 22.3107, "lng": 73.1812, "platform": "2"},
-                {"code": "KOTA", "name": "Kota Jn", "sch_arr": "02:40", "sch_dep": "02:45", "dist": 920, "lat": 25.2185, "lng": 75.8648, "platform": "1"},
-                {"code": "NDLS", "name": "New Delhi", "sch_arr": "07:55", "sch_dep": None, "dist": 1386, "lat": 28.6415, "lng": 77.2195, "platform": "3"},
-            ],
-            # Delhi - Varanasi Corridor
-            [
-                {"code": "NDLS", "name": "New Delhi", "sch_arr": None, "sch_dep": "06:00", "dist": 0, "lat": 28.6415, "lng": 77.2195, "platform": "16"},
-                {"code": "CNB", "name": "Kanpur Central", "sch_arr": "10:10", "sch_dep": "10:15", "dist": 440, "lat": 26.4539, "lng": 80.3513, "platform": "5"},
-                {"code": "PRYJ", "name": "Prayagraj Jn", "sch_arr": "12:15", "sch_dep": "12:20", "dist": 634, "lat": 25.4484, "lng": 81.8340, "platform": "6"},
-                {"code": "BSB", "name": "Varanasi Jn", "sch_arr": "14:05", "sch_dep": None, "dist": 759, "lat": 25.3284, "lng": 82.9868, "platform": "1"},
-            ],
-        ]
+        # An unknown number is unknown. Inventing a train for it would show a passenger
+        # a journey that does not exist.
+        return None
 
-        idx = sum(ord(c) for c in clean_num) % len(corridors)
-        halts = corridors[idx]
-        name = f"Express {clean_num}"
-        if clean_num.startswith(("20", "22")):
-            name = f"Superfast Express {clean_num}"
-
-        return {
-            "number": clean_num,
-            "name": name,
-            "origin": halts[0]["code"],
-            "destination": halts[-1]["code"],
-            "halts": halts,
-        }
-
-    async def get_live_status(self, train_number: str) -> Optional[RailwayStatus]:
+    async def get_live_status(
+        self, train_number: str, journey_date: Optional[str] = None
+    ) -> Optional[RailwayStatus]:
         train = self._resolve_train(train_number)
+        if not train:
+            return None
         now = datetime.now(timezone.utc)
         now_ist = datetime.now(IST)
         halts_data = train["halts"]
@@ -540,6 +504,8 @@ class OfflineSimulatorProvider(RailwayProvider):
 
     async def get_schedule(self, train_number: str) -> Optional[Dict[str, Any]]:
         train = self._resolve_train(train_number)
+        if not train:
+            return None
         return {
             "train_number": train["number"],
             "train_name": train["name"],
@@ -553,7 +519,9 @@ class OfflineSimulatorProvider(RailwayProvider):
 
     async def get_route(self, train_number: str) -> Optional[Dict[str, Any]]:
         train = self._resolve_train(train_number)
-        coordinates = [[h["lng"], h["lat"]] for h in train["halts"]]
+        if not train:
+            return None
+        coordinates = [[h["lng"], h["lat"]] for h in train["halts"] if h.get("lat") is not None]
         return {
             "train_number": train["number"],
             "train_name": train["name"],
@@ -581,17 +549,6 @@ class OfflineSimulatorProvider(RailwayProvider):
                     "destination": t["destination"],
                     "is_simulated": True,
                 })
-
-        # Synthesize entry for unindexed 4-5 digit train queries
-        if not results and q.isdigit() and len(q) in (4, 5):
-            synth = self._resolve_train(q)
-            results.append({
-                "train_number": synth["number"],
-                "train_name": synth["name"],
-                "origin": synth["origin"],
-                "destination": synth["destination"],
-                "is_simulated": True,
-            })
 
         return results
 
@@ -624,14 +581,7 @@ class OfflineSimulatorProvider(RailwayProvider):
                     latitude=s["lat"],
                     longitude=s["lng"],
                 )
-        return Station(
-            station_code=clean,
-            station_name=f"{clean} Junction",
-            state="Maharashtra",
-            zone="CR",
-            latitude=19.0760,
-            longitude=72.8777,
-        )
+        return None
 
     async def get_station_board(self, station_code: str, hours: int = 4) -> Optional[StationLiveBoard]:
         code = station_code.upper().strip()
@@ -691,6 +641,8 @@ class OfflineSimulatorProvider(RailwayProvider):
 
     async def get_coach_composition(self, train_number: str) -> Optional[CoachComposition]:
         train = self._resolve_train(train_number)
+        if not train:
+            return None
         num = train["number"]
         name_lower = train["name"].lower()
 
@@ -770,6 +722,8 @@ class OfflineSimulatorProvider(RailwayProvider):
 
     async def get_platform_information(self, train_number: str) -> List[PlatformInfo]:
         train = self._resolve_train(train_number)
+        if not train:
+            return []
         return [
             PlatformInfo(
                 station_code=h["code"],
@@ -782,6 +736,9 @@ class OfflineSimulatorProvider(RailwayProvider):
         ]
 
     async def get_pnr_status(self, pnr: str) -> Optional[PNRStatus]:
+        # One clearly fake demo number, so no real PNR can ever get a made-up booking.
+        if pnr != DEMO_PNR:
+            return None
         return PNRStatus(
             pnr=pnr,
             train_number="22225",

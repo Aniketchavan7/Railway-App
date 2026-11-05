@@ -40,7 +40,7 @@ export function TurnaroundRakeCard({
             <strong className="font-outlier font-bold text-ink">#{pairingTrainNumber}</strong>.
           </p>
           <p className="text-[11px] text-muted font-outlier leading-relaxed">
-            Turnaround punctuality guarantee: If the incoming rake for #{pairingTrainNumber} encounters terminal delays, the departing departure of #{currentTrainNumber} will be rescheduled.
+            If #{pairingTrainNumber} arrives late, #{currentTrainNumber} may also leave late.
           </p>
         </div>
 

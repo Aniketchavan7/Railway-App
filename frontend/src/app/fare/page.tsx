@@ -187,7 +187,7 @@ function FareContent() {
           Fare tariff calculator
         </h1>
         <p className="text-xs sm:text-sm text-muted max-w-2xl">
-          Official Railway Board distance tariff schedules, telescopic tapering, and class breakdowns.
+          Estimated fares from distance tariffs, with a class-by-class breakdown.
         </p>
 
         {/* Clean Route Input Form */}
@@ -528,7 +528,7 @@ function FareContent() {
             <div className="flex items-center gap-2">
               <ShieldCheck className="w-3.5 h-3.5 text-ok shrink-0" aria-hidden="true" />
               <span>
-                Computed via Railway Board telescopic distance tariffs with tapering for distances &gt; 500 km. GST applies to AC classes.
+                Estimated from distance tariffs, tapering beyond 500 km. GST applies to AC classes. Check the actual fare when booking.
               </span>
             </div>
             <span>

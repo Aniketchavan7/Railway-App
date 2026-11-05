@@ -27,7 +27,9 @@ class NTESReferenceProvider(RailwayProvider):
         # Ready for authorized B2B CRIS/IRCTC integration
         return ["HEALTH"]
 
-    async def get_live_status(self, train_number: str) -> Optional[RailwayStatus]:
+    async def get_live_status(
+        self, train_number: str, journey_date: Optional[str] = None
+    ) -> Optional[RailwayStatus]:
         logger.info("NTES live status query: Authorized CRIS API key required. Skipping.")
         return None
 

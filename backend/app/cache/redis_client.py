@@ -135,6 +135,13 @@ class CacheManager:
                 pass
         return await self._memory.subscribe(channel)
 
+    async def unsubscribe_channel(self, channel: str, subscription) -> None:
+        if hasattr(subscription, "get_message"):
+            await subscription.unsubscribe(channel)
+            await subscription.aclose()
+        else:
+            await self._memory.unsubscribe(channel, subscription)
+
     async def close(self):
         if self._redis:
             await self._redis.close()

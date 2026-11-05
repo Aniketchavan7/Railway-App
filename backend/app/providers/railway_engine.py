@@ -1,14 +1,15 @@
 import logging
-from datetime import datetime, timezone
+import re
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 import httpx
 from app.config import settings
-from app.providers.base import RailwayProvider
+from app.providers.base import ProviderUnavailable, RailwayProvider
 from app.schemas.details import CoachComposition, CoachPosition, CoachType, FareClassBreakdown, FareEnquiryResult, PlatformInfo
 from app.schemas.pnr import PassengerStatus, PNRStatus
 from app.schemas.station import Station, StationBoardItem, StationLiveBoard
 from app.schemas.status import ConfidenceLevel, FreshnessState, LocationType, RailwayStatus, StationHalt
-from app.services.train_schedule_service import TrainOperationsMetadata, IST
+from app.services.train_schedule_service import IST
 
 logger = logging.getLogger("railpulse.providers.railway_engine")
 
@@ -23,6 +24,58 @@ def _format_station(val: Any) -> Optional[str]:
             return f"{name} ({code})"
         return name or code or None
     return str(val)
+
+
+def _station_code(val: Any) -> Optional[str]:
+    if isinstance(val, dict):
+        return val.get("code") or val.get("stationCode")
+    return None
+
+
+def _parse_dt(val: Any) -> Optional[datetime]:
+    if not isinstance(val, str) or not val:
+        return None
+    try:
+        parsed = datetime.fromisoformat(val.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return parsed if parsed.tzinfo else parsed.replace(tzinfo=IST)
+
+
+def _normalise_exceptions(raw: Any) -> List[Dict[str, Any]]:
+    if not isinstance(raw, list):
+        return []
+    result: List[Dict[str, Any]] = []
+    for item in raw:
+        if isinstance(item, dict):
+            result.append(item)
+        elif item:
+            result.append({"message": str(item)})
+    return result
+
+
+NOT_STARTED_STATES = {"NOT_STARTED", "YET_TO_START", "SCHEDULED", "RESCHEDULED"}
+COMPLETED_STATES = {"COMPLETED", "TERMINATED", "REACHED", "REACHED_DESTINATION", "ARRIVED_AT_DESTINATION"}
+CANCELLED_STATES = {"CANCELLED", "CANCELED", "FULLY_CANCELLED", "CANCELLATION"}
+# "ARRIVED" alone means at a station along the way, not at the end of the journey.
+RUNNING_STATES = {"RUNNING", "IN_TRANSIT", "EN_ROUTE", "DEPARTED", "ARRIVED", "AT_STATION", "HALTED", "DELAYED", "LATE", "ON_TIME"}
+
+
+def _service_state(raw_status: Any, exceptions: List[Dict[str, Any]]) -> str:
+    """Exact matches only. An unrecognised value is UNKNOWN rather than a confident guess."""
+    raw = re.sub(r"[^A-Z]+", "_", str(raw_status or "").upper()).strip("_")
+    # Only a whole-train cancellation counts: "cancelled between X and Y" is a notice.
+    if raw in CANCELLED_STATES or any(
+        re.sub(r"[^A-Z]+", "_", str(e.get("type") or "").upper()).strip("_") in CANCELLED_STATES for e in exceptions
+    ):
+        return "CANCELLED"
+    if raw in NOT_STARTED_STATES:
+        return "NOT_STARTED"
+    if raw in COMPLETED_STATES:
+        return "COMPLETED"
+    if raw in RUNNING_STATES:
+        return "RUNNING"
+    return "UNKNOWN"
 
 
 class RailwayEngineProvider(RailwayProvider):
@@ -67,196 +120,107 @@ class RailwayEngineProvider(RailwayProvider):
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
                 res = await client.get(url, headers=req_headers, params=params)
-                if res.status_code == 200:
-                    payload = res.json()
-                    return payload.get("data") if "data" in payload else payload
-                elif res.status_code == 429:
-                    logger.warning("Railway Engine rate limit reached (HTTP 429)")
-                elif res.status_code in (401, 403):
-                    logger.warning("Railway Engine authentication required/forbidden (%s)", res.status_code)
-                else:
-                    logger.info("Railway Engine returned HTTP %s for %s", res.status_code, path)
-                return None
-        except Exception as e:
-            logger.error("Railway Engine request failed for %s: %s", path, e)
-            return None
+        except httpx.HTTPError as e:
+            raise ProviderUnavailable(f"Railway Engine request failed for {path}: {e}") from e
 
-    async def get_live_status(self, train_number: str) -> Optional[RailwayStatus]:
+        if res.status_code == 200:
+            payload = res.json()
+            return payload.get("data") if "data" in payload else payload
+        # 404 and 400 are real answers: no record, or a date outside the allowed window.
+        if res.status_code in (400, 404):
+            return None
+        raise ProviderUnavailable(f"Railway Engine returned HTTP {res.status_code} for {path}")
+
+    async def get_live_status(
+        self, train_number: str, journey_date: Optional[str] = None
+    ) -> Optional[RailwayStatus]:
+        params = {"date": journey_date} if journey_date else None
+        data = await self._get(f"/train/{train_number}/status", params=params)
+        if not data or not isinstance(data, dict):
+            return None
+        return self._parse_status(data, train_number, journey_date)
+
+    def _parse_status(
+        self, data: Dict[str, Any], train_number: str, journey_date: Optional[str]
+    ) -> RailwayStatus:
         now = datetime.now(timezone.utc)
         now_ist = datetime.now(IST)
-        op_check = TrainOperationsMetadata.check_operational_status(train_number, now)
-        profile = TrainOperationsMetadata.get_profile(train_number)
-
-        data = await self._get(f"/train/{train_number}/status")
-        if not data or not isinstance(data, dict):
-            # If upstream returned None (e.g. 404 because train is not operating today)
-            if not op_check.get("runs_today", True):
-                origin_name = profile["origin_name"] if profile else "Origin Station"
-                return RailwayStatus(
-                    train_number=str(train_number),
-                    train_name=profile["name"] if profile else f"Train {train_number}",
-                    journey_date=now_ist.strftime("%Y-%m-%d"),
-                    running_status=op_check["running_status"],
-                    delay_minutes=0,
-                    current_station=f"{origin_name} (Depot / Non-Operating Day)",
-                    previous_station=None,
-                    next_station=None,
-                    latitude=None,
-                    longitude=None,
-                    speed_kmph=0.0,
-                    source_provider=self.provider_name,
-                    observed_at=now,
-                    fetched_at=now,
-                    age_seconds=0,
-                    freshness=FreshnessState.LIVE,
-                    confidence=ConfidenceLevel.HIGH,
-                    location_type=LocationType.STATION_OBSERVED,
-                    is_simulated=False,
-                    halts=[],
-                    runs_today=False,
-                    days_of_run=op_check["days_of_run"],
-                    service_state="NOT_RUNNING_TODAY",
-                    service_notice=op_check["service_notice"],
-                    pairing_train_number=op_check.get("pairing_train"),
-                )
-            return None
-        observed_time_str = (
-            data.get("observed_at")
-            or data.get("observedAt")
-            or data.get("updated_at")
-            or data.get("updatedAt")
-        )
-        observed_at = now
-        if observed_time_str and isinstance(observed_time_str, str):
-            try:
-                observed_at = datetime.fromisoformat(observed_time_str.replace("Z", "+00:00"))
-            except Exception:
-                pass
-
-        age_seconds = int((now - observed_at).total_seconds()) if (now >= observed_at) else 0
-
-        # Location classification
         pos = data.get("position") if isinstance(data.get("position"), dict) else {}
+        fresh = data.get("freshness") if isinstance(data.get("freshness"), dict) else {}
+
+        observed_at = _parse_dt(
+            data.get("observed_at") or data.get("observedAt") or pos.get("observedAt")
+            or fresh.get("observedAt") or data.get("updated_at") or data.get("updatedAt")
+        ) or now
+        age_seconds = max(0, int((now - observed_at).total_seconds()))
+        if isinstance(fresh.get("ageSeconds"), (int, float)):
+            age_seconds = int(fresh["ageSeconds"])
+
         raw_lat = data.get("latitude") if data.get("latitude") is not None else pos.get("latitude")
         raw_lng = data.get("longitude") if data.get("longitude") is not None else pos.get("longitude")
         lat = float(raw_lat) if raw_lat is not None else None
         lng = float(raw_lng) if raw_lng is not None else None
 
-        loc_type = LocationType.STATION_OBSERVED
-        if lat is not None and lng is not None:
-            loc_type = LocationType.GPS_OBSERVED
+        raw_fresh = fresh.get("state") or data.get("freshness")
+        fresh_name = str(raw_fresh).upper() if isinstance(raw_fresh, str) else "LIVE"
+        freshness = FreshnessState[fresh_name] if fresh_name in FreshnessState.__members__ else FreshnessState.LIVE
 
-        # Freshness parsing (handles string or dict {"state": "LIVE", ...})
-        raw_fresh = data.get("freshness")
-        raw_freshness_str = "LIVE"
-        if isinstance(raw_fresh, dict):
-            raw_freshness_str = str(raw_fresh.get("state") or raw_fresh.get("freshness") or "LIVE").upper()
-            if "ageSeconds" in raw_fresh and isinstance(raw_fresh["ageSeconds"], (int, float)):
-                age_seconds = int(raw_fresh["ageSeconds"])
-        elif isinstance(raw_fresh, str):
-            raw_freshness_str = raw_fresh.upper()
-
-        freshness = FreshnessState[raw_freshness_str] if raw_freshness_str in FreshnessState.__members__ else FreshnessState.LIVE
-
-        raw_conf = str(data.get("confidence") or "HIGH").upper()
-        confidence = ConfidenceLevel[raw_conf] if raw_conf in ConfidenceLevel.__members__ else ConfidenceLevel.HIGH
-
-        # Halts extraction
-        raw_halts = data.get("halts") or data.get("schedule") or data.get("stops") or []
-        halts: List[StationHalt] = []
-        if isinstance(raw_halts, list):
-            for h in raw_halts:
-                if not isinstance(h, dict):
-                    continue
-                stn = h.get("station") if isinstance(h.get("station"), dict) else {}
-                code = h.get("station_code") or h.get("stationCode") or h.get("code") or stn.get("code") or ""
-                name = h.get("station_name") or h.get("stationName") or h.get("name") or stn.get("name") or ""
-                dist = h.get("distance_km") or h.get("distanceKm") or h.get("distance") or 0.0
-
-                halts.append(
-                    StationHalt(
-                        station_code=str(code),
-                        station_name=str(name),
-                        arrival_time=h.get("arrival_time") or h.get("arrivalTime") or h.get("arrival"),
-                        departure_time=h.get("departure_time") or h.get("departureTime") or h.get("departure"),
-                        actual_arrival=h.get("actual_arrival") or h.get("actualArrival"),
-                        actual_departure=h.get("actual_departure") or h.get("actualDeparture"),
-                        distance_km=float(dist),
-                        day_count=int(h.get("day") or h.get("day_count") or 1),
-                        platform=str(h.get("platform")) if h.get("platform") is not None else None,
-                        delay_minutes=int(h.get("delay_minutes") or h.get("delayMinutes") or 0),
-                        has_arrived=bool(h.get("has_arrived") or h.get("hasArrived") or False),
-                        has_departed=bool(h.get("has_departed") or h.get("hasDeparted") or False),
-                        latitude=float(h.get("lat") or h.get("latitude")) if (h.get("lat") or h.get("latitude")) else None,
-                        longitude=float(h.get("lng") or h.get("longitude")) if (h.get("lng") or h.get("longitude")) else None,
-                    )
-                )
+        raw_conf = str(data.get("confidence") or "MEDIUM").upper()
+        confidence = ConfidenceLevel[raw_conf] if raw_conf in ConfidenceLevel.__members__ else ConfidenceLevel.MEDIUM
 
         train_num = str(data.get("trainNumber") or data.get("train_number") or train_number)
-        train_name = str(data.get("trainName") or data.get("train_name") or f"Train {train_num}")
-        journey_date = str(data.get("journeyDate") or data.get("journey_date") or now_ist.strftime("%Y-%m-%d"))
-
-        raw_speed = data.get("speedKmph") if data.get("speedKmph") is not None else data.get("speed_kmph")
-        speed_kmph = float(raw_speed) if raw_speed is not None else None
-
         delay_val = data.get("delayMinutes") or data.get("delay_minutes") or (data.get("delay") or {}).get("minutes") or 0
+        raw_speed = data.get("speedKmph") if data.get("speedKmph") is not None else data.get("speed_kmph")
+
+        exceptions = _normalise_exceptions(data.get("exceptions"))
+        service_state = _service_state(data.get("status") or data.get("running_status") or data.get("state"), exceptions)
+
+        origin = data.get("origin") if isinstance(data.get("origin"), dict) else {}
+        destination = data.get("destination") if isinstance(data.get("destination"), dict) else {}
+        current = data.get("currentStation") or data.get("current_station")
+        previous = data.get("previousStation") or data.get("previous_station")
+        upcoming = data.get("nextStation") or data.get("next_station")
+        progress = data.get("routeProgress") if isinstance(data.get("routeProgress"), dict) else {}
+        eta = data.get("eta") if isinstance(data.get("eta"), dict) else {}
+
         delay_minutes = int(delay_val)
-
-        current_stn = _format_station(data.get("currentStation") or data.get("current_station"))
-        previous_stn = _format_station(data.get("previousStation") or data.get("previous_station"))
-        next_stn = _format_station(data.get("nextStation") or data.get("next_station"))
-
-        # Determine authentic service state (NOT_STARTED, COMPLETED, RUNNING)
-        raw_status = str(data.get("status") or data.get("running_status") or data.get("state") or "RUNNING").upper()
-        service_state = "RUNNING"
-        service_notice = op_check.get("service_notice")
-
-        if "NOT_STARTED" in raw_status or (op_check.get("service_state") == "NOT_STARTED" and (speed_kmph is None or speed_kmph == 0)):
-            service_state = "NOT_STARTED"
-            speed_kmph = 0.0
-            if profile and profile.get("dep_time"):
-                running_status = f"Scheduled to Depart {profile['origin_name']} at {profile['dep_time']} IST"
-            else:
-                running_status = "Scheduled — Not Started Yet"
-            service_notice = op_check.get("service_notice") or f"Train {train_num} has not departed yet today."
-        elif "COMPLETED" in raw_status or "TERMINATED" in raw_status or "ARRIVED" in raw_status or (op_check.get("service_state") == "COMPLETED" and (speed_kmph is None or speed_kmph == 0)):
-            service_state = "COMPLETED"
-            speed_kmph = 0.0
-            if profile and profile.get("arr_time"):
-                running_status = f"Journey Completed at {profile['destination_name']} ({profile['arr_time']} IST)"
-            else:
-                running_status = "Journey Completed (Terminated)"
-            service_notice = op_check.get("service_notice") or f"Train {train_num} has reached its final destination."
-        else:
-            service_state = "RUNNING"
-            running_status = str(data.get("status") or data.get("running_status") or "RUNNING")
+        next_eta = _parse_dt(eta.get("value"))
+        # An ETA marked SCHEDULED is the timetable time, so it still needs the running delay.
+        if next_eta and str(eta.get("source") or "").upper() == "SCHEDULED":
+            next_eta = next_eta + timedelta(minutes=delay_minutes)
 
         return RailwayStatus(
             train_number=train_num,
-            train_name=train_name,
-            journey_date=journey_date,
-            running_status=running_status,
+            train_name=str(data.get("trainName") or data.get("train_name") or f"Train {train_num}"),
+            journey_date=str(data.get("journeyDate") or data.get("journey_date") or journey_date or now_ist.strftime("%Y-%m-%d")),
+            running_status="Live status unclear" if service_state == "UNKNOWN" else str(data.get("status") or data.get("running_status") or service_state),
             delay_minutes=delay_minutes,
-            current_station=current_stn,
-            previous_station=previous_stn,
-            next_station=next_stn,
+            current_station=_format_station(current),
+            previous_station=_format_station(previous),
+            next_station=_format_station(upcoming),
             latitude=lat,
             longitude=lng,
-            speed_kmph=speed_kmph,
-            source_provider=self.provider_name,
+            speed_kmph=float(raw_speed) if raw_speed is not None else None,
+            source_provider=str(fresh.get("provider") or data.get("source") or self.provider_name),
             observed_at=observed_at,
             fetched_at=now,
             age_seconds=age_seconds,
             freshness=freshness,
             confidence=confidence,
-            location_type=loc_type,
+            location_type=LocationType.GPS_OBSERVED if lat is not None and lng is not None else LocationType.STATION_OBSERVED,
             is_simulated=False,
-            halts=halts,
-            runs_today=op_check.get("runs_today", True),
-            days_of_run=op_check.get("days_of_run", ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"]),
+            halts=[],
             service_state=service_state,
-            service_notice=service_notice,
-            pairing_train_number=op_check.get("pairing_train"),
+            origin_code=_station_code(origin),
+            origin_name=origin.get("name"),
+            destination_code=_station_code(destination),
+            destination_name=destination.get("name"),
+            previous_station_code=_station_code(previous),
+            current_station_code=_station_code(current) or pos.get("stationCode"),
+            next_station_code=_station_code(upcoming),
+            next_eta=next_eta,
+            route_progress_percent=float(progress["percent"]) if isinstance(progress.get("percent"), (int, float)) else None,
+            exceptions=exceptions,
         )
 
     async def get_schedule(self, train_number: str) -> Optional[Dict[str, Any]]:
@@ -477,5 +441,8 @@ class RailwayEngineProvider(RailwayProvider):
         )
 
     async def get_health(self) -> Dict[str, Any]:
-        data = await self._get("/provider/health")
+        try:
+            data = await self._get("/provider/health")
+        except ProviderUnavailable as e:
+            return {"status": "UNAVAILABLE", "provider": self.provider_name, "error": str(e)}
         return data or {"status": "UNKNOWN", "provider": self.provider_name}

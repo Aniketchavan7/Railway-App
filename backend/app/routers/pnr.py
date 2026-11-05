@@ -1,7 +1,7 @@
 import re
 from fastapi import APIRouter, HTTPException
 from app.schemas.status import ResponseEnvelope
-from app.services.orchestrator import orchestrator
+from app.services.orchestrator import LiveDataUnavailable, orchestrator
 
 router = APIRouter(tags=["PNR Enquiry"])
 
@@ -15,7 +15,13 @@ async def get_pnr_status(pnr: str):
             detail="Invalid PNR format. PNR must be exactly 10 numeric digits.",
         )
 
-    res = await orchestrator.get_pnr_status(clean_pnr)
+    try:
+        res = await orchestrator.get_pnr_status(clean_pnr)
+    except LiveDataUnavailable:
+        raise HTTPException(
+            status_code=503,
+            detail="The PNR service is temporarily unavailable. Please try again shortly.",
+        )
     if not res:
         raise HTTPException(status_code=404, detail=f"PNR {clean_pnr} not found or expired.")
 

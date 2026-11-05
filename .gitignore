@@ -15,6 +15,7 @@ downloads/
 eggs/
 .eggs/
 lib/
+!frontend/src/lib/
 lib64/
 parts/
 sdist/
@@ -33,6 +34,7 @@ htmlcov/
 *.sqlite3
 
 # Node / Next.js
+*.tsbuildinfo
 node_modules/
 .next/
 out/
