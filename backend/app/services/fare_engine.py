@@ -1,6 +1,7 @@
 import math
 from typing import Dict, List, Optional
 from app.schemas.details import FareClassBreakdown, FareEnquiryResult
+from app.services.geo_utils import haversine_distance_km
 
 # Station approximate distances from Mumbai (CSMT/LTT) along main trunk routes (km)
 STATION_DISTANCES: Dict[str, float] = {

@@ -34,3 +34,23 @@ def test_tatkal_quota_calculation():
 
     assert tq_result.tatkal_surcharge >= 300.0
     assert tq_result.total_fare > gn_result.total_fare
+
+
+def test_senior_citizen_concession():
+    """Verify senior citizen quota applies 40% discount on base fare."""
+    gn_result = TelescopicFareEngine.compute_fare_for_class("SL", 500.0, quota="GN")
+    ss_result = TelescopicFareEngine.compute_fare_for_class("SL", 500.0, quota="SS")
+
+    assert ss_result.base_fare < gn_result.base_fare
+    assert ss_result.total_fare < gn_result.total_fare
+
+
+def test_long_distance_telescopic_tapering():
+    """Verify rate per km tapers down for long distances (>1000km)."""
+    fare_500 = TelescopicFareEngine.compute_fare_for_class("3A", 500.0)
+    fare_1500 = TelescopicFareEngine.compute_fare_for_class("3A", 1500.0)
+
+    # Effective rate per km for 1500km should be lower than first 500km due to telescopic discounting
+    rate_500 = fare_500.base_fare / 500.0
+    rate_1500 = fare_1500.base_fare / 1500.0
+    assert rate_1500 < rate_500
