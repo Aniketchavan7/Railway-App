@@ -37,10 +37,13 @@ async def lifespan(app: FastAPI):
     await engine.dispose()
 
 
+openapi_tags = [{'name': 'System', 'description': 'Core service health checks, metrics, and readiness probes.'}, {'name': 'Live Tracking', 'description': 'Real-time telemetry, GPS lat/lng coordinates, speed, and delay status.'}, {'name': 'Details', 'description': 'Full route schedule, station halts, distance, and timetable data.'}, {'name': 'Search', 'description': 'Train and station autocomplete and search indices.'}, {'name': 'PNR', 'description': 'Passenger Name Record status and confirmation probability.'}, {'name': 'AI Assistant', 'description': 'Conversational travel assistant powered by LangGraph.'}, {'name': 'WebSockets', 'description': 'Bidirectional real-time telemetry streaming channel.'}]
+
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
     description="RailPulse — AI-Powered Indian Railway Tracking SaaS Engine",
+    openapi_tags=openapi_tags,
     lifespan=lifespan,
 )
 
