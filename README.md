@@ -1,5 +1,6 @@
 # RailPulse — AI-Powered Indian Railway Tracking SaaS
 
+[![GitHub Stars](https://img.shields.io/github/stars/Aniketchavan7/Railway-App?style=for-the-badge&logo=github&color=7aa2f7&labelColor=1a1b26)](https://github.com/Aniketchavan7/Railway-App/stargazers)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Cloudflare Pages](https://img.shields.io/badge/Frontend-Cloudflare_Pages_Live-green?logo=cloudflare)](https://railpulse-01i.pages.dev)
 [![Render Backend](https://img.shields.io/badge/Backend-Render_Live-46E3B7?logo=render)](https://railpulse-backend-fv1m.onrender.com)
@@ -10,6 +11,8 @@
 > **Backend API & Swagger Docs**: [https://railpulse-backend-fv1m.onrender.com/docs](https://railpulse-backend-fv1m.onrender.com/docs)
 
 A production-oriented Indian Railway tracking platform built with **Next.js 15+**, **FastAPI**, **PostgreSQL (Neon)**, **Redis (Upstash)**, **MapLibre GL + OpenStreetMap**, **WebSockets**, and a grounded **LangGraph AI travel assistant** powered by the **xKiro API**.
+
+> ⭐ **If you find this live railway tracking platform helpful, please consider starring the repository!**
 
 ---
 
